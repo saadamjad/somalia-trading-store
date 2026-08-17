@@ -1,0 +1,100 @@
+import type { Product } from "@/lib/types/product";
+
+export const products: Product[] = [
+  {
+    id: "cm-001",
+    slug: "premium-wooden-interior-door",
+    sku: "CM-DOOR-001",
+    name: "Premium Wooden Interior Door",
+    category: "construction-materials",
+    subcategory: "Doors",
+    shortDescription:
+      "Solid wood interior door with smooth finish, suitable for residential and commercial spaces.",
+    description:
+      "A quality wooden interior door built from timber with a smooth lacquer finish. Suitable for homes, offices, and commercial interiors.",
+    price: 160.0,
+    currency: "USD",
+    images: [
+      "https://images.unsplash.com/photo-1678555815116-52c1b10517f5?w=1200&q=80",
+      "https://images.unsplash.com/photo-1722604676113-36d5e770519a?w=1200&q=80",
+      "https://images.unsplash.com/photo-1642499804098-a7cbaf79c151?w=1200&q=80",
+    ],
+    specifications: {
+      Material: "Wood",
+      Size: "200cm x 80cm",
+      Finish: "Smooth Lacquer",
+      Thickness: "40mm",
+      Type: "Interior",
+    },
+    purchasingMode: "buy_online",
+    availability: "in_stock",
+    featured: true,
+    tags: ["doors", "interior", "wood"],
+    createdAt: "2025-11-01",
+  },
+  {
+    id: "ri-001",
+    slug: "interlocking-paver-block",
+    sku: "RI-PAV-001",
+    name: "Interlocking Paver Block",
+    category: "road-interlocks",
+    subcategory: "Interlocking Pavers",
+    shortDescription:
+      "Zig-zag interlocking concrete paver blocks for roads, driveways, pathways, and commercial surfacing — available in multiple colours.",
+    description:
+      "High-quality interlocking paver blocks with a zig-zag (S-shape) profile for stable, long-lasting road and pathway surfaces. Part of our full FGT range including hexagonal pavers, geometric designs, hollow concrete blocks, and installation materials such as base, sand, and gravel.",
+    price: 9.0,
+    currency: "USD",
+    priceUnit: "sqm",
+    images: [
+      "/images/products/road-interlocks/paver-zigzag-interlock.png",
+      "/images/products/road-interlocks/fgt-paver-catalog.png",
+      "/images/products/road-interlocks/hollow-blocks-stacked.png",
+      "/images/products/road-interlocks/hollow-concrete-blocks.png",
+    ],
+    specifications: {
+      Type: "Zig-Zag Interlocking Paver",
+      Material: "Concrete",
+      Profile: "S-Shape / Zig-Zag Interlock",
+      "Available Colours": "Grey, Red, Yellow, Charcoal",
+      Pricing: "$9 per square meter",
+      Application: "Roads, Driveways, Pathways, Patios",
+    },
+    purchasingMode: "buy_online",
+    availability: "in_stock",
+    featured: true,
+    tags: ["paver", "interlock", "concrete", "road"],
+    createdAt: "2025-10-01",
+  },
+  {
+    id: "fp-001",
+    slug: "professional-fishing-rod",
+    sku: "FP-ROD-001",
+    name: "Professional Fishing Rod",
+    category: "fishing-products",
+    subcategory: "Rods",
+    shortDescription:
+      "Carbon fiber fishing rod for professional and recreational coastal angling.",
+    description:
+      "Lightweight carbon fiber fishing rod offering sensitivity and strength for coastal and offshore fishing. Demo specifications for preview purposes.",
+    price: 89.0,
+    compareAtPrice: 109.0,
+    currency: "USD",
+    images: [
+      "https://images.unsplash.com/photo-1650081484358-b338642813c0?w=1200&q=80",
+      "https://images.unsplash.com/photo-1676396096916-4d1849f66e45?w=1200&q=80",
+      "https://images.unsplash.com/photo-1537872384762-e785271d14f8?w=1200&q=80",
+    ],
+    specifications: {
+      Material: "Carbon Fiber",
+      Length: "2.4m",
+      Weight: "180g (demo)",
+      Type: "Spinning",
+    },
+    purchasingMode: "buy_online",
+    availability: "in_stock",
+    featured: true,
+    tags: ["rod", "fishing", "carbon"],
+    createdAt: "2025-11-08",
+  },
+];
