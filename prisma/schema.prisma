@@ -96,6 +96,10 @@ model Product {
   inventory             Inventory?
   inventoryTransactions InventoryTransaction[]
 
+  // Phase 7: Cart & Wishlist.
+  cartItems     CartItem[]
+  wishlistItems WishlistItem[]
+
   @@index([categoryId])
   @@index([featured])
   @@index([availability])
@@ -150,6 +154,13 @@ model User {
   passwordResetTokens   PasswordResetToken[]
   inventoryTransactions InventoryTransaction[]
   addresses             Address[]
+
+  // Phase 7: Cart & Wishlist. 1:1 per user — simplest model that satisfies "a user has
+  // one cart" / "a user has one wishlist"; both are created lazily on first use
+  // (cart-service.ts / wishlist-service.ts getOrCreateForUser) rather than at
+  // registration, so most users never get an empty row.
+  cart     Cart?
+  wishlist Wishlist?
 
   @@index([roleId])
 }
@@ -239,4 +250,69 @@ model InventoryTransaction {
   @@index([inventoryId])
   @@index([productId])
   @@index([actorId])
+}
+
+// Phase 7: Cart & Wishlist (Server-Aware). Guest carts remain localStorage-only
+// (src/stores/cart-store.ts) — these models exist purely to give a logged-in user a
+// server-persisted cart, mirroring the client shape ({productId, quantity}, no price
+// snapshot — price always comes live from Product at read time, same principle as the
+// client store). 1:1 Cart per User is the simplest model that satisfies "a user has one
+// cart"; created lazily on first use, not at registration.
+model Cart {
+  id        String   @id @default(cuid())
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  userId String @unique
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  items CartItem[]
+}
+
+model CartItem {
+  id        String   @id @default(cuid())
+  quantity  Int
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  cartId String
+  cart   Cart   @relation(fields: [cartId], references: [id], onDelete: Cascade)
+
+  productId String
+  product   Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  // DB-level authoritative dedup: a product can only appear once per cart. Server-side
+  // "add" is always an upsert against this constraint, never a blind insert.
+  @@unique([cartId, productId])
+  @@index([productId])
+}
+
+// Same shape/rationale as Cart/CartItem. WishlistItem has no quantity — a product is
+// either on the wishlist or it isn't.
+model Wishlist {
+  id        String   @id @default(cuid())
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  userId String @unique
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  items WishlistItem[]
+}
+
+model WishlistItem {
+  id        String   @id @default(cuid())
+  createdAt DateTime @default(now())
+
+  wishlistId String
+  wishlist   Wishlist @relation(fields: [wishlistId], references: [id], onDelete: Cascade)
+
+  productId String
+  product   Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  // DB-level authoritative duplicate-prevention (Phase 7 requirement) — enforced here,
+  // not just client-side. wishlistService.addItem relies on this constraint (upsert /
+  // catch P2002) so two concurrent POSTs of the same product can never create two rows.
+  @@unique([wishlistId, productId])
+  @@index([productId])
 }
