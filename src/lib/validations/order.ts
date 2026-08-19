@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { OrderStatus, PaymentStatus } from "@/generated/prisma/client";
 
 /**
  * Same shape as `addressCreateSchema` (src/lib/validations/address.ts) minus
@@ -40,3 +41,56 @@ export const orderCreateSchema = z
 
 export type OrderCreateInput = z.infer<typeof orderCreateSchema>;
 export type InlineShippingAddressInput = z.infer<typeof inlineShippingAddressSchema>;
+
+/**
+ * Phase 9: customer-facing order-history filter — `/account/orders?status=...`. A
+ * customer may filter their OWN orders by status; there is deliberately no equivalent
+ * for paymentStatus here (spec §5 — order status and payment status are kept as
+ * separate concerns throughout; the admin query schema below is where paymentStatus
+ * filtering belongs, since only admins act on payment state).
+ */
+export const orderCustomerQuerySchema = z.object({
+  status: z.nativeEnum(OrderStatus).optional(),
+});
+
+/**
+ * Body for PATCH /api/admin/orders/[id]. `status` (with optional `note`) and
+ * `internalNote` are independent, optional operations — either or both may be supplied
+ * in one request, but at least one must be present. Never accepts `paymentStatus` —
+ * there is no request field, anywhere in this schema, that can change it (spec §5 hard
+ * requirement; see order-service.ts `updateStatus`).
+ */
+export const orderAdminUpdateSchema = z
+  .object({
+    status: z.nativeEnum(OrderStatus).optional(),
+    note: z.string().trim().max(1000).optional().or(z.literal("")),
+    internalNote: z.string().trim().max(2000).optional().or(z.literal("")),
+  })
+  .refine((data) => data.status !== undefined || data.internalNote !== undefined, {
+    message: "Provide at least one of status or internalNote.",
+    path: ["status"],
+  });
+
+export type OrderAdminUpdateInput = z.infer<typeof orderAdminUpdateSchema>;
+
+const ADMIN_ORDER_SORT_FIELDS = ["createdAt", "total", "orderNumber"] as const;
+
+/**
+ * Query params for GET /api/admin/orders. All fields optional; `page`/`pageSize` are
+ * coerced from strings (URLSearchParams) with sane bounds so a malformed/absent value
+ * never produces an unbounded or negative query.
+ */
+export const orderAdminQuerySchema = z.object({
+  status: z.nativeEnum(OrderStatus).optional(),
+  paymentStatus: z.nativeEnum(PaymentStatus).optional(),
+  orderNumber: z.string().trim().min(1).optional(),
+  customer: z.string().trim().min(1).optional(),
+  dateFrom: z.coerce.date().optional(),
+  dateTo: z.coerce.date().optional(),
+  sortBy: z.enum(ADMIN_ORDER_SORT_FIELDS).default("createdAt"),
+  sortDir: z.enum(["asc", "desc"]).default("desc"),
+  page: z.coerce.number().int().min(1).default(1),
+  pageSize: z.coerce.number().int().min(1).max(100).default(20),
+});
+
+export type OrderAdminQueryInput = z.infer<typeof orderAdminQuerySchema>;

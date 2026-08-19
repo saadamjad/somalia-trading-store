@@ -15,6 +15,7 @@ import {
 import { EmailAlreadyRegisteredError } from "@/server/services/auth-service";
 import {
   EmptyCartError,
+  InvalidStatusTransitionError,
   OrderNotFoundError,
   StockUnavailableError,
 } from "@/server/services/order-service";
@@ -47,6 +48,9 @@ export function toErrorResponse(error: unknown): NextResponse {
     return NextResponse.json({ error: error.message }, { status: 404 });
   }
   if (error instanceof EmptyCartError) {
+    return NextResponse.json({ error: error.message }, { status: 400 });
+  }
+  if (error instanceof InvalidStatusTransitionError) {
     return NextResponse.json({ error: error.message }, { status: 400 });
   }
   if (error instanceof StockUnavailableError) {

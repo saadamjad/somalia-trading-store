@@ -1,14 +1,20 @@
 import { NextRequest, NextResponse } from "next/server";
 import { requireSession } from "@/server/auth/session";
 import { orderService } from "@/server/services/order-service";
-import { orderCreateSchema } from "@/lib/validations/order";
+import { orderCreateSchema, orderCustomerQuerySchema } from "@/lib/validations/order";
 import { toErrorResponse } from "@/server/lib/api-errors";
 
-/** GET /api/orders — the caller's own orders only, scoped by session userId. */
-export async function GET() {
+/**
+ * GET /api/orders — the caller's own orders only, scoped by session userId. Accepts an
+ * optional `?status=` filter (Phase 9) — still always scoped to `session.userId`, never
+ * any other customer's orders.
+ */
+export async function GET(request: NextRequest) {
   try {
     const session = await requireSession();
-    const items = await orderService.listForUser(session.userId);
+    const { searchParams } = new URL(request.url);
+    const { status } = orderCustomerQuerySchema.parse(Object.fromEntries(searchParams));
+    const items = await orderService.listForUser(session.userId, status);
     return NextResponse.json({ items });
   } catch (error) {
     return toErrorResponse(error);

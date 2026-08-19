@@ -1,12 +1,21 @@
 import { prisma } from "@/server/lib/prisma";
-import { orderRepository, type ShippingSnapshot } from "@/server/repositories/order-repository";
+import {
+  orderRepository,
+  type ShippingSnapshot,
+  type AdminOrderListFilters,
+  type AdminOrderSortBy,
+  type AdminOrderSortDir,
+} from "@/server/repositories/order-repository";
 import { productRepository } from "@/server/repositories/product-repository";
 import { cartRepository } from "@/server/repositories/cart-repository";
 import { cartService, type StockIssue } from "@/server/services/cart-service";
 import { addressService } from "@/server/services/address-service";
 import { inventoryService } from "@/server/services/inventory-service";
-import type { OrderCreateInput } from "@/lib/validations/order";
-import type { Order, OrderItem } from "@/generated/prisma/client";
+import type {
+  OrderAdminQueryInput,
+  OrderCreateInput,
+} from "@/lib/validations/order";
+import type { Order, OrderItem, OrderStatus } from "@/generated/prisma/client";
 
 export class EmptyCartError extends Error {
   constructor() {
@@ -29,6 +38,48 @@ export class OrderNotFoundError extends Error {
   constructor() {
     super("Order not found.");
     this.name = "OrderNotFoundError";
+  }
+}
+
+/**
+ * Thrown when a requested order-status transition isn't in `ALLOWED_STATUS_TRANSITIONS`
+ * — see the map's own comment for the rules being enforced.
+ */
+export class InvalidStatusTransitionError extends Error {
+  constructor(from: OrderStatus, to: OrderStatus) {
+    super(`Cannot move an order from ${from} to ${to}.`);
+    this.name = "InvalidStatusTransitionError";
+  }
+}
+
+/**
+ * Phase 9: a lightweight allowed-transitions map, not a full state-machine library —
+ * "a simple allowed-transitions map is enough" per docs/IMPLEMENTATION_PLAN.md Phase 9.
+ * Rules encoded here:
+ *  - Forward-only through the normal lifecycle (PENDING → CONFIRMED → PROCESSING →
+ *    SHIPPED → DELIVERED); no skipping ahead (e.g. PENDING straight to DELIVERED) and
+ *    no moving backward once advanced.
+ *  - CANCELLED is reachable from any non-terminal state (an order can be cancelled at
+ *    any point before it ships/delivers) but is itself terminal — nothing transitions
+ *    out of CANCELLED.
+ *  - DELIVERED is terminal — nothing transitions out of it either.
+ *  - A no-op "transition" (same status to itself) is also rejected by the check below;
+ *    it's never in any state's allowed-set.
+ * This is deliberately independent of `paymentStatus` — no entry here reads or writes
+ * that field, and no future entry should.
+ */
+const ALLOWED_STATUS_TRANSITIONS: Record<OrderStatus, OrderStatus[]> = {
+  PENDING: ["CONFIRMED", "CANCELLED"],
+  CONFIRMED: ["PROCESSING", "CANCELLED"],
+  PROCESSING: ["SHIPPED", "CANCELLED"],
+  SHIPPED: ["DELIVERED", "CANCELLED"],
+  DELIVERED: [],
+  CANCELLED: [],
+};
+
+function assertValidTransition(from: OrderStatus, to: OrderStatus): void {
+  if (!ALLOWED_STATUS_TRANSITIONS[from].includes(to)) {
+    throw new InvalidStatusTransitionError(from, to);
   }
 }
 
@@ -66,6 +117,49 @@ export interface OrderView {
   updatedAt: string;
 }
 
+/** Customer-facing status timeline entry — no actor identity, no internal note. */
+export interface OrderStatusHistoryEntry {
+  id: string;
+  fromStatus: string | null;
+  toStatus: string;
+  createdAt: string;
+}
+
+export interface OrderDetailView extends OrderView {
+  statusHistory: OrderStatusHistoryEntry[];
+}
+
+export interface AdminOrderStatusHistoryEntry extends OrderStatusHistoryEntry {
+  note: string | null;
+  actor: { id: string; name: string } | null;
+}
+
+export interface AdminOrderListItem {
+  id: string;
+  orderNumber: string;
+  status: string;
+  paymentStatus: string;
+  total: number;
+  currency: string;
+  customer: { id: string; name: string; email: string };
+  itemCount: number;
+  createdAt: string;
+}
+
+export interface AdminOrderListResult {
+  items: AdminOrderListItem[];
+  total: number;
+  page: number;
+  pageSize: number;
+}
+
+export interface AdminOrderDetailView extends OrderView {
+  customer: { id: string; name: string; email: string };
+  internalNote: string | null;
+  statusHistory: AdminOrderStatusHistoryEntry[];
+  paymentStatusHistory: AdminOrderStatusHistoryEntry[];
+}
+
 type OrderWithItems = Order & { items: OrderItem[] };
 
 function toOrderView(order: OrderWithItems): OrderView {
@@ -99,6 +193,33 @@ function toOrderView(order: OrderWithItems): OrderView {
     })),
     createdAt: order.createdAt.toISOString(),
     updatedAt: order.updatedAt.toISOString(),
+  };
+}
+
+interface HistoryRow {
+  id: string;
+  fromStatus: string | null;
+  toStatus: string;
+  note: string | null;
+  createdAt: Date;
+}
+
+function toStatusHistoryEntry(row: HistoryRow): OrderStatusHistoryEntry {
+  return {
+    id: row.id,
+    fromStatus: row.fromStatus,
+    toStatus: row.toStatus,
+    createdAt: row.createdAt.toISOString(),
+  };
+}
+
+function toAdminStatusHistoryEntry(
+  row: HistoryRow & { actor: { id: string; name: string } | null }
+): AdminOrderStatusHistoryEntry {
+  return {
+    ...toStatusHistoryEntry(row),
+    note: row.note,
+    actor: row.actor,
   };
 }
 
@@ -290,15 +411,137 @@ export const orderService = {
       : new Error("Failed to create order after multiple attempts.");
   },
 
-  async listForUser(userId: string): Promise<OrderView[]> {
-    const orders = await orderRepository.findAllForUser(userId);
+  /** Optional `status` filter — customer's own order history, `/account/orders`. */
+  async listForUser(userId: string, status?: OrderStatus): Promise<OrderView[]> {
+    const orders = await orderRepository.findAllForUser(userId, status);
     return orders.map(toOrderView);
   },
 
-  /** Verifies ownership before returning — throws `OrderNotFoundError` otherwise. */
-  async getOwned(id: string, userId: string): Promise<OrderView> {
+  /**
+   * Verifies ownership before returning — throws `OrderNotFoundError` otherwise.
+   * Includes the status timeline (no actor identity, no internal note — see
+   * `OrderStatusHistoryEntry`) for the customer-facing order-detail view.
+   */
+  async getOwned(id: string, userId: string): Promise<OrderDetailView> {
     const order = await orderRepository.findByIdForUser(id, userId);
     if (!order) throw new OrderNotFoundError();
-    return toOrderView(order);
+    return {
+      ...toOrderView(order),
+      statusHistory: order.statusHistory.map(toStatusHistoryEntry),
+    };
+  },
+
+  /**
+   * Admin order list — search/filter/sort/paginate across ALL orders, not scoped to
+   * any one customer. Callers (the `/api/admin/orders` route) must have already
+   * verified `orders.view` — this method performs no permission check itself, matching
+   * the rest of the service layer's convention (permission checks live at the route,
+   * ownership checks live in the service).
+   */
+  async adminList(query: OrderAdminQueryInput): Promise<AdminOrderListResult> {
+    const filters: AdminOrderListFilters = {
+      status: query.status,
+      paymentStatus: query.paymentStatus,
+      orderNumber: query.orderNumber,
+      customerQuery: query.customer,
+      dateFrom: query.dateFrom,
+      dateTo: query.dateTo,
+    };
+
+    const sortBy: AdminOrderSortBy = query.sortBy;
+    const sortDir: AdminOrderSortDir = query.sortDir;
+
+    const { items, total } = await orderRepository.adminFindMany({
+      filters,
+      sortBy,
+      sortDir,
+      page: query.page,
+      pageSize: query.pageSize,
+    });
+
+    return {
+      items: items.map((order) => ({
+        id: order.id,
+        orderNumber: order.orderNumber,
+        status: order.status,
+        paymentStatus: order.paymentStatus,
+        total: Number(order.total),
+        currency: order.currency,
+        customer: order.user,
+        itemCount: order._count.items,
+        createdAt: order.createdAt.toISOString(),
+      })),
+      total,
+      page: query.page,
+      pageSize: query.pageSize,
+    };
+  },
+
+  /** Admin order detail — no ownership scoping; full audit trails and internal note. */
+  async adminGetById(id: string): Promise<AdminOrderDetailView> {
+    const order = await orderRepository.adminFindById(id);
+    if (!order) throw new OrderNotFoundError();
+    return {
+      ...toOrderView(order),
+      customer: order.user,
+      internalNote: order.internalNote,
+      statusHistory: order.statusHistory.map(toAdminStatusHistoryEntry),
+      paymentStatusHistory: order.paymentStatusHistory.map(toAdminStatusHistoryEntry),
+    };
+  },
+
+  /**
+   * Admin status update — the core of Phase 9's "status update control". Validates the
+   * transition against `ALLOWED_STATUS_TRANSITIONS`, then writes the new status and its
+   * OrderStatusHistory row atomically (one `prisma.$transaction`, via
+   * `orderRepository.updateStatusTx`). Deliberately takes no `paymentStatus` parameter
+   * and touches no payment-related column — this is the one place in the codebase that
+   * changes `Order.status`, and it is structurally incapable of also changing
+   * `Order.paymentStatus` (spec §5 hard requirement; see also the decoupling test in
+   * order-service.test.ts).
+   */
+  async updateStatus(
+    orderId: string,
+    actorId: string,
+    toStatus: OrderStatus,
+    note?: string
+  ): Promise<AdminOrderDetailView> {
+    const current = await orderRepository.adminFindById(orderId);
+    if (!current) throw new OrderNotFoundError();
+
+    assertValidTransition(current.status, toStatus);
+
+    const updated = await prisma.$transaction((tx) =>
+      orderRepository.updateStatusTx(tx, orderId, {
+        fromStatus: current.status,
+        toStatus,
+        actorId,
+        note: note ? note : null,
+      })
+    );
+
+    return {
+      ...toOrderView(updated),
+      customer: updated.user,
+      internalNote: updated.internalNote,
+      statusHistory: updated.statusHistory.map(toAdminStatusHistoryEntry),
+      paymentStatusHistory: updated.paymentStatusHistory.map(toAdminStatusHistoryEntry),
+    };
+  },
+
+  /** Admin-only working note — see `Order.internalNote`'s schema comment. */
+  async updateInternalNote(orderId: string, internalNote: string): Promise<AdminOrderDetailView> {
+    const existing = await orderRepository.adminFindById(orderId);
+    if (!existing) throw new OrderNotFoundError();
+
+    const updated = await orderRepository.updateInternalNote(orderId, internalNote ? internalNote : null);
+
+    return {
+      ...toOrderView(updated),
+      customer: updated.user,
+      internalNote: updated.internalNote,
+      statusHistory: updated.statusHistory.map(toAdminStatusHistoryEntry),
+      paymentStatusHistory: updated.paymentStatusHistory.map(toAdminStatusHistoryEntry),
+    };
   },
 };
