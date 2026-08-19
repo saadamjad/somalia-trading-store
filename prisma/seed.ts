@@ -44,6 +44,11 @@ const categories = [
   },
 ];
 
+// Phase 5: starting stock for every seeded product. 50 units on hand, low-stock alert
+// under 10 — reasonable placeholder values for local development/demo purposes.
+const STARTING_QUANTITY = 50;
+const LOW_STOCK_THRESHOLD = 10;
+
 const products = [
   {
     slug: "premium-wooden-interior-door",
@@ -216,10 +221,23 @@ async function main() {
       where: { slug: categorySlug },
     });
 
-    await prisma.product.upsert({
+    const row = await prisma.product.upsert({
       where: { slug: product.slug },
       update: { ...product, categoryId: category.id },
       create: { ...product, categoryId: category.id },
+    });
+
+    // Phase 5: every seeded product needs a starting Inventory row. `create` only (not
+    // `update`) so re-running the seed doesn't clobber stock levels an admin has since
+    // adjusted through the real inventory-adjustment flow.
+    await prisma.inventory.upsert({
+      where: { productId: row.id },
+      update: {},
+      create: {
+        productId: row.id,
+        quantity: STARTING_QUANTITY,
+        lowStockThreshold: LOW_STOCK_THRESHOLD,
+      },
     });
   }
 
