@@ -1,9 +1,10 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Heart, Menu, Search, ShoppingCart, X } from "lucide-react";
+import { useSession, signOut } from "next-auth/react";
+import { Heart, LogOut, Menu, Search, ShoppingCart, User, X } from "lucide-react";
 import { mainNav } from "@/config/navigation";
 import { brand } from "@/config/brand";
 import { useCartStore } from "@/stores/cart-store";
@@ -17,6 +18,8 @@ export function Header() {
   const pathname = usePathname();
   const cartCount = useCartStore((s) => s.getItemCount());
   const wishlistCount = useWishlistStore((s) => s.getCount());
+  const { data: session, status } = useSession();
+  const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
   const {
     isMobileMenuOpen,
     toggleMobileMenu,
@@ -24,6 +27,15 @@ export function Header() {
     openSearch,
     openCart,
   } = useUIStore();
+
+  // Close the account dropdown on navigation. Adjusted during render (React's
+  // recommended pattern for resetting state on a prop change) rather than in an
+  // effect, which avoids an extra render pass from a synchronous setState-in-effect.
+  const [lastPathname, setLastPathname] = useState(pathname);
+  if (pathname !== lastPathname) {
+    setLastPathname(pathname);
+    setIsUserMenuOpen(false);
+  }
 
   useEffect(() => {
     closeMobileMenu();
@@ -95,6 +107,45 @@ export function Header() {
               )}
             </button>
 
+            {status === "authenticated" && session?.user ? (
+              <div className="relative hidden lg:block">
+                <button
+                  onClick={() => setIsUserMenuOpen((open) => !open)}
+                  className="flex h-10 w-10 items-center justify-center text-white/70 transition-colors hover:text-white"
+                  aria-label="Account menu"
+                  aria-expanded={isUserMenuOpen}
+                >
+                  <User className="h-[18px] w-[18px]" strokeWidth={1.5} />
+                </button>
+                {isUserMenuOpen && (
+                  <div className="absolute right-0 top-12 w-56 border border-white/10 bg-[#0c0c0c] py-2 shadow-xl">
+                    <p className="truncate border-b border-white/10 px-4 pb-2 text-xs text-white/50">
+                      {session.user.name || session.user.email}
+                    </p>
+                    <button
+                      onClick={() => {
+                        setIsUserMenuOpen(false);
+                        void signOut({ callbackUrl: "/" });
+                      }}
+                      className="flex w-full items-center gap-2 px-4 py-2.5 text-left text-xs font-medium uppercase tracking-widest text-white/70 transition-colors hover:text-white"
+                    >
+                      <LogOut className="h-3.5 w-3.5" strokeWidth={1.5} />
+                      Log Out
+                    </button>
+                  </div>
+                )}
+              </div>
+            ) : (
+              status !== "loading" && (
+                <Link
+                  href="/login"
+                  className="hidden h-10 items-center px-4 text-xs font-medium uppercase tracking-widest text-white/70 transition-colors hover:text-white lg:flex"
+                >
+                  Log In
+                </Link>
+              )
+            )}
+
             <button
               onClick={toggleMobileMenu}
               className="flex h-10 w-10 items-center justify-center text-white lg:hidden"
@@ -131,6 +182,32 @@ export function Header() {
                 </li>
               ))}
             </ul>
+
+            <div className="mt-4 border-t border-white/10 pt-4">
+              {status === "authenticated" && session?.user ? (
+                <>
+                  <p className="truncate pb-2 text-xs text-white/50">
+                    {session.user.name || session.user.email}
+                  </p>
+                  <button
+                    onClick={() => void signOut({ callbackUrl: "/" })}
+                    className="flex items-center gap-2 py-2 text-sm font-medium tracking-wide text-white/80 transition-colors hover:text-white"
+                  >
+                    <LogOut className="h-4 w-4" strokeWidth={1.5} />
+                    Log Out
+                  </button>
+                </>
+              ) : (
+                status !== "loading" && (
+                  <Link
+                    href="/login"
+                    className="block py-2 text-sm font-medium tracking-wide text-white/80 transition-colors hover:text-white"
+                  >
+                    Log In
+                  </Link>
+                )
+              )}
+            </div>
           </nav>
         )}
       </header>
