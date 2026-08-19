@@ -1,0 +1,78 @@
+// Prisma schema — Somalia Trading Store
+// Phase 2: Category and Product only (entities that don't depend on auth).
+// See docs/IMPLEMENTATION_PLAN.md for what each later phase adds.
+
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum PurchasingMode {
+  BUY_ONLINE
+  QUOTE_ONLY
+  BOTH
+}
+
+enum Availability {
+  IN_STOCK
+  LIMITED
+  OUT_OF_STOCK
+  MADE_TO_ORDER
+}
+
+model Category {
+  id          String   @id @default(cuid())
+  slug        String   @unique
+  name        String
+  description String
+  shortDescription String
+  image       String
+  heroImage   String
+  accentColor String
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  parentId String?
+  parent   Category?  @relation("CategoryHierarchy", fields: [parentId], references: [id], onDelete: Restrict)
+  children Category[] @relation("CategoryHierarchy")
+
+  products Product[]
+
+  @@index([parentId])
+}
+
+model Product {
+  id          String   @id @default(cuid())
+  slug        String   @unique
+  sku         String?  @unique
+  name        String
+  description String
+  shortDescription String
+
+  categoryId String
+  category   Category @relation(fields: [categoryId], references: [id], onDelete: Restrict)
+
+  price           Decimal @db.Decimal(12, 2)
+  compareAtPrice  Decimal? @db.Decimal(12, 2)
+  currency        String  @default("USD")
+  priceUnit       String?
+
+  images         String[]
+  specifications Json     @default("{}")
+  tags           String[]
+
+  purchasingMode PurchasingMode @default(BUY_ONLINE)
+  availability   Availability   @default(IN_STOCK)
+  featured       Boolean        @default(false)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([categoryId])
+  @@index([featured])
+  @@index([availability])
+}
