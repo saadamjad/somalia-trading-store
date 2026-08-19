@@ -762,3 +762,63 @@ model QuoteStatusHistory {
   @@index([quoteId])
   @@index([actorId])
 }
+
+// Phase 12: CMS. `body` is a structured JSON array of typed content blocks (see
+// src/lib/validations/cms.ts for the block shapes — heading / paragraph / faqItem
+// today) rather than raw HTML or markdown-to-HTML. This is a deliberate XSS-prevention
+// design choice (docs/IMPLEMENTATION_PLAN.md Phase 12, "sidestep most of the risk by
+// construction"): the renderer (src/components/cms/page-renderer.tsx) only ever
+// interprets known block fields as plain text through React (which escapes text nodes
+// by default) — there is no `dangerouslySetInnerHTML` anywhere in this app, so there is
+// no HTML-injection surface for admin-supplied CMS copy to exploit, regardless of what
+// a compromised/malicious admin account submits. `published` gates the public read
+// path (src/server/services/cms-page-service.ts `getPublishedBySlug`) — a draft page is
+// never returned there, only through the admin-only methods.
+model CMSPage {
+  id        String   @id @default(cuid())
+  slug      String   @unique
+  title     String
+  body      Json
+  published Boolean  @default(false)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([published])
+}
+
+// Named slots a Banner can be assigned to. HOMEPAGE_HERO overrides the homepage hero's
+// headline/subtext/CTA (src/components/home/hero-section.tsx); HOMEPAGE_PROMO is an
+// optional promotional strip rendered only when an active one exists (see
+// src/app/page.tsx) — both fall back to the existing static approved copy/design when
+// no active banner is configured for the slot, so an empty Banner table never breaks
+// the homepage (Phase 12 requirement).
+enum BannerSlot {
+  HOMEPAGE_HERO
+  HOMEPAGE_PROMO
+}
+
+// All text fields (title/subtitle/ctaText) are rendered as plain React text — never as
+// HTML — same XSS rationale as CMSPage above. `imageUrl`/`linkUrl` are validated
+// server-side (src/lib/validations/cms.ts) to only accept http(s)/relative URLs,
+// rejecting `javascript:`/`data:` schemes that could otherwise turn an href/src into a
+// script-execution vector. Scheduling (`startsAt`/`endsAt`) is optional — a banner with
+// neither is simply always eligible whenever `active` is true. `priority` breaks ties
+// when more than one banner is active for the same slot (highest first).
+model Banner {
+  id       String     @id @default(cuid())
+  slot     BannerSlot
+  title    String
+  subtitle String?
+  imageUrl String?
+  linkUrl  String?
+  ctaText  String?
+  active   Boolean    @default(false)
+  priority Int        @default(0)
+  startsAt DateTime?
+  endsAt   DateTime?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([slot, active])
+}
