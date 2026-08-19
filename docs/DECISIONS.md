@@ -118,3 +118,19 @@ Each entry records a decision, its classification (Business / Technical / Implem
 **Date:** 2026-08-19
 
 **Decision:** No CI/CD pipelines, no staging/production infrastructure provisioning in this phase. The project remains CI/CD-ready: lint, typecheck, test, and build scripts exist and pass, so a pipeline can be wired up later without code changes. `.env.example` documents required environment variables for dev/staging/production without committing real secrets.
+
+---
+
+## D-010: Email Verification / Email Sending — DEFERRED (Blocked on Provider Decision)
+
+**Classification:** Technical Decision
+**Status:** Deferred — blocked pending an email provider decision
+**Date:** 2026-08-19
+
+**Decision:** Phase 3 adds the `emailVerified` field to the `User` model and a full password-reset token flow (`PasswordResetToken`), but does not send real email. There is no SMTP/email-provider integration in this phase. In the interim, the password-reset link is written to the server console (`src/server/services/auth-service.ts`, `requestPasswordReset`) purely so the flow is exercisable in local development — this is explicitly not sufficient for production use, and no email-verification-required gate is enforced on login (accounts work immediately after registration, with `emailVerified` left `null`).
+
+**Rationale:**
+- Sending real email requires choosing a provider (e.g. Resend, SES, Postmark, SendGrid) and provisioning credentials/domain verification (SPF/DKIM) — a business/infrastructure decision, not something to assume.
+- Building the schema and token flow now (rather than deferring the whole feature) means no future migration or rework is needed once a provider is chosen — only the delivery mechanism inside `requestPasswordReset` (and a new "send verification email" call after registration) needs to be swapped in.
+
+**Action required:** Client/team to choose an email provider. Once chosen: (1) wire real delivery into `authService.requestPasswordReset`, (2) add an email-verification-send step to `authService.register` and a `/api/auth/verify-email` (or equivalent) confirmation route that sets `User.emailVerified`, (3) decide whether unverified accounts should be restricted (e.g. blocked from checkout) — not decided yet.
