@@ -7,6 +7,12 @@ import {
   InsufficientStockError,
   InventoryNotFoundError,
 } from "@/server/services/inventory-service";
+import { AddressNotFoundError } from "@/server/services/address-service";
+import {
+  InvalidCurrentPasswordError,
+  UserNotFoundError,
+} from "@/server/services/account-service";
+import { EmailAlreadyRegisteredError } from "@/server/services/auth-service";
 
 /**
  * Translates a thrown error from a route handler into an appropriate HTTP response,
@@ -28,11 +34,19 @@ export function toErrorResponse(error: unknown): NextResponse {
   if (
     error instanceof CategoryNotFoundError ||
     error instanceof ProductNotFoundError ||
-    error instanceof InventoryNotFoundError
+    error instanceof InventoryNotFoundError ||
+    error instanceof AddressNotFoundError ||
+    error instanceof UserNotFoundError
   ) {
     return NextResponse.json({ error: error.message }, { status: 404 });
   }
   if (error instanceof InsufficientStockError) {
+    return NextResponse.json({ error: error.message }, { status: 409 });
+  }
+  if (error instanceof InvalidCurrentPasswordError) {
+    return NextResponse.json({ error: error.message }, { status: 400 });
+  }
+  if (error instanceof EmailAlreadyRegisteredError) {
     return NextResponse.json({ error: error.message }, { status: 409 });
   }
   if (isPrismaUniqueConstraintError(error)) {

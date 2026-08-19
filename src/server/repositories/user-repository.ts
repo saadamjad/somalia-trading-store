@@ -26,6 +26,19 @@ export const userRepository = {
   updatePasswordHash(userId: string, passwordHash: string) {
     return prisma.user.update({ where: { id: userId }, data: { passwordHash } });
   },
+
+  /**
+   * Updates a user's own profile fields. `email` is deliberately optional/separate
+   * from name/phone in the service layer's validation (see account-service.ts) even
+   * though it's applied here in the same call — the DB doesn't need to know that
+   * distinction, only the service's business rules do.
+   */
+  updateProfile(
+    userId: string,
+    data: { name?: string; phone?: string | null; email?: string }
+  ) {
+    return prisma.user.update({ where: { id: userId }, data });
+  },
 };
 
 export const roleRepository = {
