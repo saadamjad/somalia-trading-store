@@ -24,6 +24,20 @@ enum Availability {
   MADE_TO_ORDER
 }
 
+// Phase 5: Inventory. Kept as a small, free-form-friendly enum per
+// docs/IMPLEMENTATION_PLAN.md Phase 5 ("free text or a small enum — your call, keep it
+// simple") — MANUAL_ADJUSTMENT covers ad-hoc admin corrections, RESTOCK/CORRECTION give
+// admins meaningful categories to pick from, and ORDER_PLACED/ORDER_CANCELLED are the
+// hooks Phase 8 (checkout) will use when it starts decrementing stock on order creation.
+// A free-text `note` field on InventoryTransaction covers anything an enum can't.
+enum InventoryChangeReason {
+  MANUAL_ADJUSTMENT
+  RESTOCK
+  CORRECTION
+  ORDER_PLACED
+  ORDER_CANCELLED
+}
+
 model Category {
   id          String   @id @default(cuid())
   slug        String   @unique
@@ -79,6 +93,9 @@ model Product {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
+  inventory             Inventory?
+  inventoryTransactions InventoryTransaction[]
+
   @@index([categoryId])
   @@index([featured])
   @@index([availability])
@@ -130,7 +147,8 @@ model User {
   roleId String
   role   Role   @relation(fields: [roleId], references: [id], onDelete: Restrict)
 
-  passwordResetTokens PasswordResetToken[]
+  passwordResetTokens   PasswordResetToken[]
+  inventoryTransactions InventoryTransaction[]
 
   @@index([roleId])
 }
@@ -146,4 +164,52 @@ model PasswordResetToken {
   user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId])
+}
+
+// Phase 5: Inventory. 1:1 with Product. `quantity` must never go negative — enforced
+// both at the application layer (inventory-service.ts, atomic conditional UPDATE inside
+// a transaction) and at the DB layer via a CHECK constraint. Prisma's schema DSL has no
+// native syntax for arbitrary CHECK constraints at this version, so the constraint is
+// added by hand-editing the generated migration.sql after `prisma migrate dev` — see
+// prisma/migrations/<timestamp>_add_inventory/migration.sql and the note in
+// docs/DECISIONS.md.
+model Inventory {
+  id                String   @id @default(cuid())
+  quantity          Int      @default(0)
+  lowStockThreshold Int      @default(10)
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  productId String  @unique
+  product   Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  transactions InventoryTransaction[]
+}
+
+// Full audit log of every stock change: who (actor), what product, previous/adjustment/
+// new quantity, why (reason + optional free-text note), and when. Never mutated or
+// deleted — one row per adjustment, per docs/IMPLEMENTATION_PLAN.md cross-cutting
+// standards ("Inventory adjustments are logged with actor, previous quantity,
+// adjustment, new quantity, reason, and timestamp").
+model InventoryTransaction {
+  id               String                @id @default(cuid())
+  previousQuantity Int
+  adjustment       Int
+  newQuantity      Int
+  reason           InventoryChangeReason
+  note             String?
+  createdAt        DateTime              @default(now())
+
+  inventoryId String
+  inventory   Inventory @relation(fields: [inventoryId], references: [id], onDelete: Cascade)
+
+  productId String
+  product   Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  actorId String
+  actor   User   @relation(fields: [actorId], references: [id], onDelete: Restrict)
+
+  @@index([inventoryId])
+  @@index([productId])
+  @@index([actorId])
 }
