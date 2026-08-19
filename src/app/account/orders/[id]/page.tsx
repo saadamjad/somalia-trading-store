@@ -3,6 +3,7 @@ import Link from "next/link";
 import { CheckCircle2 } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { StatusTimeline } from "@/components/orders/status-timeline";
 import { getCurrentSession } from "@/server/auth/session";
 import { orderService, OrderNotFoundError } from "@/server/services/order-service";
 import { formatPrice } from "@/lib/utils";
@@ -122,6 +123,13 @@ export default async function AccountOrderDetailPage({ params, searchParams }: P
           </CardContent>
         </Card>
       )}
+
+      <Card>
+        <CardContent className="space-y-4 p-6">
+          <h2 className="font-display text-lg font-semibold">Order Status</h2>
+          <StatusTimeline entries={order.statusHistory} />
+        </CardContent>
+      </Card>
 
       <Link href="/account/orders" className="text-sm font-medium text-accent underline">
         Back to Orders
