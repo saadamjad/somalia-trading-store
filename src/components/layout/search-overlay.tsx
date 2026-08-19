@@ -7,12 +7,13 @@ import { Search, X } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { useUIStore } from "@/stores/ui-store";
-import { productService } from "@/lib/services/product-service";
+import type { Product } from "@/lib/types/product";
 import { formatProductPrice } from "@/lib/utils";
 
 export function SearchOverlay() {
   const { isSearchOpen, closeSearch } = useUIStore();
   const [query, setQuery] = useState("");
+  const [suggestions, setSuggestions] = useState<Product[]>([]);
   const router = useRouter();
 
   useEffect(() => {
@@ -39,8 +40,26 @@ export function SearchOverlay() {
     return () => window.removeEventListener("keydown", handleEscape);
   }, [closeSearch]);
 
-  const suggestions =
-    query.length >= 2 ? productService.getSuggestions(query) : [];
+  useEffect(() => {
+    if (query.length < 2) return;
+    let cancelled = false;
+    const params = new URLSearchParams({ q: query, suggest: "true", limit: "6" });
+    fetch(`/api/products?${params.toString()}`)
+      .then((res) => res.json())
+      .then((data: { items: Product[] }) => {
+        if (!cancelled) setSuggestions(data.items);
+      })
+      .catch(() => {
+        if (!cancelled) setSuggestions([]);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [query]);
+
+  // Derived so a short query (< 2 chars) never renders stale suggestions from a
+  // previous, longer query without needing an extra setState "reset" in the effect.
+  const visibleSuggestions = query.length >= 2 ? suggestions : [];
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -77,9 +96,9 @@ export function SearchOverlay() {
           />
         </form>
 
-        {suggestions.length > 0 && (
+        {visibleSuggestions.length > 0 && (
           <ul className="mt-4 max-h-80 overflow-y-auto rounded-xl border border-border">
-            {suggestions.map((product) => (
+            {visibleSuggestions.map((product) => (
               <li key={product.id}>
                 <Link
                   href={`/shop/${product.category}/${product.slug}`}
@@ -99,7 +118,7 @@ export function SearchOverlay() {
           </ul>
         )}
 
-        {query.length >= 2 && suggestions.length === 0 && (
+        {query.length >= 2 && visibleSuggestions.length === 0 && (
           <p className="mt-4 text-center text-sm text-muted">
             No products found. Try a different search term.
           </p>

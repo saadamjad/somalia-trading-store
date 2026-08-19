@@ -6,22 +6,16 @@ import { Minus, Plus, ShoppingBag, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { useCartStore } from "@/stores/cart-store";
+import { useCartProducts } from "@/hooks/use-cart-products";
 import { formatPrice, formatProductPrice } from "@/lib/utils";
 
 export default function CartPage() {
-  const {
-    getItemsWithProducts,
-    getSubtotal,
-    updateQuantity,
-    removeItem,
-    clearCart,
-  } = useCartStore();
-  const items = getItemsWithProducts();
-  const subtotal = getSubtotal();
+  const { updateQuantity, removeItem, clearCart } = useCartStore();
+  const { lineItems: items, subtotal, isLoading } = useCartProducts();
   const shipping = subtotal > 0 ? 0 : 0;
   const total = subtotal + shipping;
 
-  if (items.length === 0) {
+  if (!isLoading && items.length === 0) {
     return (
       <div className="container-custom flex min-h-[60vh] flex-col items-center justify-center py-24 text-center">
         <ShoppingBag className="mb-6 h-20 w-20 text-muted" />

@@ -10,14 +10,14 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent } from "@/components/ui/card";
 import { useCartStore } from "@/stores/cart-store";
+import { useCartProducts } from "@/hooks/use-cart-products";
 import { formatPrice } from "@/lib/utils";
 
 export default function CheckoutPage() {
   const router = useRouter();
   const [submitted, setSubmitted] = useState(false);
-  const { getItemsWithProducts, getSubtotal, clearCart } = useCartStore();
-  const items = getItemsWithProducts();
-  const subtotal = getSubtotal();
+  const { clearCart } = useCartStore();
+  const { lineItems: items, subtotal } = useCartProducts();
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();

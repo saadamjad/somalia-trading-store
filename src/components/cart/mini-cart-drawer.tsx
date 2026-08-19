@@ -11,15 +11,14 @@ import {
   SheetTitle,
 } from "@/components/ui/sheet";
 import { useCartStore } from "@/stores/cart-store";
+import { useCartProducts } from "@/hooks/use-cart-products";
 import { useUIStore } from "@/stores/ui-store";
 import { formatPrice, formatProductPrice } from "@/lib/utils";
 
 export function MiniCartDrawer() {
   const { isCartOpen, closeCart } = useUIStore();
-  const { getItemsWithProducts, getSubtotal, updateQuantity, removeItem } =
-    useCartStore();
-  const items = getItemsWithProducts();
-  const subtotal = getSubtotal();
+  const { updateQuantity, removeItem } = useCartStore();
+  const { lineItems: items, subtotal } = useCartProducts();
 
   return (
     <Sheet open={isCartOpen} onOpenChange={(open) => !open && closeCart()}>

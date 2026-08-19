@@ -14,7 +14,6 @@ import { availabilityLabels } from "@/lib/types/product";
 import { useCartStore } from "@/stores/cart-store";
 import { useWishlistStore } from "@/stores/wishlist-store";
 import { useUIStore } from "@/stores/ui-store";
-import { productService } from "@/lib/services/product-service";
 import {
   calculateDiscount,
   cn,
@@ -24,9 +23,15 @@ import {
 
 interface ProductDetailClientProps {
   product: Product;
+  related: Product[];
+  categoryName: string;
 }
 
-export function ProductDetailClient({ product }: ProductDetailClientProps) {
+export function ProductDetailClient({
+  product,
+  related,
+  categoryName,
+}: ProductDetailClientProps) {
   const [selectedImage, setSelectedImage] = useState(0);
   const [quantity, setQuantity] = useState(1);
   const addItem = useCartStore((s) => s.addItem);
@@ -34,8 +39,6 @@ export function ProductDetailClient({ product }: ProductDetailClientProps) {
   const { isInWishlist, toggleItem } = useWishlistStore();
   const inWishlist = isInWishlist(product.id);
   const discount = calculateDiscount(product.price, product.compareAtPrice);
-  const related = productService.getRelated(product);
-  const category = productService.getCategory(product.category);
 
   const handleAddToCart = () => {
     addItem(product.id, quantity);
@@ -65,7 +68,7 @@ export function ProductDetailClient({ product }: ProductDetailClientProps) {
               href={`/shop/${product.category}`}
               className="hover:text-accent"
             >
-              {category?.name}
+              {categoryName}
             </Link>
           </li>
           <li>/</li>

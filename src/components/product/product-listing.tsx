@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useMemo, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { SlidersHorizontal } from "lucide-react";
 import { ProductCard } from "@/components/product/product-card";
 import {
@@ -12,8 +12,7 @@ import { Input } from "@/components/ui/input";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { getFiltersForCategory } from "@/config/filters";
 import type { ActiveFilters } from "@/lib/types/filter";
-import type { CategorySlug, SortOption } from "@/lib/types/product";
-import { productService } from "@/lib/services/product-service";
+import type { CategorySlug, Product, SortOption } from "@/lib/types/product";
 
 const sortOptions: { value: SortOption; label: string }[] = [
   { value: "featured", label: "Featured" },
@@ -27,24 +26,73 @@ interface ProductListingProps {
   initialSearch?: string;
 }
 
+interface QueryResult {
+  items: Product[];
+  total: number;
+  priceRange: [number, number];
+}
+
+const EMPTY_RESULT: QueryResult = { items: [], total: 0, priceRange: [0, 1000] };
+
+/**
+ * Client component — fetches from /api/products instead of importing the (now
+ * server-only, DB-backed) product service directly. This is the split described in
+ * src/server/services/product-service.ts: server components/route handlers call the
+ * service directly, client components that need live/interactive data go through the
+ * API route.
+ */
 export function ProductListing({ category, initialSearch = "" }: ProductListingProps) {
   const [filters, setFilters] = useState<ActiveFilters>({});
   const [sort, setSort] = useState<SortOption>("featured");
   const [search, setSearch] = useState(initialSearch);
   const [mobileFiltersOpen, setMobileFiltersOpen] = useState(false);
+  const [result, setResult] = useState<QueryResult>(EMPTY_RESULT);
+  // Tracks the query key of the most recently *completed* fetch. `isLoading` is
+  // derived by comparing it to the current key, rather than toggled with a direct
+  // setState call at the top of the effect (which react-hooks/set-state-in-effect
+  // flags as a synchronous-in-effect update) — same technique used below and in
+  // use-cart-products.ts.
+  const [loadedKey, setLoadedKey] = useState<string | null>(null);
 
   const filterDefs = getFiltersForCategory(category);
-  const priceRange = productService.queryCategory(category).priceRange;
 
-  const { items, total } = useMemo(() => {
-    return productService.queryCategory(category, {
-      filters,
+  const queryKey = JSON.stringify({ category, filters, sort, search });
+
+  useEffect(() => {
+    let cancelled = false;
+
+    const params = new URLSearchParams({
+      category,
       sort,
-      search,
-      page: 1,
-      pageSize: 12,
+      page: "1",
+      pageSize: "12",
     });
+    if (search) params.set("search", search);
+    if (Object.keys(filters).length > 0) {
+      params.set("filters", JSON.stringify(filters));
+    }
+
+    fetch(`/api/products?${params.toString()}`)
+      .then((res) => res.json())
+      .then((data: { items: Product[]; total: number; priceRange: [number, number] }) => {
+        if (cancelled) return;
+        setResult({ items: data.items, total: data.total, priceRange: data.priceRange });
+      })
+      .catch(() => {
+        if (!cancelled) setResult(EMPTY_RESULT);
+      })
+      .finally(() => {
+        if (!cancelled) setLoadedKey(queryKey);
+      });
+
+    return () => {
+      cancelled = true;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- queryKey is derived from these same deps
   }, [category, filters, sort, search]);
+
+  const isLoading = loadedKey !== queryKey;
+  const { items, total, priceRange } = result;
 
   const toggleFilter = useCallback((key: string, value: string) => {
     setFilters((prev) => {
@@ -127,7 +175,9 @@ export function ProductListing({ category, initialSearch = "" }: ProductListingP
             />
           )}
 
-          {items.length === 0 ? (
+          {isLoading ? (
+            <div className="py-24 text-center text-sm text-muted">Loading products…</div>
+          ) : items.length === 0 ? (
             <div className="py-24 text-center">
               <p className="font-display mb-2 text-xl font-semibold">
                 No products found

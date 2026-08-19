@@ -1,8 +1,13 @@
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
 import type { CartItem } from "@/lib/types/product";
-import { productService } from "@/lib/services/product-service";
 
+// Phase 4 note: this store only ever holds { productId, quantity } — never a
+// product's price/name. Product data now lives in Postgres and is server/API-only, so
+// resolving cart items to full product records (price, name, images, current stock)
+// happens client-side via useCartProducts() (src/hooks/use-cart-products.ts), which
+// fetches /api/products?ids=... Price is always read live from the DB response, never
+// cached in this store — see docs/IMPLEMENTATION_PLAN.md Phase 4 data-integrity note.
 interface CartStore {
   items: CartItem[];
   addItem: (productId: string, quantity?: number) => void;
@@ -10,11 +15,6 @@ interface CartStore {
   updateQuantity: (productId: string, quantity: number) => void;
   clearCart: () => void;
   getItemCount: () => number;
-  getSubtotal: () => number;
-  getItemsWithProducts: () => Array<{
-    product: NonNullable<ReturnType<typeof productService.getById>>;
-    quantity: number;
-  }>;
 }
 
 export const useCartStore = create<CartStore>()(
@@ -60,22 +60,6 @@ export const useCartStore = create<CartStore>()(
 
       getItemCount: () =>
         get().items.reduce((sum, i) => sum + i.quantity, 0),
-
-      getSubtotal: () =>
-        get()
-          .getItemsWithProducts()
-          .reduce((sum, { product, quantity }) => sum + product.price * quantity, 0),
-
-      getItemsWithProducts: () =>
-        get()
-          .items.map((item) => {
-            const product = productService.getById(item.productId);
-            return product ? { product, quantity: item.quantity } : null;
-          })
-          .filter(Boolean) as Array<{
-          product: NonNullable<ReturnType<typeof productService.getById>>;
-          quantity: number;
-        }>,
     }),
     { name: "somalia-trading-cart" }
   )
