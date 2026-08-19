@@ -56,6 +56,13 @@ model Product {
   categoryId String
   category   Category @relation(fields: [categoryId], references: [id], onDelete: Restrict)
 
+  // Phase 4: free-text facet within a category (e.g. "Doors", "Rods"). Not a separate
+  // table/relation — the old demo data modeled this as a plain string per product, and
+  // Category nesting (parentId/children) already covers the "real subcategory as its own
+  // entity" case if that's ever needed. Kept as a simple field to preserve the existing
+  // filter/facet UI (src/config/filters.ts) with a minimal, non-breaking schema change.
+  subcategory String?
+
   price           Decimal @db.Decimal(12, 2)
   compareAtPrice  Decimal? @db.Decimal(12, 2)
   currency        String  @default("USD")
@@ -75,6 +82,7 @@ model Product {
   @@index([categoryId])
   @@index([featured])
   @@index([availability])
+  @@index([subcategory])
 }
 
 // Phase 3: Authentication & Authorization.

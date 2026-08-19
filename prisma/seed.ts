@@ -50,6 +50,7 @@ const products = [
     sku: "CM-DOOR-001",
     name: "Premium Wooden Interior Door",
     categorySlug: "construction-materials",
+    subcategory: "Doors",
     shortDescription:
       "Solid wood interior door with smooth finish, suitable for residential and commercial spaces.",
     description:
@@ -77,6 +78,7 @@ const products = [
     sku: "RI-PAV-001",
     name: "Interlocking Paver Block",
     categorySlug: "road-interlocks",
+    subcategory: "Interlocking Pavers",
     shortDescription:
       "Zig-zag interlocking concrete paver blocks for roads, driveways, pathways, and commercial surfacing — available in multiple colours.",
     description:
@@ -107,6 +109,7 @@ const products = [
     sku: "FP-ROD-001",
     name: "Professional Fishing Rod",
     categorySlug: "fishing-products",
+    subcategory: "Rods",
     shortDescription:
       "Carbon fiber fishing rod for professional and recreational coastal angling.",
     description:
@@ -139,6 +142,9 @@ const permissionKeys = [
   "products.create",
   "products.update",
   "products.delete",
+  "categories.create",
+  "categories.update",
+  "categories.delete",
   "inventory.view",
   "inventory.update",
   "orders.view",
