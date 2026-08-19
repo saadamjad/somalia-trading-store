@@ -15,7 +15,9 @@ import type {
   OrderAdminQueryInput,
   OrderCreateInput,
 } from "@/lib/validations/order";
-import type { Order, OrderItem, OrderStatus } from "@/generated/prisma/client";
+import type { Order, OrderItem, OrderStatus, Prisma } from "@/generated/prisma/client";
+
+export type { ShippingSnapshot };
 
 export class EmptyCartError extends Error {
   constructor() {
@@ -227,7 +229,7 @@ function normalizeInline(value?: string): string | null {
   return value ? value : null;
 }
 
-function shippingFromAddress(address: {
+export function shippingFromAddress(address: {
   recipientName: string;
   phone: string;
   line1: string;
@@ -249,7 +251,7 @@ function shippingFromAddress(address: {
   };
 }
 
-function shippingFromInline(input: NonNullable<OrderCreateInput["shippingAddress"]>): ShippingSnapshot {
+export function shippingFromInline(input: NonNullable<OrderCreateInput["shippingAddress"]>): ShippingSnapshot {
   return {
     shippingRecipientName: input.recipientName,
     shippingPhone: input.phone,
@@ -277,26 +279,149 @@ function isUniqueConstraintError(error: unknown): boolean {
   );
 }
 
+interface PersistOrderItemInput {
+  productId: string;
+  productName: string;
+  sku: string | null;
+  unitPrice: number;
+  quantity: number;
+  lineTotal: number;
+}
+
+interface PersistOrderParams {
+  userId: string;
+  shipping: ShippingSnapshot;
+  currency: string;
+  customerNote: string | null;
+  orderItemsInput: PersistOrderItemInput[];
+  /** Clears the caller's server cart, inside the same transaction, once the order is
+   * created — only ever true for the normal cart-based checkout path. */
+  clearCart: boolean;
+  /** Runs inside the SAME transaction as order creation + inventory decrement, right
+   * after the order row is created — e.g. quote-service.ts uses this to atomically
+   * mark a Quote CONVERTED + link the resulting order, so a quote conversion can never
+   * leave a created Order whose quote still looks unconverted, or vice versa. */
+  withinTransaction?: (tx: Prisma.TransactionClient, order: OrderWithItems) => Promise<void>;
+}
+
 /**
- * Order creation — the safety-critical core of Phase 8. Given a session-verified
- * `userId` and a shipping choice (an owned address id or an inline address), this:
+ * Shared order-persistence core — the safety-critical transaction pattern used by
+ * BOTH `createOrder` (normal cart checkout, Phase 8) and `createOrderFromPricedItems`
+ * (quote-to-order conversion, Phase 11). Runs order creation + inventory decrement +
+ * (optionally) cart clear + (optionally) a caller-supplied side effect all in ONE
+ * Prisma `$transaction`: if anything fails (insufficient stock discovered at the
+ * atomic decrement, a DB error, an order-number collision), everything rolls back —
+ * no partial order, no wrongly-decremented inventory, no side effect without its order.
  *
- *  1. Resolves the shipping snapshot (never a live Address FK — see schema.prisma).
- *  2. Loads the user's server-side cart — the ONLY source of "what's being ordered".
- *     No API surface here accepts a client-supplied product list, price, or quantity;
- *     see src/lib/validations/order.ts.
- *  3. Validates stock via cartService.validateStock (reused from Phase 7, not
- *     reimplemented) and re-prices every line from the current Product rows.
- *  4. Runs order creation + inventory decrement + cart clear in ONE Prisma
- *     `$transaction`: if anything fails (insufficient stock discovered at the atomic
- *     decrement, a DB error, an order-number collision), everything rolls back —
- *     no partial order, no wrongly-decremented inventory, cart left untouched.
- *
- * `status`/`paymentStatus` are hardcoded to PENDING/NOT_PAID — see docs/DECISIONS.md
- * D-007. Nothing in this method (or anywhere else in this phase) can produce any other
- * value.
+ * `status`/`paymentStatus` are hardcoded to PENDING/NOT_PAID by `orderRepository.createTx`
+ * — see docs/DECISIONS.md D-007. Nothing here (or anywhere else in this phase) can
+ * produce any other value.
  */
+async function persistOrder(params: PersistOrderParams): Promise<OrderWithItems> {
+  const subtotal =
+    Math.round(params.orderItemsInput.reduce((sum, i) => sum + i.lineTotal, 0) * 100) / 100;
+  // No tax/shipping charges are calculated (D-008, deferred) — total equals subtotal
+  // today. Kept as a separate field so tax/shipping can be added later without a
+  // breaking schema change.
+  const total = subtotal;
+
+  const MAX_ORDER_NUMBER_ATTEMPTS = 5;
+  let lastError: unknown;
+
+  for (let attempt = 0; attempt < MAX_ORDER_NUMBER_ATTEMPTS; attempt++) {
+    const orderNumber = generateOrderNumber();
+    try {
+      return await prisma.$transaction(async (tx) => {
+        // Decrement stock for every line FIRST, inside this same transaction — the
+        // atomic conditional UPDATE inside inventoryService.adjustStock (passed this
+        // `tx`, not a new one) throws InsufficientStockError if stock changed since the
+        // pre-check the caller already ran, which aborts and rolls back the whole
+        // transaction.
+        for (const item of params.orderItemsInput) {
+          await inventoryService.adjustStock(
+            {
+              productId: item.productId,
+              delta: -item.quantity,
+              reason: "ORDER_PLACED",
+              actorId: params.userId,
+              note: `Order ${orderNumber}`,
+            },
+            tx
+          );
+        }
+
+        const order = await orderRepository.createTx(tx, {
+          orderNumber,
+          userId: params.userId,
+          subtotal,
+          total,
+          currency: params.currency,
+          customerNote: params.customerNote,
+          ...params.shipping,
+          items: params.orderItemsInput,
+        });
+
+        // Cart is cleared only here, inside the same transaction as order creation —
+        // if anything above throws, this line never runs and the cart is untouched.
+        if (params.clearCart) {
+          const cart = await cartRepository.findByUserIdTx(tx, params.userId);
+          if (cart) {
+            await cartRepository.clearItemsTx(tx, cart.id);
+          }
+        }
+
+        if (params.withinTransaction) {
+          await params.withinTransaction(tx, order);
+        }
+
+        return order;
+      });
+    } catch (error) {
+      lastError = error;
+      if (isUniqueConstraintError(error)) {
+        // orderNumber collision — vanishingly unlikely, but retry with a fresh one
+        // rather than surfacing a confusing 500 to the customer.
+        continue;
+      }
+      throw error;
+    }
+  }
+
+  throw lastError instanceof Error
+    ? lastError
+    : new Error("Failed to create order after multiple attempts.");
+}
+
+export interface PricedOrderItemInput {
+  productId: string;
+  productName: string;
+  sku?: string | null;
+  unitPrice: number;
+  quantity: number;
+}
+
+export interface CreateOrderFromPricedItemsParams {
+  userId: string;
+  items: PricedOrderItemInput[];
+  shipping: ShippingSnapshot;
+  currency: string;
+  customerNote?: string | null;
+  withinTransaction?: (tx: Prisma.TransactionClient, order: OrderWithItems) => Promise<void>;
+}
+
 export const orderService = {
+  /**
+   * Order creation — the normal Phase 8 cart checkout path. Given a session-verified
+   * `userId` and a shipping choice (an owned address id or an inline address), this:
+   *
+   *  1. Resolves the shipping snapshot (never a live Address FK — see schema.prisma).
+   *  2. Loads the user's server-side cart — the ONLY source of "what's being ordered".
+   *     No API surface here accepts a client-supplied product list, price, or quantity;
+   *     see src/lib/validations/order.ts.
+   *  3. Validates stock via cartService.validateStock (reused from Phase 7, not
+   *     reimplemented) and re-prices every line from the current Product rows.
+   *  4. Delegates to `persistOrder` for the actual atomic creation.
+   */
   async createOrder(userId: string, input: OrderCreateInput): Promise<OrderView> {
     const shipping = input.addressId
       ? shippingFromAddress(await addressService.getOwned(input.addressId, userId))
@@ -341,74 +466,52 @@ export const orderService = {
       };
     });
 
-    const subtotal = Math.round(orderItemsInput.reduce((sum, i) => sum + i.lineTotal, 0) * 100) / 100;
-    // No tax/shipping charges are calculated (D-008, deferred) — total equals subtotal
-    // today. Kept as a separate field so tax/shipping can be added later without a
-    // breaking schema change.
-    const total = subtotal;
-
     const customerNote = input.customerNote ? input.customerNote : null;
 
-    const MAX_ORDER_NUMBER_ATTEMPTS = 5;
-    let lastError: unknown;
+    const created = await persistOrder({
+      userId,
+      shipping,
+      currency,
+      customerNote,
+      orderItemsInput,
+      clearCart: true,
+    });
 
-    for (let attempt = 0; attempt < MAX_ORDER_NUMBER_ATTEMPTS; attempt++) {
-      const orderNumber = generateOrderNumber();
-      try {
-        const created = await prisma.$transaction(async (tx) => {
-          // Decrement stock for every line FIRST, inside this same transaction — the
-          // atomic conditional UPDATE inside inventoryService.adjustStock (passed this
-          // `tx`, not a new one) throws InsufficientStockError if stock changed since
-          // the pre-check above, which aborts and rolls back the whole transaction.
-          for (const item of orderItemsInput) {
-            await inventoryService.adjustStock(
-              {
-                productId: item.productId,
-                delta: -item.quantity,
-                reason: "ORDER_PLACED",
-                actorId: userId,
-                note: `Order ${orderNumber}`,
-              },
-              tx
-            );
-          }
+    return toOrderView(created);
+  },
 
-          const order = await orderRepository.createTx(tx, {
-            orderNumber,
-            userId,
-            subtotal,
-            total,
-            currency,
-            customerNote,
-            ...shipping,
-            items: orderItemsInput,
-          });
+  /**
+   * Quote-to-order conversion's order-creation call (Phase 11) — see
+   * quote-service.ts `convertToOrder`, the only caller. Composes with the SAME
+   * `persistOrder` transaction pattern as `createOrder` (atomic inventory decrement +
+   * order creation), just sourced from pre-priced quote items instead of a cart, and
+   * with no cart to clear. `withinTransaction` lets the caller atomically mark the
+   * source Quote CONVERTED in the same DB transaction as the Order's creation.
+   */
+  async createOrderFromPricedItems(params: CreateOrderFromPricedItemsParams): Promise<OrderView> {
+    const orderItemsInput = params.items.map((item) => {
+      const lineTotal = Math.round(item.unitPrice * item.quantity * 100) / 100;
+      return {
+        productId: item.productId,
+        productName: item.productName,
+        sku: item.sku ?? null,
+        unitPrice: item.unitPrice,
+        quantity: item.quantity,
+        lineTotal,
+      };
+    });
 
-          // Cart is cleared only here, inside the same transaction as order creation —
-          // if anything above throws, this line never runs and the cart is untouched.
-          const cart = await cartRepository.findByUserIdTx(tx, userId);
-          if (cart) {
-            await cartRepository.clearItemsTx(tx, cart.id);
-          }
+    const created = await persistOrder({
+      userId: params.userId,
+      shipping: params.shipping,
+      currency: params.currency,
+      customerNote: params.customerNote ? params.customerNote : null,
+      orderItemsInput,
+      clearCart: false,
+      withinTransaction: params.withinTransaction,
+    });
 
-          return order;
-        });
-
-        return toOrderView(created);
-      } catch (error) {
-        lastError = error;
-        if (isUniqueConstraintError(error)) {
-          // orderNumber collision — vanishingly unlikely, but retry with a fresh one
-          // rather than surfacing a confusing 500 to the customer.
-          continue;
-        }
-        throw error;
-      }
-    }
-
-    throw lastError instanceof Error
-      ? lastError
-      : new Error("Failed to create order after multiple attempts.");
+    return toOrderView(created);
   },
 
   /** Optional `status` filter — customer's own order history, `/account/orders`. */

@@ -26,6 +26,15 @@ import {
   RefundRequestAlreadyOpenError,
   RefundRequestNotFoundError,
 } from "@/server/services/refund-request-service";
+import {
+  InvalidQuoteStatusTransitionError,
+  QuoteItemMismatchError,
+  QuoteItemProductNotFoundError,
+  QuoteMissingPricingError,
+  QuoteMissingUserForConversionError,
+  QuoteNotConvertibleError,
+  QuoteNotFoundError,
+} from "@/server/services/quote-service";
 
 /**
  * Translates a thrown error from a route handler into an appropriate HTTP response,
@@ -52,7 +61,9 @@ export function toErrorResponse(error: unknown): NextResponse {
     error instanceof UserNotFoundError ||
     error instanceof OrderNotFoundError ||
     error instanceof OrderNotFoundForRefundError ||
-    error instanceof RefundRequestNotFoundError
+    error instanceof RefundRequestNotFoundError ||
+    error instanceof QuoteNotFoundError ||
+    error instanceof QuoteItemProductNotFoundError
   ) {
     return NextResponse.json({ error: error.message }, { status: 404 });
   }
@@ -70,6 +81,15 @@ export function toErrorResponse(error: unknown): NextResponse {
   }
   if (error instanceof RefundRequestAlreadyOpenError) {
     return NextResponse.json({ error: error.message }, { status: 409 });
+  }
+  if (
+    error instanceof InvalidQuoteStatusTransitionError ||
+    error instanceof QuoteItemMismatchError ||
+    error instanceof QuoteNotConvertibleError ||
+    error instanceof QuoteMissingUserForConversionError ||
+    error instanceof QuoteMissingPricingError
+  ) {
+    return NextResponse.json({ error: error.message }, { status: 400 });
   }
   if (error instanceof StockUnavailableError) {
     return NextResponse.json(
