@@ -1,0 +1,41 @@
+import { redirect } from "next/navigation";
+import { AddressManager } from "@/components/account/address-manager";
+import { getCurrentSession } from "@/server/auth/session";
+import { addressService } from "@/server/services/address-service";
+
+export const metadata = { title: "My Account | Addresses" };
+
+export default async function AccountAddressesPage() {
+  const session = await getCurrentSession();
+  if (!session) {
+    redirect("/login?callbackUrl=/account/addresses");
+  }
+
+  const addresses = await addressService.listForUser(session.userId);
+
+  return (
+    <div className="space-y-8">
+      <div>
+        <h1 className="font-display text-2xl font-bold">Addresses</h1>
+        <p className="text-sm text-muted">
+          Manage your shipping addresses and choose a default for checkout.
+        </p>
+      </div>
+
+      <AddressManager
+        initialAddresses={addresses.map((address) => ({
+          id: address.id,
+          recipientName: address.recipientName,
+          phone: address.phone,
+          line1: address.line1,
+          line2: address.line2,
+          city: address.city,
+          region: address.region,
+          postalCode: address.postalCode,
+          country: address.country,
+          isDefault: address.isDefault,
+        }))}
+      />
+    </div>
+  );
+}

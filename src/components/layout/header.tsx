@@ -122,6 +122,14 @@ export function Header() {
                     <p className="truncate border-b border-white/10 px-4 pb-2 text-xs text-white/50">
                       {session.user.name || session.user.email}
                     </p>
+                    <Link
+                      href="/account"
+                      onClick={() => setIsUserMenuOpen(false)}
+                      className="flex w-full items-center gap-2 px-4 py-2.5 text-left text-xs font-medium uppercase tracking-widest text-white/70 transition-colors hover:text-white"
+                    >
+                      <User className="h-3.5 w-3.5" strokeWidth={1.5} />
+                      My Account
+                    </Link>
                     <button
                       onClick={() => {
                         setIsUserMenuOpen(false);
@@ -189,6 +197,13 @@ export function Header() {
                   <p className="truncate pb-2 text-xs text-white/50">
                     {session.user.name || session.user.email}
                   </p>
+                  <Link
+                    href="/account"
+                    className="flex items-center gap-2 py-2 text-sm font-medium tracking-wide text-white/80 transition-colors hover:text-white"
+                  >
+                    <User className="h-4 w-4" strokeWidth={1.5} />
+                    My Account
+                  </Link>
                   <button
                     onClick={() => void signOut({ callbackUrl: "/" })}
                     className="flex items-center gap-2 py-2 text-sm font-medium tracking-wide text-white/80 transition-colors hover:text-white"
