@@ -8,6 +8,7 @@ import {
   EmptyCartError,
   StockUnavailableError,
   OrderNotFoundError,
+  InvalidStatusTransitionError,
 } from "@/server/services/order-service";
 
 const runId = `${Date.now()}-${Math.floor(Math.random() * 100000)}`;
@@ -268,6 +269,140 @@ describe("orderService.createOrder", () => {
       // B can still see their own order.
       const own = await orderService.getOwned(order.id, buyerB.id);
       expect(own.id).toBe(order.id);
+    });
+  });
+
+  describe("updateStatus", () => {
+    it("records the change in OrderStatusHistory with correct actor/from/to, and leaves paymentStatus untouched", async () => {
+      const customer = await createCustomer("status-happy");
+      const admin = await createCustomer("status-happy-admin");
+      const address = await addressService.create(customer.id, SAMPLE_ADDRESS);
+      const productId = await createProduct("status-happy", 5);
+      await cartService.setItem(customer.id, productId, 1);
+      const order = await orderService.createOrder(customer.id, { addressId: address.id });
+
+      expect(order.status).toBe("PENDING");
+      expect(order.paymentStatus).toBe("NOT_PAID");
+
+      const updated = await orderService.updateStatus(order.id, admin.id, "CONFIRMED", "Verified stock.");
+
+      expect(updated.status).toBe("CONFIRMED");
+      // Hard requirement: paymentStatus never moves as a side effect of a status update.
+      expect(updated.paymentStatus).toBe("NOT_PAID");
+
+      const historyRow = updated.statusHistory.find(
+        (h) => h.fromStatus === "PENDING" && h.toStatus === "CONFIRMED"
+      );
+      expect(historyRow).toBeTruthy();
+      expect(historyRow!.note).toBe("Verified stock.");
+      expect(historyRow!.actor).not.toBeNull();
+      expect(historyRow!.actor!.id).toBe(admin.id);
+
+      // paymentStatusHistory is untouched by a status update — only the initial
+      // system-authored NOT_PAID row exists.
+      expect(updated.paymentStatusHistory).toHaveLength(1);
+      expect(updated.paymentStatusHistory[0].toStatus).toBe("NOT_PAID");
+      expect(updated.paymentStatusHistory[0].actor).toBeNull();
+    });
+
+    it("status and payment status update independently: several status transitions never change paymentStatus, since no code path here can", async () => {
+      const customer = await createCustomer("decoupling");
+      const admin = await createCustomer("decoupling-admin");
+      const address = await addressService.create(customer.id, SAMPLE_ADDRESS);
+      const productId = await createProduct("decoupling", 5);
+      await cartService.setItem(customer.id, productId, 1);
+      const order = await orderService.createOrder(customer.id, { addressId: address.id });
+
+      const transitions: Array<"CONFIRMED" | "PROCESSING" | "SHIPPED" | "DELIVERED"> = [
+        "CONFIRMED",
+        "PROCESSING",
+        "SHIPPED",
+        "DELIVERED",
+      ];
+
+      let current = order;
+      for (const nextStatus of transitions) {
+        current = await orderService.updateStatus(current.id, admin.id, nextStatus);
+        expect(current.status).toBe(nextStatus);
+        expect(current.paymentStatus).toBe("NOT_PAID");
+      }
+
+      // Re-fetch independently to confirm persisted state, not just the in-memory return value.
+      const reloaded = await orderService.adminGetById(order.id);
+      expect(reloaded.status).toBe("DELIVERED");
+      expect(reloaded.paymentStatus).toBe("NOT_PAID");
+      expect(reloaded.statusHistory).toHaveLength(1 + transitions.length); // initial PENDING row + 4 transitions
+    });
+
+    it("rejects an invalid/nonsensical transition (skipping ahead) with InvalidStatusTransitionError, and does not modify the order", async () => {
+      const customer = await createCustomer("invalid-transition");
+      const admin = await createCustomer("invalid-transition-admin");
+      const address = await addressService.create(customer.id, SAMPLE_ADDRESS);
+      const productId = await createProduct("invalid-transition", 5);
+      await cartService.setItem(customer.id, productId, 1);
+      const order = await orderService.createOrder(customer.id, { addressId: address.id });
+
+      // PENDING -> DELIVERED skips CONFIRMED/PROCESSING/SHIPPED entirely.
+      await expect(
+        orderService.updateStatus(order.id, admin.id, "DELIVERED")
+      ).rejects.toThrow(InvalidStatusTransitionError);
+
+      const unchanged = await orderService.adminGetById(order.id);
+      expect(unchanged.status).toBe("PENDING");
+      expect(unchanged.statusHistory).toHaveLength(1);
+    });
+
+    it("rejects moving backward out of a terminal status (CANCELLED)", async () => {
+      const customer = await createCustomer("terminal-transition");
+      const admin = await createCustomer("terminal-transition-admin");
+      const address = await addressService.create(customer.id, SAMPLE_ADDRESS);
+      const productId = await createProduct("terminal-transition", 5);
+      await cartService.setItem(customer.id, productId, 1);
+      const order = await orderService.createOrder(customer.id, { addressId: address.id });
+
+      const cancelled = await orderService.updateStatus(order.id, admin.id, "CANCELLED");
+      expect(cancelled.status).toBe("CANCELLED");
+
+      await expect(
+        orderService.updateStatus(order.id, admin.id, "CONFIRMED")
+      ).rejects.toThrow(InvalidStatusTransitionError);
+    });
+  });
+
+  describe("adminList", () => {
+    it("filters by status and searches by order number / customer, independent of any one customer's ownership", async () => {
+      const customer = await createCustomer("admin-list");
+      const address = await addressService.create(customer.id, SAMPLE_ADDRESS);
+      const productId = await createProduct("admin-list", 5);
+      await cartService.setItem(customer.id, productId, 1);
+      const order = await orderService.createOrder(customer.id, { addressId: address.id });
+
+      const byOrderNumber = await orderService.adminList({
+        orderNumber: order.orderNumber,
+        sortBy: "createdAt",
+        sortDir: "desc",
+        page: 1,
+        pageSize: 20,
+      });
+      expect(byOrderNumber.items.map((i) => i.id)).toContain(order.id);
+
+      const byStatus = await orderService.adminList({
+        status: "PENDING",
+        sortBy: "createdAt",
+        sortDir: "desc",
+        page: 1,
+        pageSize: 20,
+      });
+      expect(byStatus.items.some((i) => i.id === order.id)).toBe(true);
+
+      const byWrongStatus = await orderService.adminList({
+        status: "DELIVERED",
+        sortBy: "createdAt",
+        sortDir: "desc",
+        page: 1,
+        pageSize: 20,
+      });
+      expect(byWrongStatus.items.some((i) => i.id === order.id)).toBe(false);
     });
   });
 });

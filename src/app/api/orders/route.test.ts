@@ -83,7 +83,7 @@ describe("GET/POST /api/orders", () => {
   it("rejects unauthenticated GET and POST with 401", async () => {
     vi.mocked(requireSession).mockRejectedValue(new UnauthenticatedError());
 
-    const getRes = await GET();
+    const getRes = await GET(makeRequest("http://localhost:3000/api/orders"));
     expect(getRes.status).toBe(401);
 
     const postRes = await POST(
@@ -121,13 +121,13 @@ describe("GET/POST /api/orders", () => {
     expect(stored.userId).toBe(customer.userId);
 
     vi.mocked(requireSession).mockResolvedValue(customer);
-    const getRes = await GET();
+    const getRes = await GET(makeRequest("http://localhost:3000/api/orders"));
     const list = await getRes.json();
     expect(list.items).toHaveLength(1);
     expect(list.items[0].id).toBe(created.item.id);
 
     vi.mocked(requireSession).mockResolvedValue(otherCustomer);
-    const otherGetRes = await GET();
+    const otherGetRes = await GET(makeRequest("http://localhost:3000/api/orders"));
     const otherList = await otherGetRes.json();
     expect(otherList.items).toHaveLength(0);
   });
