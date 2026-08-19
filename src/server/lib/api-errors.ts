@@ -35,6 +35,8 @@ import {
   QuoteNotConvertibleError,
   QuoteNotFoundError,
 } from "@/server/services/quote-service";
+import { CMSPageNotFoundError } from "@/server/services/cms-page-service";
+import { BannerNotFoundError } from "@/server/services/banner-service";
 
 /**
  * Translates a thrown error from a route handler into an appropriate HTTP response,
@@ -63,7 +65,9 @@ export function toErrorResponse(error: unknown): NextResponse {
     error instanceof OrderNotFoundForRefundError ||
     error instanceof RefundRequestNotFoundError ||
     error instanceof QuoteNotFoundError ||
-    error instanceof QuoteItemProductNotFoundError
+    error instanceof QuoteItemProductNotFoundError ||
+    error instanceof CMSPageNotFoundError ||
+    error instanceof BannerNotFoundError
   ) {
     return NextResponse.json({ error: error.message }, { status: 404 });
   }
