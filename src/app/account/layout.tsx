@@ -34,6 +34,12 @@ export default async function AccountLayout({ children }: { children: React.Reac
           >
             Addresses
           </Link>
+          <Link
+            href="/account/orders"
+            className="whitespace-nowrap rounded-lg px-3 py-2 text-sm font-medium hover:bg-accent-muted"
+          >
+            Orders
+          </Link>
         </nav>
       </aside>
       <main className="min-w-0 flex-1">{children}</main>
