@@ -149,8 +149,35 @@ model User {
 
   passwordResetTokens   PasswordResetToken[]
   inventoryTransactions InventoryTransaction[]
+  addresses             Address[]
 
   @@index([roleId])
+}
+
+// Phase 6: Customer Account. Multiple addresses per user (e.g. home + office); Phase 8
+// (checkout) will read `isDefault` to preselect a shipping address. Every read/write
+// path (src/server/services/address-service.ts) must scope by the owning userId taken
+// from the server-verified session — never a client-supplied userId — per
+// docs/IMPLEMENTATION_PLAN.md cross-cutting standards and the Phase 6 IDOR requirement.
+// No `postalCode` requirement — Somalia addressing doesn't always use one.
+model Address {
+  id            String   @id @default(cuid())
+  recipientName String
+  phone         String
+  line1         String
+  line2         String?
+  city          String
+  region        String?
+  postalCode    String?
+  country       String
+  isDefault     Boolean  @default(false)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
 }
 
 model PasswordResetToken {
