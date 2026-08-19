@@ -4,7 +4,7 @@ import { CategoryCard } from "@/components/product/category-card";
 import { FadeIn } from "@/components/ui/motion";
 import { brand } from "@/config/brand";
 import { createPageMetadata } from "@/config/seo";
-import { productService } from "@/lib/services/product-service";
+import { productService } from "@/server/services/product-service";
 
 export const metadata = createPageMetadata({
   title: "Shop Catalogue",
@@ -12,8 +12,8 @@ export const metadata = createPageMetadata({
   path: "/shop",
 });
 
-export default function ShopPage() {
-  const categories = productService.getCategories();
+export default async function ShopPage() {
+  const categories = await productService.getCategories();
 
   return (
     <>

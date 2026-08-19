@@ -4,7 +4,7 @@ import { CategoryCard } from "@/components/product/category-card";
 import { FadeIn } from "@/components/ui/motion";
 import { brand } from "@/config/brand";
 import { createPageMetadata } from "@/config/seo";
-import { productService } from "@/lib/services/product-service";
+import { productService } from "@/server/services/product-service";
 
 export const metadata = createPageMetadata({
   title: "About Us",
@@ -21,8 +21,8 @@ const values = [
   { title: "Partnerships", description: "Long-term relationships with the communities we serve." },
 ];
 
-export default function AboutPage() {
-  const categories = productService.getCategories();
+export default async function AboutPage() {
+  const categories = await productService.getCategories();
 
   return (
     <>

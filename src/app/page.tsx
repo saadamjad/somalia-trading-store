@@ -10,6 +10,7 @@ import { CTABanner, TrustStrip } from "@/components/home/trust-strip";
 import { WhyChooseSection } from "@/components/home/why-choose-section";
 import { createPageMetadata } from "@/config/seo";
 import { brand } from "@/config/brand";
+import { productService } from "@/server/services/product-service";
 
 export const metadata = createPageMetadata({
   title: brand.name,
@@ -17,14 +18,19 @@ export const metadata = createPageMetadata({
   path: "/",
 });
 
-export default function HomePage() {
+export default async function HomePage() {
+  const [categories, featured] = await Promise.all([
+    productService.getCategories(),
+    productService.getFeatured(),
+  ]);
+
   return (
     <>
-      <HeroSection />
-      <ShopByCategory />
+      <HeroSection categories={categories} />
+      <ShopByCategory categories={categories} />
       <StatsTrustSection />
       <OurStorySection />
-      <FeaturedProducts />
+      <FeaturedProducts products={featured} />
       <WhyChooseSection />
       <ReviewsSection />
       <TrustStrip />

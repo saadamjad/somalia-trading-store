@@ -1,6 +1,6 @@
 import type { LucideIcon } from "lucide-react";
-import { Box, Grid3X3, Layers, DoorOpen, Hammer, Wrench, Fish, Anchor, Waves } from "lucide-react";
-import type { CategorySlug } from "@/lib/types/product";
+import { Box, Grid3X3, Layers, DoorOpen, Hammer, Wrench, Fish, Anchor, Waves, Tag } from "lucide-react";
+import type { Category, CategorySlug } from "@/lib/types/product";
 
 export interface CategoryBannerImage {
   src: string;
@@ -111,3 +111,29 @@ export const categoryBannerConfig: Record<CategorySlug, CategoryBannerConfig> = 
     footerTags: ["Carbon Fiber", "Coastal", "Offshore"],
   },
 };
+
+/**
+ * Falls back to a generic banner built from the category's own data (image/heroImage/
+ * subcategories) for any category that doesn't have hand-authored banner copy above —
+ * e.g. a category an admin creates through /admin/categories (Phase 4). Without this,
+ * CategoryBanner would crash on `categoryBannerConfig[slug]` being undefined for any
+ * category beyond the original 3 demo ones.
+ */
+function buildDefaultBannerConfig(category: Category): CategoryBannerConfig {
+  const image = { src: category.image || category.heroImage, alt: category.name };
+  const heroImage = { src: category.heroImage || category.image, alt: category.name };
+  return {
+    eyebrow: "Catalogue",
+    accentWordIndex: 0,
+    highlights: category.subcategories.slice(0, 3).map((label) => ({ icon: Tag, label })),
+    images: {
+      primary: { ...heroImage, featured: true, featuredLabel: "Featured", featuredTitle: category.name },
+      secondary: image,
+      tertiary: image,
+    },
+  };
+}
+
+export function getCategoryBannerConfig(category: Category): CategoryBannerConfig {
+  return categoryBannerConfig[category.slug] ?? buildDefaultBannerConfig(category);
+}

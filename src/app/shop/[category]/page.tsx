@@ -2,8 +2,7 @@ import { notFound } from "next/navigation";
 import { ProductListing } from "@/components/product/product-listing";
 import { CategoryBanner } from "@/components/product/category-banner";
 import { createPageMetadata } from "@/config/seo";
-import { productService } from "@/lib/services/product-service";
-import type { CategorySlug } from "@/lib/types/product";
+import { productService } from "@/server/services/product-service";
 
 interface CategoryPageProps {
   params: Promise<{ category: string }>;
@@ -11,12 +10,13 @@ interface CategoryPageProps {
 }
 
 export async function generateStaticParams() {
-  return productService.getCategories().map((c) => ({ category: c.slug }));
+  const categories = await productService.getCategories();
+  return categories.map((c) => ({ category: c.slug }));
 }
 
 export async function generateMetadata({ params }: CategoryPageProps) {
   const { category: slug } = await params;
-  const category = productService.getCategory(slug);
+  const category = await productService.getCategory(slug);
   if (!category) return {};
   return createPageMetadata({
     title: category.name,
@@ -31,11 +31,11 @@ export default async function CategoryPage({
 }: CategoryPageProps) {
   const { category: slug } = await params;
   const { q } = await searchParams;
-  const category = productService.getCategory(slug);
+  const category = await productService.getCategory(slug);
 
   if (!category) notFound();
 
-  const { total } = productService.queryCategory(slug as CategorySlug);
+  const { total } = await productService.queryCategory(slug);
 
   return (
     <>
@@ -44,7 +44,7 @@ export default async function CategoryPage({
       <section className="section-padding section-after-hero">
         <div className="container-custom">
           <ProductListing
-            category={slug as CategorySlug}
+            category={slug}
             initialSearch={q ?? ""}
           />
         </div>

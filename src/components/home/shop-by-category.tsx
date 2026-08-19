@@ -3,11 +3,9 @@ import { ArrowUpRight } from "lucide-react";
 import { CategoryCard } from "@/components/product/category-card";
 import { ProductCard } from "@/components/product/product-card";
 import { FadeIn } from "@/components/ui/motion";
-import { productService } from "@/lib/services/product-service";
+import type { Category, Product } from "@/lib/types/product";
 
-export function ShopByCategory() {
-  const categories = productService.getCategories();
-
+export function ShopByCategory({ categories }: { categories: Category[] }) {
   return (
     <section className="section-padding section-after-hero bg-background">
       <div className="container-custom">
@@ -38,9 +36,7 @@ export function ShopByCategory() {
   );
 }
 
-export function FeaturedProducts() {
-  const products = productService.getFeatured();
-
+export function FeaturedProducts({ products }: { products: Product[] }) {
   return (
     <section className="section-padding section-after-band bg-background">
       <div className="container-custom">

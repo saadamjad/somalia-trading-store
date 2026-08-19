@@ -3,7 +3,7 @@ import { Search } from "lucide-react";
 import { ProductCard } from "@/components/product/product-card";
 import { Button } from "@/components/ui/button";
 import { createPageMetadata } from "@/config/seo";
-import { productService } from "@/lib/services/product-service";
+import { productService } from "@/server/services/product-service";
 
 interface SearchPageProps {
   searchParams: Promise<{ q?: string }>;
@@ -18,7 +18,7 @@ export const metadata = createPageMetadata({
 export default async function SearchPage({ searchParams }: SearchPageProps) {
   const { q } = await searchParams;
   const query = q?.trim() ?? "";
-  const results = query ? productService.search(query) : [];
+  const results = query ? await productService.search(query) : [];
 
   return (
     <div className="container-custom py-24 md:py-28">

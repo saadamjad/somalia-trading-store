@@ -6,11 +6,13 @@ import { ArrowUpRight } from "lucide-react";
 import { motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { brand } from "@/config/brand";
-import { productService } from "@/lib/services/product-service";
+import type { Category } from "@/lib/types/product";
 
-export function HeroSection() {
-  const categories = productService.getCategories();
+interface HeroSectionProps {
+  categories: Category[];
+}
 
+export function HeroSection({ categories }: HeroSectionProps) {
   return (
     <section className="mesh-dark relative min-h-screen overflow-hidden">
       <div

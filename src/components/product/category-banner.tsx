@@ -2,8 +2,8 @@
 
 import Image from "next/image";
 import { motion, useReducedMotion } from "framer-motion";
-import type { Category, CategorySlug } from "@/lib/types/product";
-import { categoryBannerConfig } from "@/config/category-banners";
+import type { Category } from "@/lib/types/product";
+import { getCategoryBannerConfig } from "@/config/category-banners";
 
 interface CategoryBannerProps {
   category: Category;
@@ -11,7 +11,7 @@ interface CategoryBannerProps {
 }
 
 export function CategoryBanner({ category, productCount }: CategoryBannerProps) {
-  const config = categoryBannerConfig[category.slug as CategorySlug];
+  const config = getCategoryBannerConfig(category);
   const shouldReduceMotion = useReducedMotion();
   const ease = [0.16, 1, 0.3, 1] as const;
   const words = category.name.split(" ");
