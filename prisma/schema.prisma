@@ -173,6 +173,13 @@ model User {
   orderStatusHistoryActions   OrderStatusHistory[]
   paymentStatusHistoryActions PaymentStatusHistory[]
 
+  // Phase 10: Refund/Return Workflow. Two distinct relations to RefundRequest (the
+  // customer who requested vs. the admin who reviewed) plus the status-history actor —
+  // named relations required since there's more than one FK from User to RefundRequest.
+  refundRequestsMade                RefundRequest[]               @relation("RefundRequestsMade")
+  refundRequestsReviewed             RefundRequest[]               @relation("RefundRequestsReviewed")
+  refundRequestStatusHistoryActions RefundRequestStatusHistory[]
+
   @@index([roleId])
 }
 
@@ -335,6 +342,11 @@ model Order {
   statusHistory OrderStatusHistory[]
   paymentStatusHistory PaymentStatusHistory[]
 
+  // Phase 10: Refund/Return Workflow. See RefundRequest's own comment — order-level,
+  // so a single order may accumulate multiple requests over time (though only one may
+  // be open/unresolved at once, enforced in refund-service.ts).
+  refundRequests RefundRequest[]
+
   @@index([userId])
   @@index([orderNumber])
 }
@@ -419,6 +431,108 @@ model OrderItem {
 
   @@index([orderId])
   @@index([productId])
+}
+
+// Phase 10: Refund/Return Workflow (spec §7; docs/DECISIONS.md D-007). This is a
+// REQUEST workflow only — no payment gateway exists yet, so nothing here ever moves
+// money or touches `Order.paymentStatus`. `RefundRequestStatus` is the request's own
+// lifecycle (did we, as a business, agree the customer should get their money back)
+// and is deliberately never written to `Order.paymentStatus` by any code path — see
+// refund-service.ts. A genuine "has this actually been refunded in the real world"
+// concept (`PaymentRefundStatus`) is intentionally NOT modeled yet: `Order.paymentStatus`
+// already reserves a `REFUNDED` value for whenever a payment gateway exists (Phase 8
+// schema comment), so adding a second, parallel, always-unset enum here would be pure
+// scope creep with no code path that could ever set it — unlike Phase 9's
+// PaymentStatusHistory, which existed to give a *future* gateway integration an audit
+// trail to write into. There's no equivalent "write into this from day one" need here.
+//
+// Order-level, not per-item: the plan doesn't require per-item granularity, and
+// per-item would mean tracking partial-order refund state (e.g. "3 of 5 items
+// refunded") which is unnecessary complexity for this phase — order-level is the
+// simpler, defensible choice.
+enum RefundReasonCategory {
+  DAMAGED
+  WRONG_ITEM
+  NOT_AS_DESCRIBED
+  NO_LONGER_NEEDED
+  OTHER
+}
+
+// REQUESTED is the only starting state. UNDER_REVIEW is an optional intermediate an
+// admin can move into before deciding (e.g. to signal "looking into it" without
+// committing to approve/reject yet) — both REQUESTED and UNDER_REVIEW can go straight
+// to APPROVED or REJECTED. APPROVED/REJECTED are terminal for this phase; there's no
+// "reopen" action.
+enum RefundRequestStatus {
+  REQUESTED
+  UNDER_REVIEW
+  APPROVED
+  REJECTED
+}
+
+// One refund request per order at a time — refund-service.ts rejects creating a new
+// request for an order that already has an open (REQUESTED/UNDER_REVIEW) one, enforced
+// at the application layer (mirrors the InsufficientStockError conditional-update
+// pattern in spirit, not literally — this is a plain pre-check + create, not a
+// concurrent-decrement race, so no DB-level constraint is warranted here).
+model RefundRequest {
+  id String @id @default(cuid())
+
+  orderId String
+  order   Order  @relation(fields: [orderId], references: [id], onDelete: Restrict)
+
+  requestedByUserId String
+  requestedBy       User   @relation("RefundRequestsMade", fields: [requestedByUserId], references: [id], onDelete: Restrict)
+
+  reasonCategory RefundReasonCategory
+  reasonDetail   String?
+
+  status RefundRequestStatus @default(REQUESTED)
+
+  // Written by the admin action that resolves the request (approve/reject).
+  // Customer-visible — see docs comment on the customer-facing view in
+  // refund-service.ts: an adminNote explaining a rejection (or approval) is only
+  // useful to the customer if they can actually see it, so it's surfaced on
+  // /account/orders/[id] and any refund-request detail the customer can read. There is
+  // no separate internal-only note field in this phase (unlike Order.internalNote) —
+  // the plan doesn't call for one and admins already have the full status history.
+  adminNote String?
+
+  reviewedByUserId String?
+  reviewedBy       User?   @relation("RefundRequestsReviewed", fields: [reviewedByUserId], references: [id], onDelete: SetNull)
+  reviewedAt       DateTime?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  statusHistory RefundRequestStatusHistory[]
+
+  @@index([orderId])
+  @@index([requestedByUserId])
+  @@index([status])
+}
+
+// Full audit trail for `RefundRequest.status` changes — same rigor/shape as Phase 9's
+// OrderStatusHistory (actor/previous/new/reason/timestamp), per the cross-cutting
+// standards' emphasis on auditability for admin actions. `fromStatus` is null only for
+// the system-authored initial row written at request creation; `actorId` is null for
+// that same row (the customer creates the request, not an admin acting on it) and set
+// for every admin-initiated transition thereafter.
+model RefundRequestStatusHistory {
+  id         String                @id @default(cuid())
+  fromStatus RefundRequestStatus?
+  toStatus   RefundRequestStatus
+  note       String?
+  createdAt  DateTime              @default(now())
+
+  refundRequestId String
+  refundRequest   RefundRequest @relation(fields: [refundRequestId], references: [id], onDelete: Cascade)
+
+  actorId String?
+  actor   User?   @relation(fields: [actorId], references: [id], onDelete: SetNull)
+
+  @@index([refundRequestId])
+  @@index([actorId])
 }
 
 // Phase 7: Cart & Wishlist (Server-Aware). Guest carts remain localStorage-only
