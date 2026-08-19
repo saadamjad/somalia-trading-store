@@ -41,6 +41,21 @@ npm run build
 npm start
 ```
 
+## Development commands
+
+```bash
+npm run dev        # start the dev server
+npm run build      # production build
+npm start          # run the production build
+npm run lint        # ESLint
+npm run typecheck  # TypeScript, no emit
+npm run test        # run the test suite (Vitest)
+```
+
+## Environment variables
+
+Copy `.env.example` to `.env.local` and fill in real values for local development. Never commit `.env.local` or any file containing real credentials — see `docs/DECISIONS.md` for the variables introduced by each phase.
+
 ## Project Structure
 
 - `src/app/` — Pages and routes
@@ -49,6 +64,9 @@ npm start
 - `src/lib/services/` — Product service (swappable for API later)
 - `src/stores/` — Cart, wishlist, UI state
 - `src/config/` — Brand, navigation, filters, SEO
+- `src/server/` — Server-only code (services, repositories); see `src/server/README.md`
+
+See `docs/PROJECT_AUDIT.md`, `docs/DECISIONS.md`, and `docs/IMPLEMENTATION_PLAN.md` for the current state of the project and the phased roadmap to a production-ready backend.
 
 ## Note
 
