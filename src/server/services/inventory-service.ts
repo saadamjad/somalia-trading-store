@@ -1,7 +1,6 @@
-import type { InventoryChangeReason } from "@/generated/prisma/client";
+import type { InventoryChangeReason, Prisma } from "@/generated/prisma/client";
 import { prisma } from "@/server/lib/prisma";
 import { inventoryRepository } from "@/server/repositories/inventory-repository";
-import { productRepository } from "@/server/repositories/product-repository";
 import { toDomainProduct } from "@/server/services/product-mappers";
 
 export class InventoryNotFoundError extends Error {
@@ -116,39 +115,55 @@ export const inventoryService = {
    * Inventory row, or `InsufficientStockError` if the adjustment would push quantity
    * below zero. Writes exactly one InventoryTransaction row per call, atomically with
    * the quantity update (single Prisma `$transaction` — both succeed or both roll back).
+   *
+   * Accepts an optional `tx` (an already-open `Prisma.TransactionClient`) so a caller
+   * that needs this adjustment to be part of a larger atomic operation — e.g.
+   * order-service.createOrder, which must create the Order + OrderItems, decrement
+   * stock, and clear the cart all-or-nothing — can pass its own transaction down
+   * instead of letting this method open a second, independent one. This matters because
+   * Prisma's interactive transactions do not nest: calling `prisma.$transaction` again
+   * from inside another `prisma.$transaction` callback runs on a separate connection as
+   * an unrelated transaction, so if the outer transaction later rolled back, an
+   * inventory decrement done via a nested `prisma.$transaction` would NOT roll back
+   * with it. Passing `tx` through avoids that: every query in this method then runs on
+   * the caller's single connection/transaction. When `tx` is omitted (the normal admin-
+   * adjustment call path), this method opens its own transaction exactly as before.
    */
-  async adjustStock(input: {
-    productId: string;
-    delta: number;
-    reason: InventoryChangeReason;
-    actorId: string;
-    note?: string;
-  }): Promise<StockAdjustmentResult> {
+  async adjustStock(
+    input: {
+      productId: string;
+      delta: number;
+      reason: InventoryChangeReason;
+      actorId: string;
+      note?: string;
+    },
+    tx?: Prisma.TransactionClient
+  ): Promise<StockAdjustmentResult> {
     const { productId, delta, reason, actorId, note } = input;
 
     if (!Number.isInteger(delta) || delta === 0) {
       throw new Error("Adjustment delta must be a non-zero integer.");
     }
 
-    const product = await productRepository.findById(productId);
-    if (!product) {
-      throw new InventoryNotFoundError(productId);
-    }
+    const run = async (client: Prisma.TransactionClient) => {
+      const product = await client.product.findUnique({ where: { id: productId } });
+      if (!product) {
+        throw new InventoryNotFoundError(productId);
+      }
 
-    return prisma.$transaction(async (tx) => {
-      const existing = await inventoryRepository.findByProductIdTx(tx, productId);
+      const existing = await inventoryRepository.findByProductIdTx(client, productId);
       if (!existing) {
         throw new InventoryNotFoundError(productId);
       }
 
-      const newQuantity = await inventoryRepository.applyAdjustment(tx, productId, delta);
+      const newQuantity = await inventoryRepository.applyAdjustment(client, productId, delta);
       if (newQuantity === null) {
         throw new InsufficientStockError(productId, delta, existing.quantity);
       }
 
       const previousQuantity = newQuantity - delta;
 
-      const transaction = await inventoryRepository.createTransactionTx(tx, {
+      const transaction = await inventoryRepository.createTransactionTx(client, {
         inventoryId: existing.id,
         productId,
         previousQuantity,
@@ -168,6 +183,11 @@ export const inventoryService = {
         },
         transaction,
       };
-    });
+    };
+
+    if (tx) {
+      return run(tx);
+    }
+    return prisma.$transaction(run);
   },
 };
