@@ -33,6 +33,18 @@ export const inventoryRepository = {
     return prisma.inventory.findUnique({ where: { productId }, include: withProduct });
   },
 
+  /**
+   * Public-safe read: just productId + quantity, for many products at once. No admin
+   * fields (thresholds, transaction history), so this is fine to call without the
+   * `inventory.view` permission — see inventory-service.ts `getAvailableQuantities`.
+   */
+  findManyByProductIds(productIds: string[]) {
+    return prisma.inventory.findMany({
+      where: { productId: { in: productIds } },
+      select: { productId: true, quantity: true },
+    });
+  },
+
   findByProductIdTx(tx: Prisma.TransactionClient, productId: string) {
     return tx.inventory.findUnique({ where: { productId } });
   },

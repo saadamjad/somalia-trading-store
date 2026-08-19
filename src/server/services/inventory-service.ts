@@ -92,6 +92,20 @@ export const inventoryService = {
     };
   },
 
+  /**
+   * Public-safe stock read: "is there enough of this product for a customer's cart" is
+   * not an admin action, unlike `getAll`/`getForProduct` (which return admin-shaped
+   * data and are called from permission-gated routes). No permission check here —
+   * callers are expected to be things like cart-service.validateStock. Returns a Map
+   * keyed by productId; a product with no Inventory row (or not in `productIds`) is
+   * simply absent from the map — callers treat "absent" as "0 available".
+   */
+  async getAvailableQuantities(productIds: string[]): Promise<Map<string, number>> {
+    if (productIds.length === 0) return new Map();
+    const rows = await inventoryRepository.findManyByProductIds(productIds);
+    return new Map(rows.map((row) => [row.productId, row.quantity]));
+  },
+
   async getTransactionsForProduct(productId: string, limit?: number) {
     return inventoryRepository.listTransactionsForProduct(productId, limit);
   },
