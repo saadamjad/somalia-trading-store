@@ -103,6 +103,9 @@ model Product {
   // Phase 8: Checkout & Order Placement. Reference-only — see OrderItem's comment.
   orderItems OrderItem[]
 
+  // Phase 11: Quote Requests. Reference-only — see QuoteItem's own comment.
+  quoteItems QuoteItem[]
+
   @@index([categoryId])
   @@index([featured])
   @@index([availability])
@@ -179,6 +182,13 @@ model User {
   refundRequestsMade                RefundRequest[]               @relation("RefundRequestsMade")
   refundRequestsReviewed             RefundRequest[]               @relation("RefundRequestsReviewed")
   refundRequestStatusHistoryActions RefundRequestStatusHistory[]
+
+  // Phase 11: Quote Requests. Nullable — a quote may be submitted by a guest (no
+  // userId at all, see Quote's own comment) rather than every quote having an owning
+  // user. `quoteStatusHistoryActions` is the admin actor on QuoteStatusHistory rows
+  // (nullable there too, for the system-authored initial NEW row).
+  quotes                     Quote[]
+  quoteStatusHistoryActions  QuoteStatusHistory[]
 
   @@index([roleId])
 }
@@ -346,6 +356,12 @@ model Order {
   // so a single order may accumulate multiple requests over time (though only one may
   // be open/unresolved at once, enforced in refund-service.ts).
   refundRequests RefundRequest[]
+
+  // Phase 11: Quote Requests. Reverse side of Quote.convertedOrderId — set only when
+  // this order was created via quote-service.convertToOrder rather than normal
+  // checkout. No FK columns live on Order itself for this; Quote holds the FK (see
+  // Quote's own comment).
+  convertedFromQuote Quote?
 
   @@index([userId])
   @@index([orderNumber])
@@ -598,4 +614,151 @@ model WishlistItem {
   // catch P2002) so two concurrent POSTs of the same product can never create two rows.
   @@unique([wishlistId, productId])
   @@index([productId])
+}
+
+// Phase 11: Quote Requests (spec §19). Formalizes the previously-cosmetic `/quote`
+// form into a real, persisted B2B-style request workflow — a REQUEST, not an
+// authoritative price: the customer/guest states what they want and (optionally) what
+// price they'd hope for, and an admin responds with real pricing before anything can
+// become an order.
+//
+// Lifecycle implemented (a deliberately trimmed subset of the plan's full
+// NEW → REVIEWING → QUOTED → ACCEPTED/DECLINED/EXPIRED → CONVERTED — EXPIRED is
+// dropped: nothing in this phase runs a background job that could ever set it, so
+// modeling it now would be an unused enum value, not a real feature):
+//   NEW        — just submitted, nothing reviewed yet.
+//   REVIEWING  — optional intermediate an admin can move into (mirrors
+//                RefundRequestStatus.UNDER_REVIEW) before pricing it.
+//   QUOTED     — an admin has set quotedUnitPrice on every item and responded
+//                (quote-service.ts `respond`).
+//   ACCEPTED   — the customer (ownership-checked, their own quote) or an admin
+//                (e.g. phone confirmation) has agreed to the quoted pricing. This is
+//                NOT the same as an order existing yet — see the conversion comment
+//                below.
+//   DECLINED   — terminal rejection, by either side, from NEW/REVIEWING/QUOTED.
+//   CONVERTED  — an admin has run quote-service.ts `convertToOrder`, creating a real
+//                Order priced at the locked-in quotedUnitPrice values.
+enum QuoteStatus {
+  NEW
+  REVIEWING
+  QUOTED
+  ACCEPTED
+  DECLINED
+  CONVERTED
+}
+
+// Submitter is EITHER a logged-in User (`userId` set) OR a guest (`userId` null,
+// contact fields carry everything) — quotes, unlike checkout (Phase 8's auth-required
+// decision), are a legitimate guest-submittable business inquiry per
+// docs/IMPLEMENTATION_PLAN.md Phase 11 ("a business inquiry doesn't necessarily require
+// an account"). Contact fields are always populated (even for a logged-in submitter,
+// inline at submission time — mirroring Order's shipping-address snapshot pattern: a
+// quote records what the submitter typed at that moment, not a live pointer to
+// User.name/email that could drift later).
+//
+// Conversion (`convertToOrder` in quote-service.ts) requires `userId` to be set — a
+// guest quote cannot self-convert into an Order, since Order.userId is required and
+// there is no session to attach it to. A guest whose quote needs converting must
+// register/log in first (at which point a new quote could be submitted, or — out of
+// this phase's scope — an admin could handle it manually outside the system). This is
+// a deliberate, documented limitation, not an oversight.
+model Quote {
+  id String @id @default(cuid())
+
+  userId String?
+  user   User?   @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  contactName    String
+  contactEmail   String
+  contactPhone   String?
+  contactCompany String?
+
+  // The customer's free-text message/requirements — distinct from any per-item note.
+  customerNote String?
+
+  status QuoteStatus @default(NEW)
+
+  // Currency snapshot, taken from the first quoted item's product at submission time
+  // (mirrors Order.currency) — see docs/DECISIONS.md D-006, still an open business
+  // decision; USD remains the development-time default.
+  currency String @default("USD")
+
+  // Written by the admin action that responds with pricing (`respond`) — customer-
+  // visible, same rationale as RefundRequest.adminNote: a note only an admin can read
+  // isn't useful to the customer deciding whether to accept.
+  adminNote String?
+
+  // Set only by `convertToOrder`, atomically with Order creation (same DB transaction
+  // — see order-service.ts `createOrderFromPricedItems` `withinTransaction` hook). A
+  // read-only reference once set; the Order itself is never mutated once created.
+  convertedOrderId String? @unique
+  convertedOrder   Order?  @relation(fields: [convertedOrderId], references: [id], onDelete: SetNull)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  items         QuoteItem[]
+  statusHistory QuoteStatusHistory[]
+
+  @@index([userId])
+  @@index([status])
+  @@index([contactEmail])
+}
+
+// Every request-time identity field (productName/sku) is a SNAPSHOT taken at
+// submission time, same rationale as OrderItem — a product renamed/re-SKU'd after a
+// quote was submitted shouldn't change what the quote says was asked for.
+// `requestedPrice` is customer-supplied and purely informational (never trusted as an
+// authoritative price — cross-cutting standard); `quotedUnitPrice` is the ONLY price
+// that can ever become an OrderItem.unitPrice on conversion, and is null until an
+// admin sets it via `respond`. onDelete: Restrict on the Product relation, matching
+// OrderItem, so a quoted-on product can't be hard-deleted out from under this record.
+model QuoteItem {
+  id String @id @default(cuid())
+
+  quoteId String
+  quote   Quote  @relation(fields: [quoteId], references: [id], onDelete: Cascade)
+
+  productId String
+  product   Product @relation(fields: [productId], references: [id], onDelete: Restrict)
+
+  productName String
+  sku         String?
+  quantity    Int
+
+  requestedPrice Decimal? @db.Decimal(12, 2)
+  customerNote   String?
+
+  quotedUnitPrice Decimal? @db.Decimal(12, 2)
+
+  createdAt DateTime @default(now())
+
+  @@index([quoteId])
+  @@index([productId])
+}
+
+// Full audit trail for `Quote.status` changes — same shape/rationale as Phase 9/10's
+// history models (actor/previous/new/note/timestamp). `fromStatus` is null only for
+// the system-authored initial NEW row written at submission; `actorId` is null for
+// that same row AND for a customer's own ACCEPTED/DECLINED transition (the customer is
+// not an "admin actor" in the sense this field represents elsewhere — a customer
+// acting on their own quote is still a real, session-verified user, but recording them
+// via `actorId` would visually conflate "an admin did this" with "the customer did
+// this" in the admin-facing timeline; see quote-service.ts `customerUpdateStatus`
+// for where this history row is written without an actorId).
+model QuoteStatusHistory {
+  id         String       @id @default(cuid())
+  fromStatus QuoteStatus?
+  toStatus   QuoteStatus
+  note       String?
+  createdAt  DateTime     @default(now())
+
+  quoteId String
+  quote   Quote  @relation(fields: [quoteId], references: [id], onDelete: Cascade)
+
+  actorId String?
+  actor   User?   @relation(fields: [actorId], references: [id], onDelete: SetNull)
+
+  @@index([quoteId])
+  @@index([actorId])
 }
