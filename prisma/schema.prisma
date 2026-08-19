@@ -168,6 +168,11 @@ model User {
   // Phase 8: Checkout & Order Placement.
   orders Order[]
 
+  // Phase 9: Order Management. Nullable actor on both — see the history models' own
+  // comments for why (system-authored initial rows have no actor).
+  orderStatusHistoryActions   OrderStatusHistory[]
+  paymentStatusHistoryActions PaymentStatusHistory[]
+
   @@index([roleId])
 }
 
@@ -316,13 +321,76 @@ model Order {
 
   customerNote String?
 
+  // Phase 9: Order Management. Admin-only working note — visible only in /admin/orders,
+  // never surfaced to the customer. A single overwritable field, not a log: simpler than
+  // a separate notes model, at the cost of losing history if an admin overwrites it. If a
+  // running log ever becomes a real requirement, promote this to its own model then —
+  // not needed for the "internal notes field" ask in the Phase 9 plan today.
+  internalNote String?
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  items OrderItem[]
+  items         OrderItem[]
+  statusHistory OrderStatusHistory[]
+  paymentStatusHistory PaymentStatusHistory[]
 
   @@index([userId])
   @@index([orderNumber])
+}
+
+// Phase 9: Order Management — full audit trail for `Order.status` changes, per
+// docs/IMPLEMENTATION_PLAN.md Phase 9 ("full audit trail") and the same spirit as
+// InventoryTransaction (cross-cutting standard: actor/previous/new/reason/timestamp).
+// One row per transition, never mutated/deleted. `fromStatus` is null only for the
+// very first row written at order creation (PENDING has no prior status); `actorId` is
+// null for that same row (the system, not an admin, creates a PENDING order) and set
+// for every admin-initiated change thereafter. Kept as its own model rather than a
+// generic polymorphic "history" table — two small, clearly-named models
+// (OrderStatusHistory / PaymentStatusHistory) are easier to query and reason about than
+// one shared table with a discriminator column, for the two fields that need this today.
+model OrderStatusHistory {
+  id         String       @id @default(cuid())
+  fromStatus OrderStatus?
+  toStatus   OrderStatus
+  note       String?
+  createdAt  DateTime     @default(now())
+
+  orderId String
+  order   Order  @relation(fields: [orderId], references: [id], onDelete: Cascade)
+
+  actorId String?
+  actor   User?   @relation(fields: [actorId], references: [id], onDelete: SetNull)
+
+  @@index([orderId])
+  @@index([actorId])
+}
+
+// Phase 9: parallel audit trail for `Order.paymentStatus`. No code path in this phase
+// (or any prior phase) ever changes paymentStatus — D-007, no payment gateway exists
+// yet — so today this only ever gets the one row written at order creation
+// (fromStatus: null, toStatus: NOT_PAID, actorId: null). It exists now, alongside
+// OrderStatusHistory, so a future payment-gateway integration has an audit trail to
+// write into from day one instead of retrofitting one later. Deliberately a SEPARATE
+// model from OrderStatusHistory (not a shared table) — this is the same structural
+// guardrail as the Order model itself keeping `status`/`paymentStatus` as two
+// independent fields: nothing about this schema invites coupling the two histories
+// together either.
+model PaymentStatusHistory {
+  id         String         @id @default(cuid())
+  fromStatus PaymentStatus?
+  toStatus   PaymentStatus
+  note       String?
+  createdAt  DateTime       @default(now())
+
+  orderId String
+  order   Order  @relation(fields: [orderId], references: [id], onDelete: Cascade)
+
+  actorId String?
+  actor   User?   @relation(fields: [actorId], references: [id], onDelete: SetNull)
+
+  @@index([orderId])
+  @@index([actorId])
 }
 
 // Every pricing/identity field here is a SNAPSHOT taken at order-creation time —
