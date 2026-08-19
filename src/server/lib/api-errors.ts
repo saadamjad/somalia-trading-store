@@ -3,6 +3,10 @@ import { ZodError } from "zod";
 import { UnauthenticatedError } from "@/server/auth/session";
 import { ForbiddenError } from "@/server/auth/permissions";
 import { CategoryNotFoundError, ProductNotFoundError } from "@/server/services/product-service";
+import {
+  InsufficientStockError,
+  InventoryNotFoundError,
+} from "@/server/services/inventory-service";
 
 /**
  * Translates a thrown error from a route handler into an appropriate HTTP response,
@@ -21,8 +25,15 @@ export function toErrorResponse(error: unknown): NextResponse {
       { status: 400 }
     );
   }
-  if (error instanceof CategoryNotFoundError || error instanceof ProductNotFoundError) {
+  if (
+    error instanceof CategoryNotFoundError ||
+    error instanceof ProductNotFoundError ||
+    error instanceof InventoryNotFoundError
+  ) {
     return NextResponse.json({ error: error.message }, { status: 404 });
+  }
+  if (error instanceof InsufficientStockError) {
+    return NextResponse.json({ error: error.message }, { status: 409 });
   }
   if (isPrismaUniqueConstraintError(error)) {
     return NextResponse.json(
