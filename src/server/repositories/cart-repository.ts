@@ -1,3 +1,4 @@
+import type { Prisma } from "@/generated/prisma/client";
 import { prisma } from "@/server/lib/prisma";
 
 /**
@@ -41,5 +42,19 @@ export const cartRepository = {
     return prisma.cartItem.findUnique({
       where: { cartId_productId: { cartId, productId } },
     });
+  },
+
+  /**
+   * Same lookup as `findByUserId`, but runs on a caller-supplied transaction client —
+   * used by order-service.createOrder, which must clear the cart atomically alongside
+   * order creation and the inventory decrement (see the note on
+   * inventory-service.adjustStock about why `prisma.$transaction` calls don't nest).
+   */
+  findByUserIdTx(tx: Prisma.TransactionClient, userId: string) {
+    return tx.cart.findUnique({ where: { userId }, include: { items: true } });
+  },
+
+  clearItemsTx(tx: Prisma.TransactionClient, cartId: string) {
+    return tx.cartItem.deleteMany({ where: { cartId } });
   },
 };

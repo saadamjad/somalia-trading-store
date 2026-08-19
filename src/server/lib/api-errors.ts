@@ -13,6 +13,11 @@ import {
   UserNotFoundError,
 } from "@/server/services/account-service";
 import { EmailAlreadyRegisteredError } from "@/server/services/auth-service";
+import {
+  EmptyCartError,
+  OrderNotFoundError,
+  StockUnavailableError,
+} from "@/server/services/order-service";
 
 /**
  * Translates a thrown error from a route handler into an appropriate HTTP response,
@@ -36,9 +41,19 @@ export function toErrorResponse(error: unknown): NextResponse {
     error instanceof ProductNotFoundError ||
     error instanceof InventoryNotFoundError ||
     error instanceof AddressNotFoundError ||
-    error instanceof UserNotFoundError
+    error instanceof UserNotFoundError ||
+    error instanceof OrderNotFoundError
   ) {
     return NextResponse.json({ error: error.message }, { status: 404 });
+  }
+  if (error instanceof EmptyCartError) {
+    return NextResponse.json({ error: error.message }, { status: 400 });
+  }
+  if (error instanceof StockUnavailableError) {
+    return NextResponse.json(
+      { error: error.message, issues: error.issues },
+      { status: 409 }
+    );
   }
   if (error instanceof InsufficientStockError) {
     return NextResponse.json({ error: error.message }, { status: 409 });
