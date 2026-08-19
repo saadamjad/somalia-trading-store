@@ -8,11 +8,25 @@ import { Button } from "@/components/ui/button";
 import { brand } from "@/config/brand";
 import type { Category } from "@/lib/types/product";
 
-interface HeroSectionProps {
-  categories: Category[];
+export interface HeroBanner {
+  title: string;
+  subtitle: string | null;
+  ctaText: string | null;
+  linkUrl: string | null;
 }
 
-export function HeroSection({ categories }: HeroSectionProps) {
+interface HeroSectionProps {
+  categories: Category[];
+  /**
+   * Admin-managed override for the headline/subtext/CTA, sourced from the active
+   * `Banner` in the `HOMEPAGE_HERO` slot (see src/app/page.tsx). `null`/`undefined`
+   * (no active banner configured) falls back to the original static approved copy
+   * below, unchanged — an empty Banner table must never break the homepage.
+   */
+  banner?: HeroBanner | null;
+}
+
+export function HeroSection({ categories, banner }: HeroSectionProps) {
   return (
     <section className="mesh-dark relative min-h-screen overflow-hidden">
       <div
@@ -37,21 +51,27 @@ export function HeroSection({ categories }: HeroSectionProps) {
               <span className="hidden h-px w-12 bg-accent/40 sm:block" />
             </div>
 
-            <h1 className="font-display text-balance mb-8 text-[clamp(2.75rem,7vw,5.5rem)] font-bold leading-[0.95] tracking-tight text-white">
-              Built for
-              <br />
-              <span className="text-accent">Industry.</span>
-              <br />
-              Trusted in Trade.
-            </h1>
+            {banner ? (
+              <h1 className="font-display text-balance mb-8 text-[clamp(2.75rem,7vw,5.5rem)] font-bold leading-[0.95] tracking-tight text-white">
+                {banner.title}
+              </h1>
+            ) : (
+              <h1 className="font-display text-balance mb-8 text-[clamp(2.75rem,7vw,5.5rem)] font-bold leading-[0.95] tracking-tight text-white">
+                Built for
+                <br />
+                <span className="text-accent">Industry.</span>
+                <br />
+                Trusted in Trade.
+              </h1>
+            )}
 
             <p className="mb-10 max-w-lg text-base leading-relaxed text-white/55 md:text-lg">
-              {brand.description}
+              {banner?.subtitle || brand.description}
             </p>
 
             <Button asChild size="lg" variant="accent">
-              <Link href="/shop">
-                Explore Catalogue
+              <Link href={banner?.linkUrl || "/shop"}>
+                {banner?.ctaText || "Explore Catalogue"}
                 <ArrowUpRight className="h-4 w-4" />
               </Link>
             </Button>

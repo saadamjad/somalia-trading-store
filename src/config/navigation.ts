@@ -24,6 +24,7 @@ export const footerNav = {
   company: [
     { label: "About Us", href: "/about" },
     { label: "Contact", href: "/about" },
+    { label: "FAQ", href: "/faq" },
   ],
   shop: [
     { label: "Construction Materials", href: "/shop/construction-materials" },
