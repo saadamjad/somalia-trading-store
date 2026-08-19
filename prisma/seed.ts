@@ -131,6 +131,71 @@ const products = [
   },
 ];
 
+// Phase 3: Authentication & Authorization.
+// Initial permission set (placeholders — later phases add more as those features are built).
+// Naming convention: "<resource>.<action>".
+const permissionKeys = [
+  "products.view",
+  "products.create",
+  "products.update",
+  "products.delete",
+  "inventory.view",
+  "inventory.update",
+  "orders.view",
+  "orders.update",
+  "customers.view",
+  "customers.update",
+  "refunds.view",
+  "refunds.manage",
+  "quotes.view",
+  "quotes.manage",
+  "cms.view",
+  "cms.manage",
+];
+
+async function seedAuth() {
+  const permissions = await Promise.all(
+    permissionKeys.map((key) =>
+      prisma.permission.upsert({
+        where: { key },
+        update: {},
+        create: { key },
+      })
+    )
+  );
+
+  // "customer" — no special permissions. Customers only ever access their own data;
+  // that's enforced by ownership checks (userId === session.userId), not by permissions.
+  await prisma.role.upsert({
+    where: { name: "customer" },
+    update: {},
+    create: { name: "customer" },
+  });
+
+  // "super_admin" — every permission that exists today, and (via the loop below)
+  // automatically gets any permission added by a future migration/seed run too.
+  const superAdmin = await prisma.role.upsert({
+    where: { name: "super_admin" },
+    update: {},
+    create: { name: "super_admin" },
+  });
+
+  await Promise.all(
+    permissions.map((permission) =>
+      prisma.rolePermission.upsert({
+        where: {
+          roleId_permissionId: {
+            roleId: superAdmin.id,
+            permissionId: permission.id,
+          },
+        },
+        update: {},
+        create: { roleId: superAdmin.id, permissionId: permission.id },
+      })
+    )
+  );
+}
+
 async function main() {
   for (const category of categories) {
     await prisma.category.upsert({
@@ -151,6 +216,8 @@ async function main() {
       create: { ...product, categoryId: category.id },
     });
   }
+
+  await seedAuth();
 }
 
 main()
