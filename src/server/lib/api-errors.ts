@@ -19,6 +19,13 @@ import {
   OrderNotFoundError,
   StockUnavailableError,
 } from "@/server/services/order-service";
+import {
+  InvalidRefundStatusTransitionError,
+  OrderNotEligibleForRefundError,
+  OrderNotFoundForRefundError,
+  RefundRequestAlreadyOpenError,
+  RefundRequestNotFoundError,
+} from "@/server/services/refund-request-service";
 
 /**
  * Translates a thrown error from a route handler into an appropriate HTTP response,
@@ -43,7 +50,9 @@ export function toErrorResponse(error: unknown): NextResponse {
     error instanceof InventoryNotFoundError ||
     error instanceof AddressNotFoundError ||
     error instanceof UserNotFoundError ||
-    error instanceof OrderNotFoundError
+    error instanceof OrderNotFoundError ||
+    error instanceof OrderNotFoundForRefundError ||
+    error instanceof RefundRequestNotFoundError
   ) {
     return NextResponse.json({ error: error.message }, { status: 404 });
   }
@@ -52,6 +61,15 @@ export function toErrorResponse(error: unknown): NextResponse {
   }
   if (error instanceof InvalidStatusTransitionError) {
     return NextResponse.json({ error: error.message }, { status: 400 });
+  }
+  if (error instanceof OrderNotEligibleForRefundError) {
+    return NextResponse.json({ error: error.message }, { status: 400 });
+  }
+  if (error instanceof InvalidRefundStatusTransitionError) {
+    return NextResponse.json({ error: error.message }, { status: 400 });
+  }
+  if (error instanceof RefundRequestAlreadyOpenError) {
+    return NextResponse.json({ error: error.message }, { status: 409 });
   }
   if (error instanceof StockUnavailableError) {
     return NextResponse.json(
