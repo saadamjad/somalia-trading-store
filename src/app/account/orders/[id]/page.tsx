@@ -4,8 +4,13 @@ import { CheckCircle2 } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { StatusTimeline } from "@/components/orders/status-timeline";
+import { RequestRefundForm } from "@/components/refunds/request-refund-form";
 import { getCurrentSession } from "@/server/auth/session";
 import { orderService, OrderNotFoundError } from "@/server/services/order-service";
+import {
+  refundRequestService,
+  ELIGIBLE_ORDER_STATUSES,
+} from "@/server/services/refund-request-service";
 import { formatPrice } from "@/lib/utils";
 
 export const metadata = { title: "My Account | Order Detail" };
@@ -41,6 +46,20 @@ export default async function AccountOrderDetailPage({ params, searchParams }: P
     }
     throw error;
   }
+
+  // Folded into the order-detail view rather than a separate /account/refunds list
+  // (Phase 10 plan leaves this open) — a customer only ever needs "does THIS order
+  // have a refund request and what's its status", which this page already answers for
+  // order status; a dedicated list page would be a second UI for the same handful of
+  // rows most customers will ever have.
+  const allRefundRequests = await refundRequestService.listForUser(session.userId);
+  const refundRequestsForOrder = allRefundRequests.filter((r) => r.order.id === order.id);
+  const hasOpenRefundRequest = refundRequestsForOrder.some(
+    (r) => r.status === "REQUESTED" || r.status === "UNDER_REVIEW"
+  );
+  const canRequestRefund =
+    ELIGIBLE_ORDER_STATUSES.includes(order.status as (typeof ELIGIBLE_ORDER_STATUSES)[number]) &&
+    !hasOpenRefundRequest;
 
   return (
     <div className="space-y-8">
@@ -128,6 +147,48 @@ export default async function AccountOrderDetailPage({ params, searchParams }: P
         <CardContent className="space-y-4 p-6">
           <h2 className="font-display text-lg font-semibold">Order Status</h2>
           <StatusTimeline entries={order.statusHistory} />
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardContent className="space-y-4 p-6">
+          <h2 className="font-display text-lg font-semibold">Refund Requests</h2>
+
+          {refundRequestsForOrder.length === 0 && (
+            <p className="text-sm text-muted">No refund request has been made for this order.</p>
+          )}
+
+          {refundRequestsForOrder.map((r) => (
+            <div key={r.id} className="space-y-2 border-t border-border pt-4 first:border-t-0 first:pt-0">
+              <div className="flex flex-wrap items-center gap-2">
+                <Badge variant="outline">{r.status}</Badge>
+                <span className="text-sm text-muted">
+                  {r.reasonCategory.replaceAll("_", " ")} &middot;{" "}
+                  {new Date(r.createdAt).toLocaleString()}
+                </span>
+              </div>
+              {r.reasonDetail && <p className="text-sm text-muted">&ldquo;{r.reasonDetail}&rdquo;</p>}
+              {r.adminNote && (
+                <p className="text-sm">
+                  <span className="font-medium">Note from our team: </span>
+                  {r.adminNote}
+                </p>
+              )}
+            </div>
+          ))}
+
+          {canRequestRefund && (
+            <div className="border-t border-border pt-4">
+              <RequestRefundForm orderId={order.id} />
+            </div>
+          )}
+
+          {!canRequestRefund && refundRequestsForOrder.length === 0 && (
+            <p className="text-xs text-muted">
+              Refund requests can be made once an order has been confirmed. Still-pending
+              orders can be cancelled instead.
+            </p>
+          )}
         </CardContent>
       </Card>
 
