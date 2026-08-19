@@ -7,11 +7,17 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { useCartStore } from "@/stores/cart-store";
 import { useCartProducts } from "@/hooks/use-cart-products";
+import { useCartStockValidation } from "@/hooks/use-cart-stock-validation";
 import { formatPrice, formatProductPrice } from "@/lib/utils";
 
 export default function CartPage() {
   const { updateQuantity, removeItem, clearCart } = useCartStore();
   const { lineItems: items, subtotal, isLoading } = useCartProducts();
+  // Phase 7: stock validation before checkout — flags any line item whose requested
+  // quantity now exceeds current inventory, so the customer sees it here rather than
+  // discovering it at checkout (checkout itself is Phase 8).
+  const stockIssues = useCartStockValidation();
+  const hasStockIssues = Object.keys(stockIssues).length > 0;
   const shipping = subtotal > 0 ? 0 : 0;
   const total = subtotal + shipping;
 
@@ -70,6 +76,12 @@ export default function CartPage() {
                     <p className="mt-1 font-bold">
                       {formatProductPrice(product.price, product.currency, product.priceUnit)}
                     </p>
+                    {stockIssues[product.id] && (
+                      <p role="alert" className="mt-1 text-xs font-medium text-destructive">
+                        Only {stockIssues[product.id].available} left in stock — reduce
+                        quantity before checkout.
+                      </p>
+                    )}
                   </div>
                   <div className="mt-4 flex items-center gap-4 sm:mt-0">
                     <div className="flex items-center gap-2">
@@ -137,8 +149,19 @@ export default function CartPage() {
                   <span>{formatPrice(total)}</span>
                 </div>
               </div>
-              <Button asChild className="w-full" size="lg">
-                <Link href="/checkout">Proceed to Checkout</Link>
+              {hasStockIssues && (
+                <p role="alert" className="text-xs text-destructive">
+                  Some items exceed available stock. Update quantities before checkout.
+                </p>
+              )}
+              <Button asChild className="w-full" size="lg" disabled={hasStockIssues}>
+                <Link
+                  href="/checkout"
+                  aria-disabled={hasStockIssues}
+                  onClick={(e) => hasStockIssues && e.preventDefault()}
+                >
+                  Proceed to Checkout
+                </Link>
               </Button>
               <Button asChild variant="outline" className="w-full">
                 <Link href="/shop">
