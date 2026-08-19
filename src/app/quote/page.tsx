@@ -1,26 +1,36 @@
-"use client";
-
-import { useSearchParams } from "next/navigation";
-import { Suspense } from "react";
-import { toast } from "sonner";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent } from "@/components/ui/card";
-import { brand } from "@/config/brand";
 import { FadeIn } from "@/components/ui/motion";
+import { QuoteRequestForm } from "@/components/quote/quote-request-form";
+import { brand } from "@/config/brand";
+import { getCurrentSession } from "@/server/auth/session";
+import { productService } from "@/server/services/product-service";
 
-function QuoteForm() {
-  const searchParams = useSearchParams();
-  const productSlug = searchParams.get("product");
+export const metadata = { title: "Request a Quote" };
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    toast.info(
-      "Quote request preview — this form is not connected to a server yet."
-    );
-  };
+interface QuotePageProps {
+  searchParams: Promise<{ product?: string }>;
+}
+
+/**
+ * Formalized quote-request page (Phase 11) — replaces the previous cosmetic form.
+ * Server component: resolves the current session (to prefill contact details and pick
+ * the post-submit redirect) and the product catalog (so the form can offer a real
+ * product picker instead of a free-text field), then hands both to the client form
+ * that does the actual submission. `?product=<id>` pre-selects a line — see
+ * ProductDetailClient, which links here with this param for QUOTE_ONLY products (the
+ * only way to acquire one, since no "buy online" path exists for them).
+ */
+export default async function QuotePage({ searchParams }: QuotePageProps) {
+  const { product: initialProductId } = await searchParams;
+  const [session, products] = await Promise.all([getCurrentSession(), productService.getAll()]);
+
+  const formProducts = products.map((p) => ({
+    id: p.id,
+    name: p.name,
+    sku: p.sku,
+    price: p.price,
+    currency: p.currency,
+  }));
 
   return (
     <div className="container-custom py-24 md:py-28">
@@ -30,84 +40,36 @@ function QuoteForm() {
           Request a Quote
         </h1>
         <p className="mb-8 text-muted">
-          Have a project, supply requirement, or product inquiry? Fill out the
-          form below and our team will respond. This is a preview form — submissions
-          are not yet processed.
+          Have a project, supply requirement, or bulk-order inquiry? Add the products
+          you&apos;re interested in below and our team will respond with pricing.
         </p>
 
         <Card>
           <CardContent className="p-6 md:p-8">
-            <form onSubmit={handleSubmit} className="space-y-5">
-              <div className="grid gap-4 sm:grid-cols-2">
-                <div>
-                  <Label htmlFor="name">Full Name *</Label>
-                  <Input id="name" required className="mt-1.5" />
-                </div>
-                <div>
-                  <Label htmlFor="company">Company</Label>
-                  <Input id="company" className="mt-1.5" />
-                </div>
-              </div>
-              <div className="grid gap-4 sm:grid-cols-2">
-                <div>
-                  <Label htmlFor="email">Email *</Label>
-                  <Input id="email" type="email" required className="mt-1.5" />
-                </div>
-                <div>
-                  <Label htmlFor="phone">Phone</Label>
-                  <Input id="phone" type="tel" className="mt-1.5" />
-                </div>
-              </div>
-              <div>
-                <Label htmlFor="interest">Product / Project Interest *</Label>
-                <Input
-                  id="interest"
-                  required
-                  defaultValue={productSlug ?? ""}
-                  placeholder="e.g. Road interlocks for street project"
-                  className="mt-1.5"
-                />
-              </div>
-              <div>
-                <Label htmlFor="message">Message *</Label>
-                <Textarea
-                  id="message"
-                  required
-                  rows={5}
-                  placeholder="Tell us about your requirements, quantities, and timeline..."
-                  className="mt-1.5"
-                />
-              </div>
-              <Button type="submit" size="lg" className="w-full">
-                Submit Quote Request
-              </Button>
-            </form>
+            <QuoteRequestForm
+              products={formProducts}
+              initialProductId={initialProductId}
+              initialContact={session ? { name: session.name, email: session.email } : undefined}
+              loggedIn={Boolean(session)}
+            />
           </CardContent>
         </Card>
 
         <div className="mt-10 rounded-xl border border-border bg-accent-light/30 p-6">
           <h2 className="font-display mb-3 font-semibold">Contact Details</h2>
-            <ul className="space-y-2 text-sm text-muted">
-              <li>{brand.contact.email}</li>
-              {brand.contact.phones.map((phone) => (
-                <li key={phone}>
-                  <a href={`tel:${phone.replace(/\s/g, "")}`} className="hover:text-foreground">
-                    {phone}
-                  </a>
-                </li>
-              ))}
-              <li>{brand.contact.address}</li>
-            </ul>
+          <ul className="space-y-2 text-sm text-muted">
+            <li>{brand.contact.email}</li>
+            {brand.contact.phones.map((phone) => (
+              <li key={phone}>
+                <a href={`tel:${phone.replace(/\s/g, "")}`} className="hover:text-foreground">
+                  {phone}
+                </a>
+              </li>
+            ))}
+            <li>{brand.contact.address}</li>
+          </ul>
         </div>
       </FadeIn>
     </div>
-  );
-}
-
-export default function QuotePage() {
-  return (
-    <Suspense>
-      <QuoteForm />
-    </Suspense>
   );
 }

@@ -3,7 +3,7 @@
 import { useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
-import { Heart, Minus, Plus, ShoppingCart } from "lucide-react";
+import { Heart, Minus, Plus, ShoppingCart, FileText } from "lucide-react";
 import { toast } from "sonner";
 import { motion } from "framer-motion";
 import { Badge } from "@/components/ui/badge";
@@ -181,10 +181,20 @@ export function ProductDetailClient({
           </div>
 
           <div className="space-y-3">
-            <Button onClick={handleAddToCart} size="lg" className="w-full">
-              <ShoppingCart className="h-5 w-5" />
-              Add to Cart
-            </Button>
+            {product.purchasingMode !== "quote_only" && (
+              <Button onClick={handleAddToCart} size="lg" className="w-full">
+                <ShoppingCart className="h-5 w-5" />
+                Add to Cart
+              </Button>
+            )}
+            {product.purchasingMode !== "buy_online" && (
+              <Button asChild size="lg" variant={product.purchasingMode === "quote_only" ? "default" : "outline"} className="w-full">
+                <Link href={`/quote?product=${product.id}`}>
+                  <FileText className="h-5 w-5" />
+                  Request a Quote
+                </Link>
+              </Button>
+            )}
             <Button
               variant="outline"
               size="lg"
