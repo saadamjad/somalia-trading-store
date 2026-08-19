@@ -100,6 +100,9 @@ model Product {
   cartItems     CartItem[]
   wishlistItems WishlistItem[]
 
+  // Phase 8: Checkout & Order Placement. Reference-only — see OrderItem's comment.
+  orderItems OrderItem[]
+
   @@index([categoryId])
   @@index([featured])
   @@index([availability])
@@ -161,6 +164,9 @@ model User {
   // registration, so most users never get an empty row.
   cart     Cart?
   wishlist Wishlist?
+
+  // Phase 8: Checkout & Order Placement.
+  orders Order[]
 
   @@index([roleId])
 }
@@ -250,6 +256,101 @@ model InventoryTransaction {
   @@index([inventoryId])
   @@index([productId])
   @@index([actorId])
+}
+
+// Phase 8: Checkout & Order Placement.
+// D-007 (docs/DECISIONS.md): no payment gateway is chosen yet, so every order is
+// created PENDING/NOT_PAID, unconditionally, forever, in this phase. CONFIRMED/
+// PROCESSING/SHIPPED/DELIVERED/CANCELLED and PAID/REFUNDED/FAILED exist here only as
+// future-proofing for Phase 9/10 — nothing in Phase 8's checkout flow can ever produce
+// them; order-service.createOrder hardcodes PENDING/NOT_PAID and nothing else writes
+// to these fields yet.
+enum OrderStatus {
+  PENDING
+  CONFIRMED
+  PROCESSING
+  SHIPPED
+  DELIVERED
+  CANCELLED
+}
+
+enum PaymentStatus {
+  NOT_PAID
+  PAID
+  REFUNDED
+  FAILED
+}
+
+// Order/OrderItem intentionally do NOT reuse CartItem's { productId, quantity } shape
+// (docs/PROJECT_AUDIT.md data-integrity section) — an order must remain accurate
+// forever even after the referenced Product's price/name/sku changes later. Shipping
+// address is copied onto the Order as plain fields (not a live Address FK) for the same
+// reason: editing/deleting the source Address later must never alter what a past order
+// shows as "shipped to". `taxAmount`/`shippingAmount` are deliberately not modeled yet
+// (D-008 — both deferred); `subtotal`/`total` are equal today by construction, kept as
+// two fields so tax/shipping can be added later (`total = subtotal + tax + shipping`)
+// without a breaking schema change.
+model Order {
+  id          String        @id @default(cuid())
+  orderNumber String        @unique
+  status      OrderStatus   @default(PENDING)
+  paymentStatus PaymentStatus @default(NOT_PAID)
+
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Restrict)
+
+  // Shipping address snapshot — copied at order-creation time from the customer's
+  // chosen Address (or inline input), never a live FK. See comment above.
+  shippingRecipientName String
+  shippingPhone         String
+  shippingLine1         String
+  shippingLine2         String?
+  shippingCity          String
+  shippingRegion        String?
+  shippingPostalCode    String?
+  shippingCountry       String
+
+  subtotal Decimal @db.Decimal(12, 2)
+  total    Decimal @db.Decimal(12, 2)
+  currency String  @default("USD")
+
+  customerNote String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  items OrderItem[]
+
+  @@index([userId])
+  @@index([orderNumber])
+}
+
+// Every pricing/identity field here is a SNAPSHOT taken at order-creation time —
+// productName/sku/unitPrice/lineTotal are never re-derived from the live Product row
+// afterward (docs/IMPLEMENTATION_PLAN.md cross-cutting standards). `productId` is kept
+// as a reference-only FK (e.g. for admins to jump to the current product page) — never
+// the source of truth for what was actually purchased. onDelete: Restrict on the
+// Product relation means a product that has ever been ordered can't be hard-deleted,
+// which keeps that reference meaningful for as long as it exists.
+model OrderItem {
+  id String @id @default(cuid())
+
+  orderId String
+  order   Order  @relation(fields: [orderId], references: [id], onDelete: Cascade)
+
+  productId String
+  product   Product @relation(fields: [productId], references: [id], onDelete: Restrict)
+
+  productName String
+  sku         String?
+  unitPrice   Decimal @db.Decimal(12, 2)
+  quantity    Int
+  lineTotal   Decimal @db.Decimal(12, 2)
+
+  createdAt DateTime @default(now())
+
+  @@index([orderId])
+  @@index([productId])
 }
 
 // Phase 7: Cart & Wishlist (Server-Aware). Guest carts remain localStorage-only
