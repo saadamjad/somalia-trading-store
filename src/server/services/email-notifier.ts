@@ -5,9 +5,12 @@
  * anything. This mirrors the exact interim pattern `authService.requestPasswordReset`
  * already established for password-reset links (src/server/services/auth-service.ts).
  *
- * `notificationService.notify()` is the ONLY call site — swap this function's body for
- * a real provider call (Resend/SES/Postmark/SendGrid) once one is chosen, and every
- * caller (order-service.ts, refund-request-service.ts, quote-service.ts) keeps working
+ * Called from `notificationService.notify()` (the in-app-notification email echo, used
+ * by order-service.ts, refund-request-service.ts, and quote-service.ts) and directly
+ * from `authService.requestPasswordReset` (a pre-auth flow with no signed-in session to
+ * attach an in-app Notification to, so it calls this stub directly rather than through
+ * `notificationService.notify()`). Swap this function's body for a real provider call
+ * (Resend/SES/Postmark/SendGrid) once one is chosen, and every caller keeps working
  * unchanged.
  */
 export const emailNotifier = {

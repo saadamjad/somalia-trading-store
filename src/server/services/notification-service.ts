@@ -58,12 +58,14 @@ export interface NotifyParams {
 }
 
 /**
- * In-app notifications (Phase 15) plus the stubbed email "channel" (D-011). This is
- * the ONE call site every trigger point (order-service.ts `updateStatus`,
+ * In-app notifications (Phase 15) plus the stubbed email "channel" (D-011). This is the
+ * call site every in-app trigger point (order-service.ts `updateStatus`,
  * refund-request-service.ts `updateStatus`, quote-service.ts `respond`) goes through —
- * neither of them talks to `notificationRepository` or `emailNotifier` directly, so
- * both channels stay wired together and swapping the email stub for a real provider
- * later touches only this file.
+ * none of them talks to `notificationRepository` or `emailNotifier` directly, so both
+ * channels stay wired together for signed-in users. The one exception is
+ * `authService.requestPasswordReset`, a pre-auth flow with no session to attach an
+ * in-app Notification to — it calls `emailNotifier.send()` directly instead (see that
+ * function's own comment).
  */
 export const notificationService = {
   /**
