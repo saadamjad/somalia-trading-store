@@ -11,9 +11,17 @@ import { authService } from "@/server/services/auth-service";
  *   VerificationToken tables exist. `authorize` queries Prisma directly.
  * - The JWT/session payload carries only id, email, name, and role name — never the
  *   password hash.
+ * - Session cookie security (Phase 16 review): Auth.js's default cookie options
+ *   (`node_modules/@auth/core/lib/utils/cookie.js`) already set `httpOnly: true`,
+ *   `sameSite: "lax"`, and `secure: true` whenever the deployment is HTTPS (derived
+ *   from `AUTH_URL`/`trustHost` at runtime) — verified directly in that file rather
+ *   than assumed, no override needed.
+ * - `session.maxAge` is set explicitly below (30 days) — same as Auth.js's own
+ *   default, made explicit so session lifetime is a deliberate, documented decision
+ *   rather than an implicit library default.
  */
 export const { handlers, signIn, signOut, auth } = NextAuth({
-  session: { strategy: "jwt" },
+  session: { strategy: "jwt", maxAge: 30 * 24 * 60 * 60 },
   pages: {
     signIn: "/login",
   },
