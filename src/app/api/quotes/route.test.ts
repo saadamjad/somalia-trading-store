@@ -2,6 +2,7 @@ import { afterAll, describe, expect, it, vi } from "vitest";
 import { NextRequest } from "next/server";
 import { prisma } from "@/server/lib/prisma";
 import { authService } from "@/server/services/auth-service";
+import { __resetRateLimitStateForTests } from "@/server/lib/rate-limit";
 import { GET, POST } from "./route";
 
 vi.mock("@/server/auth/session", async (importOriginal) => {
@@ -153,5 +154,26 @@ describe("GET/POST /api/quotes", () => {
     const otherRes = await GET();
     const otherList = await otherRes.json();
     expect(otherList.items.some((q: { id: string }) => q.id === created.item.id)).toBe(false);
+  });
+
+  it("rate-limits POST /api/quotes after too many requests from the same IP (429)", async () => {
+    __resetRateLimitStateForTests();
+    vi.mocked(getCurrentSession).mockResolvedValue(null);
+    const productId = await createProduct("rate-limit");
+
+    // RATE_LIMITS.quote allows 10 requests/minute per IP — the 11th from the same IP
+    // must be rejected with 429, independent of whether the payload itself is valid.
+    let lastStatus = 0;
+    for (let i = 0; i < 11; i++) {
+      const res = await POST(
+        postJson({ name: "Rate Limit Test", email: uniqueEmail(`rate-limit-${i}`), items: [{ productId, quantity: 1 }] })
+      );
+      lastStatus = res.status;
+      if (i < 10) {
+        expect(res.status).toBe(201);
+      }
+    }
+
+    expect(lastStatus).toBe(429);
   });
 });

@@ -1,6 +1,7 @@
 "use server";
 
 import { redirect } from "next/navigation";
+import { headers } from "next/headers";
 import { AuthError } from "next-auth";
 import { signIn, signOut } from "@/server/auth/auth";
 import { authService, EmailAlreadyRegisteredError } from "@/server/services/auth-service";
@@ -10,13 +11,26 @@ import {
   registerSchema,
   resetPasswordSchema,
 } from "@/lib/validations/auth";
+import { checkRateLimit, getClientIp, RATE_LIMITS } from "@/server/lib/rate-limit";
 
 export type ActionState = {
   errors?: Record<string, string[]>;
   message?: string;
 } | undefined;
 
+const RATE_LIMIT_MESSAGE = "Too many attempts. Please wait a moment and try again.";
+
+async function isRateLimited(routeKey: string, policy: { limit: number; windowMs: number }) {
+  const ip = getClientIp(await headers());
+  const result = checkRateLimit(`${routeKey}:${ip}`, policy.limit, policy.windowMs);
+  return !result.allowed;
+}
+
 export async function loginAction(_prevState: ActionState, formData: FormData): Promise<ActionState> {
+  if (await isRateLimited("login", RATE_LIMITS.login)) {
+    return { message: RATE_LIMIT_MESSAGE };
+  }
+
   const validated = loginSchema.safeParse({
     email: formData.get("email"),
     password: formData.get("password"),
@@ -47,6 +61,10 @@ export async function registerAction(
   _prevState: ActionState,
   formData: FormData
 ): Promise<ActionState> {
+  if (await isRateLimited("register", RATE_LIMITS.register)) {
+    return { message: RATE_LIMIT_MESSAGE };
+  }
+
   const validated = registerSchema.safeParse({
     name: formData.get("name"),
     email: formData.get("email"),
@@ -87,6 +105,10 @@ export async function forgotPasswordAction(
   _prevState: ActionState,
   formData: FormData
 ): Promise<ActionState> {
+  if (await isRateLimited("forgot-password", RATE_LIMITS.forgotPassword)) {
+    return { message: RATE_LIMIT_MESSAGE };
+  }
+
   const validated = forgotPasswordSchema.safeParse({
     email: formData.get("email"),
   });
@@ -107,6 +129,10 @@ export async function resetPasswordAction(
   _prevState: ActionState,
   formData: FormData
 ): Promise<ActionState> {
+  if (await isRateLimited("reset-password", RATE_LIMITS.resetPassword)) {
+    return { message: RATE_LIMIT_MESSAGE };
+  }
+
   const validated = resetPasswordSchema.safeParse({
     token: formData.get("token"),
     password: formData.get("password"),

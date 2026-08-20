@@ -3,6 +3,7 @@ import { getCurrentSession, requireSession } from "@/server/auth/session";
 import { quoteService } from "@/server/services/quote-service";
 import { quoteCreateSchema } from "@/lib/validations/quote";
 import { toErrorResponse } from "@/server/lib/api-errors";
+import { checkRateLimit, getClientIp, RATE_LIMITS } from "@/server/lib/rate-limit";
 
 /** GET /api/quotes — the caller's own submitted quotes only (requires a session; guest
  * quotes have no way to be looked up here — see Quote's schema comment). */
@@ -26,6 +27,15 @@ export async function GET() {
  */
 export async function POST(request: NextRequest) {
   try {
+    const ip = getClientIp(request.headers);
+    const rateLimit = checkRateLimit(`quote:${ip}`, RATE_LIMITS.quote.limit, RATE_LIMITS.quote.windowMs);
+    if (!rateLimit.allowed) {
+      return NextResponse.json(
+        { error: "Too many quote submissions. Please wait a moment and try again." },
+        { status: 429, headers: { "Retry-After": String(Math.ceil(rateLimit.retryAfterMs / 1000)) } }
+      );
+    }
+
     const session = await getCurrentSession();
 
     const body = await request.json();

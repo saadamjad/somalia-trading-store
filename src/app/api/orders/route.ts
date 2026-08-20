@@ -3,6 +3,7 @@ import { requireSession } from "@/server/auth/session";
 import { orderService } from "@/server/services/order-service";
 import { orderCreateSchema, orderCustomerQuerySchema } from "@/lib/validations/order";
 import { toErrorResponse } from "@/server/lib/api-errors";
+import { checkRateLimit, getClientIp, RATE_LIMITS } from "@/server/lib/rate-limit";
 
 /**
  * GET /api/orders — the caller's own orders only, scoped by session userId. Accepts an
@@ -30,6 +31,15 @@ export async function GET(request: NextRequest) {
  */
 export async function POST(request: NextRequest) {
   try {
+    const ip = getClientIp(request.headers);
+    const rateLimit = checkRateLimit(`checkout:${ip}`, RATE_LIMITS.checkout.limit, RATE_LIMITS.checkout.windowMs);
+    if (!rateLimit.allowed) {
+      return NextResponse.json(
+        { error: "Too many order attempts. Please wait a moment and try again." },
+        { status: 429, headers: { "Retry-After": String(Math.ceil(rateLimit.retryAfterMs / 1000)) } }
+      );
+    }
+
     const session = await requireSession();
 
     const body = await request.json();
