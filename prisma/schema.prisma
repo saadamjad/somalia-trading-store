@@ -190,6 +190,10 @@ model User {
   quotes                     Quote[]
   quoteStatusHistoryActions  QuoteStatusHistory[]
 
+  // Phase 15: Notifications. In-app notifications addressed to this user — see the
+  // Notification model's own comment.
+  notifications Notification[]
+
   @@index([roleId])
 }
 
@@ -821,4 +825,57 @@ model Banner {
   updatedAt DateTime @updatedAt
 
   @@index([slot, active])
+}
+
+// Phase 15: Notifications. A small closed enum covering exactly the three trigger
+// points wired up in this phase (order-service.ts `updateStatus`,
+// refund-request-service.ts `updateStatus`, quote-service.ts `respond`) rather than a
+// generic/open-ended event-type string — "no unnecessary abstraction" per
+// docs/IMPLEMENTATION_PLAN.md cross-cutting standards. Add a new value here (and a new
+// trigger call) if a future phase needs another notification-worthy event; don't
+// generalize ahead of that need.
+enum NotificationType {
+  ORDER_STATUS_CHANGED
+  REFUND_REQUEST_UPDATED
+  QUOTE_RESPONSE
+}
+
+// What `relatedEntityId` points at, so the UI knows which detail page to link to
+// (/account/orders/[id], /account/refund-requests/[id]-equivalent, /account/quotes/[id]).
+enum NotificationEntityType {
+  ORDER
+  REFUND_REQUEST
+  QUOTE
+}
+
+// In-app notifications only — see docs/DECISIONS.md D-011. `title`/`message` are
+// plain, pre-rendered strings written at creation time (not re-derived later from the
+// related entity's current state), same "snapshot, not a live pointer" principle as
+// Order/Quote/RefundRequest's own snapshot fields: if the related order/refund/quote
+// changes again later, this notification's text still describes the event it was
+// actually created for. `relatedEntityType`/`relatedEntityId` are optional so the model
+// isn't forced to always point somewhere, but every trigger point in this phase sets
+// both. Real email delivery does NOT happen here or anywhere in this codebase yet
+// (src/server/services/email-notifier.ts is a stub that only logs) — this table is the
+// one real, working delivery channel this phase ships.
+model Notification {
+  id String @id @default(cuid())
+
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  type    NotificationType
+  title   String
+  message String
+
+  relatedEntityType NotificationEntityType?
+  relatedEntityId   String?
+
+  read   Boolean   @default(false)
+  readAt DateTime?
+
+  createdAt DateTime @default(now())
+
+  @@index([userId])
+  @@index([userId, read])
 }
