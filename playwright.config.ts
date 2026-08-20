@@ -1,11 +1,11 @@
 import { defineConfig, devices } from "@playwright/test";
 
 /**
- * Phase 18 — E2E configuration. Runs against `next dev` (not a production build): this
- * app has no CI/CD pipeline yet (D-009) and dev-mode is faster to iterate against
- * locally while still exercising real server components, route handlers, and the real
- * Postgres database — which is what actually matters for these specs (they verify
- * business flows, not build-output behavior).
+ * Phase 18 — E2E configuration. Runs against `next dev` (not a production build):
+ * dev-mode is faster to iterate against locally while still exercising real server
+ * components, route handlers, and the real Postgres database — which is what actually
+ * matters for these specs (they verify business flows, not build-output behavior).
+ * CI runs this same suite the same way — see .github/workflows/ci.yml's e2e job.
  *
  * `globalSetup` ensures a known test-only super_admin account exists before the suite
  * runs (see e2e/global-setup.ts) — the admin flow specs log in as that account through
