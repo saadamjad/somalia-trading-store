@@ -367,8 +367,21 @@ model Order {
   // Quote's own comment).
   convertedFromQuote Quote?
 
+  // Phase 17: Performance. Added after auditing the actual query patterns that hit
+  // this table — `status` and `paymentStatus` are both used as standalone filters in
+  // `orderRepository.buildAdminWhere` (admin order list, /admin/orders) and in
+  // `dashboardRepository.orderStatusCounts`'s groupBy; `createdAt` is the admin list's
+  // default sort column AND the date-range filter used by
+  // `orderRepository.adminFindMany`, `dashboardRepository.ordersCountInPeriod`/
+  // `orderValueInPeriod`, and `reportRepository.productSales`/`ordersByCustomer`. Order
+  // is the highest-write-volume table in the schema (one row per checkout, growing
+  // forever, unlike the small bounded Category/Role tables), making it the one place
+  // an index genuinely pays for itself rather than being speculative.
   @@index([userId])
   @@index([orderNumber])
+  @@index([status])
+  @@index([paymentStatus])
+  @@index([createdAt])
 }
 
 // Phase 9: Order Management — full audit trail for `Order.status` changes, per
