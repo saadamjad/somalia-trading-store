@@ -15,9 +15,12 @@
  * Safe to re-run: if the email already exists, it is promoted to super_admin and its
  * password is left untouched (pass BOOTSTRAP_ADMIN_RESET_PASSWORD=true to also reset it).
  */
+import { config } from "dotenv";
 import { PrismaPg } from "@prisma/adapter-pg";
 import { PrismaClient } from "../src/generated/prisma/client";
 import { hashPassword } from "../src/server/auth/password";
+
+config({ path: ".env.local" });
 
 const adapter = new PrismaPg({ connectionString: process.env.DATABASE_URL });
 const prisma = new PrismaClient({ adapter });
