@@ -87,7 +87,7 @@ These are unchanged from `docs/DECISIONS.md` and are re-confirmed accurate as of
 
 - **Payment gateway** (D-007) — no provider selected; order/checkout architecture is provider-agnostic and ready for one to be plugged in without a rewrite.
 - **Tax and shipping** (D-008) — no calculation logic exists; schema allows adding `taxAmount`/`shippingAmount` later.
-- **CI/CD and production infrastructure** (D-009) — no pipelines/staging/production provisioning; lint/typecheck/test/build all pass and are ready to wire into a pipeline.
+- ~~**CI/CD and production infrastructure** (D-009)~~ — **resolved post-Phase-18**: see D-014 and `docs/DEPLOYMENT.md`. CI (GitHub Actions) and hosting (Vercel + Supabase) are now set up.
 - **Email provider** (D-010/D-011) — password reset and all order/refund/quote notification emails are logged to the server console instead of sent; wiring a real provider only requires changing `emailNotifier.send`'s implementation, no call-site changes.
 - **Operating currency** (D-006) — still an open business decision; USD is used as a placeholder default throughout, schema supports changing it without a rewrite.
 - **Somali (i18n)** — not implemented. Flagged in the original Phase 0 audit as requiring a full retrofit (extracting every hardcoded string into translation keys) that was never scheduled as a dedicated phase in the 18-phase plan. Still accurate.
@@ -105,5 +105,5 @@ These are unchanged from `docs/DECISIONS.md` and are re-confirmed accurate as of
 2. **Choose an email provider** (Resend, SES, Postmark, SendGrid) — unblocks real password-reset delivery and order/refund/quote notification emails (D-010/D-011); the integration point is a single function (`emailNotifier.send`).
 3. **Confirm the operating currency** (D-006) — USD is a placeholder only.
 4. **Decide on a Somali translation timeline** — no code changes are blocking this decision; it's a scoping/budget question for a future dedicated phase.
-5. **Set up CI/CD and production infrastructure** (D-009) — lint/typecheck/test/build/E2E all pass locally and are ready to be wired into a pipeline (e.g. GitHub Actions); choose a hosting target (Vercel or any Node-capable host per D-005) and a managed Postgres provider (per D-002).
+5. ~~Set up CI/CD and production infrastructure~~ — **done**, see D-014 and `docs/DEPLOYMENT.md`.
 6. **Revisit the two documented `npm audit` findings** (D-012) next time `prisma` or `exceljs` ships a release that resolves them upstream — no action needed before then.

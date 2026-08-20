@@ -1,5 +1,7 @@
 # Somalia Trading Store
 
+[![CI](https://github.com/saadamjad/somalia-trading-store/actions/workflows/ci.yml/badge.svg)](https://github.com/saadamjad/somalia-trading-store/actions/workflows/ci.yml)
+
 A full-stack e-commerce platform for **Somalia Trading** — a diversified trading company serving construction, road infrastructure, and fishing industries across Somalia. Built as an 18-phase project (see `docs/IMPLEMENTATION_PLAN.md`); this is the completed application, not a UI-only demo.
 
 ## What this is
@@ -121,20 +123,23 @@ Copy `.env.example` to `.env.local` and fill in real values for local developmen
 - `prisma/` — Schema, migrations, seed script
 - `e2e/` — Playwright E2E specs and fixtures
 - `scripts/` — One-off operational scripts (e.g. `bootstrap-super-admin.ts`)
-- `docs/` — Project audit, architecture decisions, phase-by-phase implementation plan, and the production-readiness summary
+- `docs/` — Project audit, architecture decisions, phase-by-phase implementation plan, production-readiness summary, and deployment guide
 
-See `docs/PROJECT_AUDIT.md` (original Phase 0 state), `docs/DECISIONS.md` (architecture/business decisions, D-001–D-012+), `docs/IMPLEMENTATION_PLAN.md` (all 18 phases), and `docs/PRODUCTION_READINESS.md` (final readiness checklist and known gaps) for full project history and current status.
+See `docs/PROJECT_AUDIT.md` (original Phase 0 state), `docs/DECISIONS.md` (architecture/business decisions, D-001–D-014+), `docs/IMPLEMENTATION_PLAN.md` (all 18 phases), `docs/PRODUCTION_READINESS.md` (final readiness checklist and known gaps), and `docs/DEPLOYMENT.md` (hosting/CI/database setup) for full project history and current status.
 
 ## Documentation
 
 - **`docs/ai/`** — a consolidated knowledge base for AI coding agents (Claude Code, Cursor, Copilot, etc.). Start at `docs/ai/README.md` — it explains what each file covers (architecture, database, API surface, business rules, security/performance, testing/coding standards, known limitations, deferred features) and links out to the phase-by-phase docs above. Read `docs/ai/BUSINESS_RULES.md` before touching payment, orders, inventory, refunds, quotes, or authorization.
 - **`docs/user/`** — plain-language guides for human users: `customer-guide.md` (browsing, cart, checkout, orders, refunds, quotes, account) and `admin-guide.md` (the back office: products, inventory, orders, refunds, quotes, CMS, reports).
 
+## Deployment
+
+Hosted on Vercel, database on Supabase, CI on GitHub Actions (`.github/workflows/ci.yml` — typecheck/lint/test/build/E2E on every push and PR against `main`). See `docs/DEPLOYMENT.md` for first-time setup and `docs/DECISIONS.md` D-014 for why this stack was chosen.
+
 ## Known gaps (by design, not oversight)
 
 - **No payment gateway** — D-007, pending client choice of provider
 - **No tax/shipping calculation** — D-008, explicitly out of scope for now
-- **No CI/CD pipeline** — D-009; lint/typecheck/test/build all pass and are ready to wire into one
 - **No real email delivery** — D-010/D-011; password reset and notification emails are logged to the server console pending an email provider decision
 - **No Somali (i18n)** — flagged in the original audit as requiring a dedicated retrofit phase that was never scheduled; English only today
 

@@ -17,11 +17,6 @@ No shipping-charge calculation, courier integration, or delivery-zone logic exis
 **Decision record:** `docs/DECISIONS.md` D-008 (same entry as shipping).
 No tax/VAT calculation exists anywhere. Same "kept a field slot open, didn't build the logic" pattern as shipping — a `taxAmount` field can be added later. Do not invent a tax rate or jurisdiction model without a client decision.
 
-## CI/CD and production infrastructure
-
-**Decision record:** `docs/DECISIONS.md` D-009.
-No CI/CD pipeline (GitHub Actions or otherwise), no staging/production infrastructure provisioning. Lint/typecheck/test/build/E2E all pass locally and are ready to be wired into a pipeline — the blocker is a hosting/CI platform decision, not missing scripts. If asked to "set up CI," confirm the target platform (GitHub Actions is the natural fit given the repo lives on GitHub, but this hasn't been explicitly decided) before writing workflow files.
-
 ## Real email delivery
 
 **Decision records:** `docs/DECISIONS.md` D-010 (password reset / verification), D-011 (order/refund/quote notifications).

@@ -119,7 +119,31 @@ Each entry records a decision, its classification (Business / Technical / Implem
 
 **Decision:** No CI/CD pipelines, no staging/production infrastructure provisioning in this phase. The project remains CI/CD-ready: lint, typecheck, test, and build scripts exist and pass, so a pipeline can be wired up later without code changes. `.env.example` documents required environment variables for dev/staging/production without committing real secrets.
 
+**Superseded by:** D-014 — the client explicitly requested CI/CD and hosting be set up.
+
 ---
+
+## D-014: CI/CD and Hosting — Vercel + Supabase + GitHub Actions
+
+**Classification:** Technical Decision (client-authorized; supersedes D-009's deferral)
+**Status:** Confirmed
+**Date:** 2026-08-21
+
+**Decision:**
+- **Hosting:** Vercel. Zero-config Next.js App Router deployment (auto-detects the framework, correctly splits the client bundle from server runtime — matches D-001/D-005's existing architecture, no code changes required), automatic preview deployments per PR, generous free tier appropriate for this project's current traffic.
+- **Database:** Supabase (managed PostgreSQL) — connected via a **pooled** connection (`DATABASE_URL`, transaction-mode pooler, port 6543) for app runtime queries, and a separate **direct** connection (`DIRECT_URL`, port 5432) for running migrations, since PgBouncer's transaction mode doesn't support the session-level locking `prisma migrate` needs. `prisma.config.ts` was updated to use `DIRECT_URL` (falling back to `DATABASE_URL` locally, where no pooler sits in front of Postgres) for exactly this reason.
+- **CI:** GitHub Actions (`.github/workflows/ci.yml`) — runs typecheck, lint, the full unit/integration suite, a production build, and the full Playwright E2E suite on every push/PR against `main`, against a disposable Postgres service container (never touches the real production database). This is a status check only; it does not deploy anything.
+- **Migrations are a deliberate manual step, not automated on every deploy** — `npx prisma migrate deploy` is run explicitly from a trusted machine against production `DATABASE_URL`/`DIRECT_URL` when a schema-changing PR merges, not auto-triggered by Vercel's build. This avoids an unreviewed schema change ever firing as a side effect of an unrelated deploy.
+- Added `"postinstall": "prisma generate"` to `package.json` so the generated Prisma client is always fresh after `npm install`, in CI and on Vercel alike, without relying on a manually-remembered step.
+
+**Rationale:**
+- Vercel + a managed Postgres provider is the standard, well-documented pairing for a Next.js + Prisma app, requiring no new architecture and no code changes beyond environment configuration.
+- Supabase over Neon/RDS (D-002 left the specific provider open): the client's choice; its built-in connection pooler is exactly what a `pg`-driver-adapter-based Prisma setup (D-003, Prisma 7's driver-adapter model) needs in a serverless deployment.
+- No staging environment, container orchestration, or secrets manager was added — Vercel's PR preview deployments already substitute for most of what a separate staging environment provides at this scale (see `docs/DEPLOYMENT.md` §5 for the explicit reasoning and its one caveat: previews currently share the production database, so destructive testing on a preview URL should be avoided until/unless per-branch database branching is added).
+
+**Full step-by-step setup instructions:** `docs/DEPLOYMENT.md`.
+
+**Revisit if:** traffic or compliance requirements outgrow Vercel's/Supabase's managed tiers, or per-branch preview databases become worth the added complexity.
 
 ## D-010: Email Verification / Email Sending — DEFERRED (Blocked on Provider Decision)
 
