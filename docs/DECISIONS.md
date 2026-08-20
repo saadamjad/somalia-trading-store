@@ -173,3 +173,22 @@ Each entry records a decision, its classification (Business / Technical / Implem
 **Decision:** Not fixed (no safe upstream fix exists), and verified non-exploitable given actual usage. Revisit when `exceljs` ships a release depending on `uuid@>=11.1.1`.
 
 **Rationale for not using `npm audit fix --force` or manual `overrides`:** Forcing `prisma` to `6.x` would break every Prisma 7 API surface used across the codebase (a 15-phase regression risk far exceeding the actual DoS exposure of a CLI-only dependency). Forcing an `overrides` entry to bump `uuid` to `11.x` under `exceljs` risks an undocumented API mismatch (uuid v11 changed its packaging/exports) for a code path already confirmed unreachable. Both were rejected as disproportionate to the actual risk, per spec §33 "keep it simple, no unnecessary/speculative changes."
+
+---
+
+## D-013: E2E Test Framework and Test-Admin Credential
+
+**Classification:** Technical Decision
+**Status:** Confirmed
+**Date:** 2026-08-20
+
+**Decision:** Added `@playwright/test` as the E2E framework (Phase 18) — the one new dependency introduced this phase, justified per the master spec's "genuinely necessary dependency" allowance since browser-driven E2E testing cannot be done with the existing Vitest setup. The suite runs against `npm run dev` rather than a production build (`next build && next start`), since this project has no CI/CD pipeline yet (D-009) that would require production-build parity, and dev mode is faster to iterate against while still exercising real server components, route handlers, and the real Postgres database.
+
+Admin-flow E2E specs authenticate as a fixed, obviously-fake, local-test-only super_admin account (`e2e-admin@example.test` / a hardcoded test password, both defined in `e2e/e2e-constants.ts`), created via `e2e/global-setup.ts` directly against whatever database `DATABASE_URL` points at when the suite runs. `example.test` is an RFC 2606 reserved testing domain that can never resolve to a real mailbox.
+
+**Rationale:**
+- This mirrors the same pattern already established for `scripts/bootstrap-super-admin.ts` (Phase 3) — a super_admin account created via direct Prisma calls, gated on the `super_admin` role already being seeded — rather than inventing a new provisioning mechanism.
+- A hardcoded password string for an obviously-named, local-only throwaway test account is explicitly not the same category of risk as a hardcoded production credential (per the master spec's own carve-out for this exact scenario) — it never touches a deploy pipeline and only ever exists in a local/dev database.
+- Reusing `tsx` (already a project dependency, already used for `npm run bootstrap:admin` and `prisma db seed`) to run the actual Prisma seeding logic (`e2e/seed-admin.ts`) as a child process from `global-setup.ts`, rather than importing the generated Prisma client directly into Playwright's own config/setup loader, works around a real incompatibility: Playwright's TS/ESM loader throws `ReferenceError: exports is not defined in ES module scope` on the generated (CommonJS-flavored) Prisma client when imported in-process, but `tsx` handles it without issue.
+
+**Revisit if:** a CI/CD pipeline is set up (D-009) — at that point, consider whether the E2E suite should also run against a production build as part of that pipeline, and whether the test-admin provisioning should move to a CI-specific seed step instead of `global-setup.ts`.
