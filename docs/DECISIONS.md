@@ -153,3 +153,23 @@ Each entry records a decision, its classification (Business / Technical / Implem
 - In-app notifications don't have this blocker at all (no third-party dependency), so there's no reason to defer that half of the feature — only the email half is genuinely blocked.
 
 **Action required:** Same as D-010 — client/team to choose an email provider. Once chosen, only `emailNotifier.send`'s implementation needs to change; every call site stays the same.
+
+---
+
+## D-012: npm audit findings (Phase 16) — no safe fix available, documented as accepted risk
+
+**Classification:** Technical Decision
+**Status:** Confirmed — re-audit at next `prisma`/`exceljs` release, not forced now
+**Date:** 2026-08-20
+
+**Context:** Phase 16 security hardening ran `npm audit` (5 findings: 3 high, 2 moderate, all transitive). Per the phase instructions, only safe/targeted fixes should be applied — no blind `npm audit fix --force` that could pull in breaking majors.
+
+**Finding 1 — `deepmerge-ts` stack exhaustion (GHSA-ggr8-5vv4-36mx, high) via `@prisma/config` → `prisma`:**
+`prisma@7.9.1` (the current, latest-stable 7.x release — verified via `npm view prisma versions`, nothing newer exists between 7.9.1 and the unreleased `8.0.0-rc.*` prereleases) depends on `@prisma/config@7.9.1`, which pins `deepmerge-ts@7.1.5` (vulnerable range `<8.0.0`). npm's only `fixAvailable` path is downgrading to `prisma@6.12.0`, a major *downgrade* from the 7.x already in use throughout `prisma/schema.prisma`, `src/server/lib/prisma.ts`, and every repository — not applied, since it would be a breaking regression, not a fix. The vulnerable code path (stack exhaustion merging deeply recursive object graphs) is exercised by `@prisma/config`'s own config-merging logic at CLI/build time (`prisma migrate`, `prisma generate`), not by the Prisma Client query path this app's request handlers actually call at runtime — so the practical exposure is a local/CI tooling DoS, not a production request-path vulnerability.
+**Decision:** Not fixed now. Revisit when `prisma` ships a stable 8.x (or a 7.x patch bumping `deepmerge-ts`) — re-run `npm audit` at that point.
+
+**Finding 2 — `uuid` missing buffer bounds check (GHSA-w5hq-g745-h8pq, moderate) via `exceljs`:**
+`exceljs@4.4.0` (latest stable — verified via `npm view exceljs versions`) depends on `uuid@^8.3.0` (resolves to `8.3.2`, vulnerable range `<11.1.1`). The advisory affects `uuid`'s `v3`/`v5`/`v6` functions **only when called with an explicit output buffer argument**. Checked `exceljs`'s actual usage (`grep -rn "require('uuid')" node_modules/exceljs/lib`): the only call site is `node_modules/exceljs/lib/xlsx/xform/sheet/cf-ext/cf-rule-ext-xform.js`, which calls `uuidv4()` (the `v4` function, not `v3`/`v5`/`v6`) with no buffer argument — the vulnerable code path is never reached by this dependency's actual usage in this app (used for XLSX report export, `src/server/lib/export/xlsx.ts`). npm's only `fixAvailable` path is downgrading `exceljs` to `3.4.0`, a major downgrade with breaking API differences — not applied.
+**Decision:** Not fixed (no safe upstream fix exists), and verified non-exploitable given actual usage. Revisit when `exceljs` ships a release depending on `uuid@>=11.1.1`.
+
+**Rationale for not using `npm audit fix --force` or manual `overrides`:** Forcing `prisma` to `6.x` would break every Prisma 7 API surface used across the codebase (a 15-phase regression risk far exceeding the actual DoS exposure of a CLI-only dependency). Forcing an `overrides` entry to bump `uuid` to `11.x` under `exceljs` risks an undocumented API mismatch (uuid v11 changed its packaging/exports) for a code path already confirmed unreachable. Both were rejected as disproportionate to the actual risk, per spec §33 "keep it simple, no unnecessary/speculative changes."
