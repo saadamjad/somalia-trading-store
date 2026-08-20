@@ -4,11 +4,11 @@ import { getCurrentSession } from "@/server/auth/session";
 import { getRolePermissions } from "@/server/auth/permissions";
 
 /**
- * Admin shell — Phase 4 scope only. This is the first `/admin` route in the app; a
- * fuller dashboard (metrics, more sections) is Phase 13. Gated on `products.view`
- * (the one seeded permission every admin-capable role is expected to have) as a
- * stand-in for "can enter the admin area at all"; individual pages/actions still
- * enforce their own specific permission (products.create, categories.update, ...).
+ * Admin shell. Gated on `products.view` (the one seeded permission every
+ * admin-capable role is expected to have) as a stand-in for "can enter the admin area
+ * at all"; individual pages/actions still enforce their own specific permission
+ * (products.create, categories.update, ...). `/admin` itself (see `page.tsx`) is the
+ * Phase 13 dashboard — an operational summary, not a redirect.
  */
 export default async function AdminLayout({ children }: { children: React.ReactNode }) {
   const session = await getCurrentSession();
@@ -36,6 +36,12 @@ export default async function AdminLayout({ children }: { children: React.ReactN
           <p className="text-sm text-muted">{session.name || session.email}</p>
         </div>
         <nav className="flex flex-col gap-1 px-3" aria-label="Admin">
+          <Link
+            href="/admin"
+            className="rounded-lg px-3 py-2 text-sm font-medium hover:bg-accent-muted"
+          >
+            Dashboard
+          </Link>
           <Link
             href="/admin/products"
             className="rounded-lg px-3 py-2 text-sm font-medium hover:bg-accent-muted"
