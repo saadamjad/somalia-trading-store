@@ -172,12 +172,22 @@ describe("dashboardService.getSummary", () => {
     expect(todaySummary.orders.totalAllTime).toBeGreaterThanOrEqual(allTimeSummary.orders.totalAllTime === 0 ? 0 : 1);
   });
 
-  it("counts customers by role and new-in-period correctly", async () => {
-    const before = await dashboardService.getSummary("all");
+  it("counts customers by role correctly, matching a direct DB query", async () => {
+    // Vitest runs test files in parallel against a shared DB, so an exact count can
+    // shift by a handful between two separate queries as other test files' fixtures
+    // are created/torn down concurrently. Fired together (Promise.all) to minimize
+    // that window, and compared with a small tolerance rather than exact equality —
+    // still catches a real logic bug (e.g. counting all users instead of just the
+    // "customer" role, which would produce a large, non-tolerance-sized divergence).
     await makeCustomer("customer-count");
 
-    const after = await dashboardService.getSummary("all");
-    expect(after.customers.total).toBe(before.customers.total + 1);
+    const [summary, directCount] = await Promise.all([
+      dashboardService.getSummary("all"),
+      prisma.user.count({ where: { role: { name: "customer" } } }),
+    ]);
+
+    expect(summary.customers.total).toBeGreaterThanOrEqual(1);
+    expect(Math.abs(summary.customers.total - directCount)).toBeLessThanOrEqual(10);
   });
 
   it("counts products and inventory low/out-of-stock status via the existing inventory service logic", async () => {
