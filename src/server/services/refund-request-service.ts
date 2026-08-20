@@ -4,6 +4,7 @@ import {
   type RefundRequestAdminListFilters,
 } from "@/server/repositories/refund-request-repository";
 import { orderRepository } from "@/server/repositories/order-repository";
+import { notificationService } from "@/server/services/notification-service";
 import type {
   RefundRequestAdminQueryInput,
   RefundRequestCreateInput,
@@ -297,6 +298,22 @@ export const refundRequestService = {
       })
     );
 
-    return toView(updated as unknown as RefundRequestRow);
+    const view = toView(updated as unknown as RefundRequestRow);
+
+    // Phase 15: notify the requesting customer only on the decisions that actually
+    // matter to them (APPROVED/REJECTED) — not on the optional UNDER_REVIEW waypoint,
+    // per docs/IMPLEMENTATION_PLAN.md Phase 15 ("Refund request approved/rejected").
+    if (toStatus === "APPROVED" || toStatus === "REJECTED") {
+      await notificationService.notify({
+        userId: current.requestedByUserId,
+        type: "REFUND_REQUEST_UPDATED",
+        title: `Refund request ${toStatus === "APPROVED" ? "approved" : "rejected"}`,
+        message: `Your refund request for order ${view.order.orderNumber} was ${toStatus.toLowerCase()}.`,
+        relatedEntityType: "REFUND_REQUEST",
+        relatedEntityId: view.id,
+      });
+    }
+
+    return view;
   },
 };

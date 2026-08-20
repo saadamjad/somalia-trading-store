@@ -14,6 +14,7 @@ import {
   type ShippingSnapshot,
   type OrderView,
 } from "@/server/services/order-service";
+import { notificationService } from "@/server/services/notification-service";
 import type {
   QuoteAdminQueryInput,
   QuoteAdminRespondInput,
@@ -403,7 +404,24 @@ export const quoteService = {
       })
     );
 
-    return toView(updated as unknown as QuoteRow);
+    const view = toView(updated as unknown as QuoteRow);
+
+    // Phase 15: notify the quote's associated user, if there is one — guest quotes
+    // (no `userId`) have no in-app inbox to deliver to and are skipped, per
+    // docs/IMPLEMENTATION_PLAN.md Phase 15 ("guest quotes have no user to notify
+    // in-app — that's fine, just skip in-app notification for guest quotes").
+    if (current.userId) {
+      await notificationService.notify({
+        userId: current.userId,
+        type: "QUOTE_RESPONSE",
+        title: "Your quote is ready",
+        message: "We've responded to your quote request with pricing — take a look.",
+        relatedEntityType: "QUOTE",
+        relatedEntityId: view.id,
+      });
+    }
+
+    return view;
   },
 
   /**

@@ -11,6 +11,7 @@ import { cartRepository } from "@/server/repositories/cart-repository";
 import { cartService, type StockIssue } from "@/server/services/cart-service";
 import { addressService } from "@/server/services/address-service";
 import { inventoryService } from "@/server/services/inventory-service";
+import { notificationService } from "@/server/services/notification-service";
 import type {
   OrderAdminQueryInput,
   OrderCreateInput,
@@ -622,6 +623,18 @@ export const orderService = {
         note: note ? note : null,
       })
     );
+
+    // Phase 15: notify the order's customer — in-app (real) + stubbed email "would
+    // send" log (D-011). Runs after the status-change transaction has committed; a
+    // notification failure must never roll back or block the actual status update.
+    await notificationService.notify({
+      userId: updated.userId,
+      type: "ORDER_STATUS_CHANGED",
+      title: `Order ${updated.orderNumber} status updated`,
+      message: `Your order ${updated.orderNumber} is now ${toStatus}.`,
+      relatedEntityType: "ORDER",
+      relatedEntityId: updated.id,
+    });
 
     return {
       ...toOrderView(updated),
