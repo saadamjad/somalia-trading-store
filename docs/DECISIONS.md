@@ -134,3 +134,22 @@ Each entry records a decision, its classification (Business / Technical / Implem
 - Building the schema and token flow now (rather than deferring the whole feature) means no future migration or rework is needed once a provider is chosen — only the delivery mechanism inside `requestPasswordReset` (and a new "send verification email" call after registration) needs to be swapped in.
 
 **Action required:** Client/team to choose an email provider. Once chosen: (1) wire real delivery into `authService.requestPasswordReset`, (2) add an email-verification-send step to `authService.register` and a `/api/auth/verify-email` (or equivalent) confirmation route that sets `User.emailVerified`, (3) decide whether unverified accounts should be restricted (e.g. blocked from checkout) — not decided yet.
+
+---
+
+## D-011: Notification Delivery Channel — In-App Real, Email Stubbed (Blocked on Provider Decision)
+
+**Classification:** Technical Decision
+**Status:** Deferred (email channel only) — blocked pending the same email provider decision as D-010
+**Date:** 2026-08-20
+
+**Context:** Phase 15 (Notifications) requires notifying customers of order status changes, refund request approvals/rejections, and quote responses. Per docs/IMPLEMENTATION_PLAN.md Phase 15: "Depends on an email provider decision if email is required — flag as a technical decision to resolve at phase start if not already settled." No email provider has been chosen — this is the same open business decision as D-010, not a new one, and this entry exists only because Phase 15's scope (notification delivery generally) is broader than D-010's (password-reset/verification email specifically), not because the underlying blocker differs.
+
+**Decision:** In-app notifications (the `Notification` model, `/api/notifications`, the header unread-count indicator) are built as the real, fully working feature this phase delivers — no stubbing, no deferral. Email is implemented only as an interface: `src/server/services/email-notifier.ts` exports `emailNotifier.send(to, subject, body)`, which logs `[email-notifier] would send email to X: subject Y` to the server console and does not contact any real email provider or SMTP server. It is called from the same three trigger points as the in-app notification (`order-service.ts` `updateStatus`, `refund-request-service.ts` `updateStatus`, `quote-service.ts` `respond`) so both "channels" exist in the code path, exactly mirroring the console-log pattern D-010 established for password-reset links in `authService.requestPasswordReset`.
+
+**Rationale:**
+- Consistency: reusing D-010's exact interim pattern (log instead of send) rather than inventing a second convention for the same underlying blocker.
+- The architecture is ready to plug in a real provider later — `notificationService.notify()` is the single call site that invokes `emailNotifier.send`, so swapping the stub's body for a real Resend/SES/Postmark/SendGrid call requires no changes to order-service.ts, refund-request-service.ts, or quote-service.ts.
+- In-app notifications don't have this blocker at all (no third-party dependency), so there's no reason to defer that half of the feature — only the email half is genuinely blocked.
+
+**Action required:** Same as D-010 — client/team to choose an email provider. Once chosen, only `emailNotifier.send`'s implementation needs to change; every call site stays the same.
