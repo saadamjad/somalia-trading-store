@@ -47,6 +47,10 @@ export default function GlobalError({
               >
                 Try Again
               </button>
+              {/* Plain <a>, not next/link: this file replaces the root layout entirely, so
+                  the app router context it crashed under may not be intact — a hard
+                  navigation is the only reliably safe way home from here. */}
+              {/* eslint-disable-next-line @next/next/no-html-link-for-pages */}
               <a
                 href="/"
                 className="inline-flex h-12 items-center justify-center border border-border-strong px-7 text-sm font-semibold text-foreground transition-all hover:border-foreground"
