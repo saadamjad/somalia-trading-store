@@ -125,6 +125,11 @@ Copy `.env.example` to `.env.local` and fill in real values for local developmen
 
 See `docs/PROJECT_AUDIT.md` (original Phase 0 state), `docs/DECISIONS.md` (architecture/business decisions, D-001–D-012+), `docs/IMPLEMENTATION_PLAN.md` (all 18 phases), and `docs/PRODUCTION_READINESS.md` (final readiness checklist and known gaps) for full project history and current status.
 
+## Documentation
+
+- **`docs/ai/`** — a consolidated knowledge base for AI coding agents (Claude Code, Cursor, Copilot, etc.). Start at `docs/ai/README.md` — it explains what each file covers (architecture, database, API surface, business rules, security/performance, testing/coding standards, known limitations, deferred features) and links out to the phase-by-phase docs above. Read `docs/ai/BUSINESS_RULES.md` before touching payment, orders, inventory, refunds, quotes, or authorization.
+- **`docs/user/`** — plain-language guides for human users: `customer-guide.md` (browsing, cart, checkout, orders, refunds, quotes, account) and `admin-guide.md` (the back office: products, inventory, orders, refunds, quotes, CMS, reports).
+
 ## Known gaps (by design, not oversight)
 
 - **No payment gateway** — D-007, pending client choice of provider
