@@ -23,13 +23,19 @@ export const mainNav = [
 export const footerNav = {
   company: [
     { label: "About Us", href: "/about" },
-    { label: "Contact", href: "/about" },
+    { label: "Contact", href: "/contact" },
     { label: "FAQ", href: "/faq" },
   ],
   shop: [
     { label: "Construction Materials", href: "/shop/construction-materials" },
     { label: "Road Interlocks", href: "/shop/road-interlocks" },
     { label: "Fishing Products", href: "/shop/fishing-products" },
+  ],
+  legal: [
+    { label: "Terms & Conditions", href: "/terms" },
+    { label: "Privacy Policy", href: "/privacy" },
+    { label: "Refund & Return Policy", href: "/refund-policy" },
+    { label: "Shipping Policy", href: "/shipping-policy" },
   ],
   account: [
     { label: "Cart", href: "/cart" },
