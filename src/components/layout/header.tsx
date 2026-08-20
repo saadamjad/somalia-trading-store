@@ -13,6 +13,7 @@ import { useUIStore } from "@/stores/ui-store";
 import { cn } from "@/lib/utils";
 import { MiniCartDrawer } from "@/components/cart/mini-cart-drawer";
 import { SearchOverlay } from "@/components/layout/search-overlay";
+import { NotificationBell } from "@/components/layout/notification-bell";
 
 export function Header() {
   const pathname = usePathname();
@@ -106,6 +107,8 @@ export function Header() {
                 </span>
               )}
             </button>
+
+            <NotificationBell />
 
             {status === "authenticated" && session?.user ? (
               <div className="relative hidden lg:block">
