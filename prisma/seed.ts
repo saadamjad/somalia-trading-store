@@ -162,6 +162,7 @@ const permissionKeys = [
   "quotes.manage",
   "cms.view",
   "cms.manage",
+  "reports.view",
 ];
 
 async function seedAuth() {
