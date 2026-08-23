@@ -416,7 +416,7 @@ Each phase lists: objective, requirements, dependencies, affected files/modules,
 - Payment gateway integration (pending client decision — DECISIONS.md D-007)
 - Shipping & delivery (DECISIONS.md D-008)
 - Tax/VAT (DECISIONS.md D-008)
-- CI/CD pipelines, staging/production infrastructure provisioning (DECISIONS.md D-009)
+- ~~CI/CD pipelines, staging/production infrastructure provisioning (DECISIONS.md D-009)~~ — done post-Phase-18; see DECISIONS.md D-014 and `docs/DEPLOYMENT.md`
 - Advanced idempotency (becomes mandatory once payment webhooks exist)
 - Accounting system integration
 

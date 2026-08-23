@@ -19,16 +19,17 @@ If you are about to change backend behavior — order status, inventory, refunds
 | `SECURITY_AND_PERFORMANCE.md` | Rate limiting, security headers, cookie/session config, CORS stance, error-handling philosophy, Phase 17 DB indexes, and the "no premature infrastructure" philosophy. |
 | `TESTING_AND_CODING_STANDARDS.md` | Vitest/Playwright conventions, where tests live, the zod validation pattern, and the naming/module-boundary conventions actually followed in this codebase. |
 | `KNOWN_LIMITATIONS.md` | Honest, concrete technical debt — things verified in the code, not generic boilerplate caveats. |
-| `DEFERRED_FEATURES.md` | Payment gateway, tax/shipping, CI/CD, real email, Somali i18n, object storage — what's deferred, why, and the explicit warning not to silently implement any of these without the underlying business decision being made first. |
+| `DEFERRED_FEATURES.md` | Payment gateway, tax/shipping, real email, Somali i18n, object storage — what's deferred, why, and the explicit warning not to silently implement any of these without the underlying business decision being made first. |
 
 ## The existing `docs/` files — what each is for
 
 These already existed before this knowledge base was added. They are the detailed historical record; `docs/ai/*` is the summary layer on top of them. Don't duplicate their content here — link to them.
 
 - **`docs/PROJECT_AUDIT.md`** — the original Phase 0 audit of the pre-existing UI-only demo: what existed, what was preserved/refactored/replaced/built new. Read this to understand where the project started.
-- **`docs/DECISIONS.md`** — numbered decision records (D-001 through D-013): why each architecture/business choice was made (backend architecture, database, ORM, auth, deployment, currency, payment gateway, tax/shipping, CI/CD, email, notifications, npm audit findings, E2E framework). **Check here before assuming something is a gap — it might be a confirmed, documented deferral.**
+- **`docs/DECISIONS.md`** — numbered decision records (D-001 through D-014): why each architecture/business choice was made (backend architecture, database, ORM, auth, deployment, currency, payment gateway, tax/shipping, CI/CD deferral and its later reversal, email, notifications, npm audit findings, E2E framework, CI/CD + hosting). **Check here before assuming something is a gap — it might be a confirmed, documented deferral.**
 - **`docs/IMPLEMENTATION_PLAN.md`** — the full 18-phase build plan: each phase's objective, schema/API/frontend changes, tests, and acceptance criteria. This is the most detailed architecture-and-feature map of the whole app, phase by phase — useful when you need to understand *why* a particular model or route exists.
 - **`docs/PRODUCTION_READINESS.md`** — the Phase 18 final report: a phase completion table, a full production-readiness checklist (verified pass/fail per item, not just claimed), known gaps, and recommended next steps for the client.
+- **`docs/DEPLOYMENT.md`** — step-by-step production setup (Vercel + Supabase + GitHub Actions) and the ongoing deploy/migration workflow. See D-014.
 
 ## Git workflow (the short version)
 
