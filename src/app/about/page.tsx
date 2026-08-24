@@ -65,7 +65,7 @@ export default async function AboutPage() {
             <div className="relative aspect-[4/3] overflow-hidden">
               <Image
                 src="/images/our-story/leadership-site.jpg"
-                alt="Somalia Trading leadership representing the business internationally"
+                alt="Foley General Trading leadership representing the business internationally"
                 fill
                 className="object-cover"
               />

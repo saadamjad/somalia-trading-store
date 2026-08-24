@@ -13,7 +13,7 @@ const storyChapters = [
     description:
       "Our team travels to inspect the equipment and materials we source firsthand — from heavy machinery to factory floors — before anything is offered to our clients.",
     image: "/images/our-story/site-visit-road.jpg",
-    alt: "Somalia Trading leadership meeting with partners at an international trade expo",
+    alt: "Foley General Trading leadership meeting with partners at an international trade expo",
     span: "large" as const,
   },
   {
@@ -22,7 +22,7 @@ const storyChapters = [
     description:
       "We sit with suppliers and partners face-to-face at international trade expos — reviewing products, specifications, and requirements before any order is placed.",
     image: "/images/our-story/client-consultation.jpg",
-    alt: "Somalia Trading leadership at an agricultural trading company booth",
+    alt: "Foley General Trading leadership at an agricultural trading company booth",
     span: "medium" as const,
   },
   {
@@ -39,12 +39,12 @@ const storyChapters = [
 const galleryMoments = [
   {
     image: "/images/our-story/our-team.jpg",
-    alt: "Somalia Trading leadership at an international trade fair",
+    alt: "Foley General Trading leadership at an international trade fair",
     caption: "Representing our business",
   },
   {
     image: "/images/our-story/community-event.jpg",
-    alt: "Somalia Trading at the UNIDO Somalia trade programme booth",
+    alt: "Foley General Trading at the UNIDO Somalia trade programme booth",
     caption: "Industry partnerships",
   },
   {

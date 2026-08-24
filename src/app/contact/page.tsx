@@ -28,18 +28,20 @@ export default function ContactPage() {
         <FadeIn delay={0.1}>
           <Card>
             <CardContent className="grid gap-6 p-6 sm:grid-cols-2 md:p-8">
-              <div className="flex items-start gap-3">
-                <Mail className="mt-0.5 h-5 w-5 shrink-0 text-accent" strokeWidth={1.5} />
-                <div>
-                  <p className="label mb-1">Email</p>
-                  <a
-                    href={`mailto:${brand.contact.email}`}
-                    className="text-sm text-foreground transition-colors hover:text-accent"
-                  >
-                    {brand.contact.email}
-                  </a>
+              {brand.contact.email && (
+                <div className="flex items-start gap-3">
+                  <Mail className="mt-0.5 h-5 w-5 shrink-0 text-accent" strokeWidth={1.5} />
+                  <div>
+                    <p className="label mb-1">Email</p>
+                    <a
+                      href={`mailto:${brand.contact.email}`}
+                      className="text-sm text-foreground transition-colors hover:text-accent"
+                    >
+                      {brand.contact.email}
+                    </a>
+                  </div>
                 </div>
-              </div>
+              )}
 
               <div className="flex items-start gap-3">
                 <Phone className="mt-0.5 h-5 w-5 shrink-0 text-accent" strokeWidth={1.5} />
@@ -60,13 +62,15 @@ export default function ContactPage() {
                 </div>
               </div>
 
-              <div className="flex items-start gap-3 sm:col-span-2">
-                <MapPin className="mt-0.5 h-5 w-5 shrink-0 text-accent" strokeWidth={1.5} />
-                <div>
-                  <p className="label mb-1">Address</p>
-                  <p className="text-sm text-foreground">{brand.contact.address}</p>
+              {brand.contact.address && (
+                <div className="flex items-start gap-3 sm:col-span-2">
+                  <MapPin className="mt-0.5 h-5 w-5 shrink-0 text-accent" strokeWidth={1.5} />
+                  <div>
+                    <p className="label mb-1">Address</p>
+                    <p className="text-sm text-foreground">{brand.contact.address}</p>
+                  </div>
                 </div>
-              </div>
+              )}
             </CardContent>
           </Card>
         </FadeIn>

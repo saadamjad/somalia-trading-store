@@ -58,7 +58,7 @@ export default async function QuotePage({ searchParams }: QuotePageProps) {
         <div className="mt-10 rounded-xl border border-border bg-accent-light/30 p-6">
           <h2 className="font-display mb-3 font-semibold">Contact Details</h2>
           <ul className="space-y-2 text-sm text-muted">
-            <li>{brand.contact.email}</li>
+            {brand.contact.email && <li>{brand.contact.email}</li>}
             {brand.contact.phones.map((phone) => (
               <li key={phone}>
                 <a href={`tel:${phone.replace(/\s/g, "")}`} className="hover:text-foreground">
@@ -66,7 +66,7 @@ export default async function QuotePage({ searchParams }: QuotePageProps) {
                 </a>
               </li>
             ))}
-            <li>{brand.contact.address}</li>
+            {brand.contact.address && <li>{brand.contact.address}</li>}
           </ul>
         </div>
       </FadeIn>

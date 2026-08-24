@@ -1,3 +1,4 @@
+import Image from "next/image";
 import Link from "next/link";
 import { brand } from "@/config/brand";
 import { footerNav } from "@/config/navigation";
@@ -12,8 +13,13 @@ export function Footer() {
               href="/"
               className="font-display mb-5 inline-flex items-center gap-2.5 text-base font-bold"
             >
-              <span className="flex h-7 w-7 items-center justify-center bg-foreground text-[9px] font-bold tracking-wider text-background">
-                FGT
+              <span className="relative h-9 w-9 shrink-0 bg-white p-1">
+                <Image
+                  src="/images/brand/fgt-logo.svg"
+                  alt=""
+                  fill
+                  className="object-contain p-0.5"
+                />
               </span>
               {brand.name}
             </Link>
@@ -73,7 +79,7 @@ export function Footer() {
           <div className="md:col-span-3">
             <p className="label mb-4">Contact</p>
             <ul className="space-y-2 text-sm text-muted">
-              <li>{brand.contact.email}</li>
+              {brand.contact.email && <li>{brand.contact.email}</li>}
               {brand.contact.phones.map((phone) => (
                 <li key={phone}>
                   <a
@@ -84,7 +90,7 @@ export function Footer() {
                   </a>
                 </li>
               ))}
-              <li>{brand.contact.address}</li>
+              {brand.contact.address && <li>{brand.contact.address}</li>}
             </ul>
           </div>
         </div>

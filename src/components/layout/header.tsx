@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useSession, signOut } from "next-auth/react";
@@ -50,8 +51,13 @@ export function Header() {
             href="/"
             className="font-display flex items-center gap-3 text-sm font-bold tracking-tight text-white transition-colors md:text-base"
           >
-            <span className="flex h-7 w-7 shrink-0 items-center justify-center bg-accent text-[9px] font-bold tracking-widest text-foreground">
-              FGT
+            <span className="relative h-9 w-9 shrink-0 bg-white p-1">
+              <Image
+                src="/images/brand/fgt-logo.svg"
+                alt=""
+                fill
+                className="object-contain p-0.5"
+              />
             </span>
             <span className="hidden max-w-[200px] leading-tight sm:inline lg:max-w-none">
               {brand.shortName}

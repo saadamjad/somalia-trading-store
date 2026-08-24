@@ -66,7 +66,7 @@ const FALLBACK_BLOCKS: CMSBlock[] = [
   },
   {
     type: "paragraph",
-    text: `If you have questions about this Privacy Policy or how your information is handled, contact us at ${brand.contact.email} or through our Contact page. This page is a general draft intended for ongoing review.`,
+    text: `If you have questions about this Privacy Policy or how your information is handled, contact us through our Contact page${brand.contact.email ? ` or at ${brand.contact.email}` : ""}. This page is a general draft intended for ongoing review.`,
   },
 ];
 
