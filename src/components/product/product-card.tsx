@@ -77,7 +77,7 @@ export function ProductCard({
                   {formatPrice(product.compareAtPrice, product.currency)}
                 </span>
                 {discount && (
-                  <span className="text-xs font-semibold text-accent">
+                  <span className="text-xs font-semibold text-accent-text">
                     −{discount}%
                   </span>
                 )}

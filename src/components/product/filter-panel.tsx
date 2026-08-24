@@ -34,7 +34,7 @@ export function FilterPanel({
         {activeFilterCount > 0 && (
           <button
             onClick={onClearFilters}
-            className="text-sm text-accent hover:underline"
+            className="text-sm text-accent-text hover:underline"
           >
             Clear all
           </button>
@@ -103,7 +103,7 @@ export function ActiveFilterPills({
           <button
             key={`${key}-${v}`}
             onClick={() => onToggleFilter(key, v)}
-            className="inline-flex items-center gap-1 bg-accent-muted px-3 py-1 text-xs font-medium text-accent"
+            className="inline-flex items-center gap-1 bg-accent-muted px-3 py-1 text-xs font-medium text-accent-text"
           >
             {v}
             <X className="h-3 w-3" />

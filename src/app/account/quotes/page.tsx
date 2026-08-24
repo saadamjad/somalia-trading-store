@@ -75,7 +75,7 @@ export default async function AccountQuotesPage() {
                 )}
 
                 {quote.convertedOrder && (
-                  <p className="text-sm text-accent">
+                  <p className="text-sm text-accent-text">
                     Converted to order {quote.convertedOrder.orderNumber}.
                   </p>
                 )}

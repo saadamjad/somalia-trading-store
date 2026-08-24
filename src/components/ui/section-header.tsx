@@ -26,7 +26,7 @@ export function SectionHeader({
         <span
           className={cn(
             "label mb-2 block",
-            tone === "dark" ? "text-accent" : "text-accent",
+            tone === "dark" && "text-accent",
             size === "lg" && "mb-4"
           )}
         >

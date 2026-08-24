@@ -33,6 +33,7 @@
   --gold-500: #c8a24a;
   --gold-600: #b8923f;
   --gold-100: rgba(200, 162, 74, 0.12);
+  --gold-700: #8a6626;
   --green-700: #2d6a4f;
   --red-600: #c0392b;
 
@@ -48,6 +49,10 @@
   --accent-hover: var(--gold-600);
   --accent-muted: var(--gold-100);
   --accent-light: var(--gold-100);
+  /* Darker gold for small text on light backgrounds only — --accent (gold-500) fails
+     WCAG AA contrast (2.3:1) as small text on light surfaces; this variant passes
+     (~5:1). Buttons/icons/borders/dark-background text keep using --accent unchanged. */
+  --accent-text: var(--gold-700);
   --muted: var(--gray-500);
   --muted-foreground: var(--gray-400);
   --border: var(--gray-200);
@@ -104,6 +109,7 @@
   --color-accent-hover: var(--accent-hover);
   --color-accent-muted: var(--accent-muted);
   --color-accent-light: var(--accent-light);
+  --color-accent-text: var(--accent-text);
   --color-muted: var(--muted);
   --color-muted-foreground: var(--muted-foreground);
   --color-border: var(--border);
@@ -235,12 +241,17 @@ body {
   }
 }
 
+/* Default color is --accent-text (a darkened gold, ~5:1 contrast) since most
+   usages sit on light backgrounds where --accent itself fails WCAG AA as small
+   text (2.3:1). Dark-section usages already explicitly apply text-accent to get
+   the brighter gold-500 back — verified across every such usage before this
+   change (hero, our-story, trust-strip, category-banner, error/404 pages). */
 .label {
   font-size: 0.6875rem;
   font-weight: 600;
   letter-spacing: 0.14em;
   text-transform: uppercase;
-  color: var(--accent);
+  color: var(--accent-text);
 }
 
 .mesh-dark {
