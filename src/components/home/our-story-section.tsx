@@ -173,24 +173,6 @@ export function OurStorySection() {
             <ArrowUpRight className="h-3.5 w-3.5" />
           </Link>
         </FadeIn>
-
-        {/* Closing CTA */}
-        <FadeIn delay={0.25}>
-          <div className="flex flex-col items-center justify-between gap-6 border-t border-border pt-10 sm:flex-row">
-            <p className="max-w-md text-sm leading-relaxed text-muted">
-              From paver blocks and hollow concrete to doors and fishing
-              equipment — every product we supply is backed by people who show
-              up, inspect, and stand behind their work.
-            </p>
-            <Link
-              href="/about"
-              className="inline-flex shrink-0 items-center gap-2 border border-border-strong px-6 py-3 text-xs font-semibold uppercase tracking-widest text-foreground transition-colors hover:border-accent hover:text-accent-text"
-            >
-              Learn More About Us
-              <ArrowUpRight className="h-3.5 w-3.5" />
-            </Link>
-          </div>
-        </FadeIn>
       </div>
     </section>
   );
