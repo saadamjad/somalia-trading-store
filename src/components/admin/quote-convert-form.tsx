@@ -6,6 +6,13 @@ import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 interface AddressOption {
   id: string;
@@ -101,17 +108,18 @@ export function QuoteConvertForm({ quoteId, addresses }: QuoteConvertFormProps) 
             Use a saved address
           </label>
           {!useInline && (
-            <select
-              value={addressId}
-              onChange={(e) => setAddressId(e.target.value)}
-              className="h-9 w-full max-w-md border border-border-strong bg-background px-3 text-sm"
-            >
-              {addresses.map((a) => (
-                <option key={a.id} value={a.id}>
-                  {a.label}
-                </option>
-              ))}
-            </select>
+            <Select value={addressId} onValueChange={setAddressId}>
+              <SelectTrigger className="w-full max-w-md">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {addresses.map((a) => (
+                  <SelectItem key={a.id} value={a.id}>
+                    {a.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           )}
           <label className="flex items-center gap-2">
             <input type="radio" checked={useInline} onChange={() => setUseInline(true)} />
