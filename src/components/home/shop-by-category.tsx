@@ -11,11 +11,14 @@ export function ShopByCategory({ categories }: { categories: Category[] }) {
       <div className="container-custom">
         <FadeIn className="section-heading flex flex-col justify-between gap-6 md:flex-row md:items-end">
           <div>
-            <span className="label mb-4 block">Catalogue</span>
+            <div className="mb-4 flex items-center gap-3">
+              <span className="label">Catalogue</span>
+              <span className="h-px w-10 bg-accent/40" />
+            </div>
             <h2 className="font-display text-4xl font-bold md:text-5xl">
               Shop by
               <br />
-              Category
+              <span className="text-accent">Category</span>
             </h2>
           </div>
           <p className="max-w-sm text-sm leading-relaxed text-muted">
@@ -42,9 +45,12 @@ export function FeaturedProducts({ products }: { products: Product[] }) {
       <div className="container-custom">
         <FadeIn className="section-heading flex items-end justify-between">
           <div>
-            <span className="label mb-4 block">Selected</span>
+            <div className="mb-4 flex items-center gap-3">
+              <span className="label">Selected</span>
+              <span className="h-px w-10 bg-accent/40" />
+            </div>
             <h2 className="font-display text-4xl font-bold md:text-5xl">
-              Featured
+              <span className="text-accent">Featured</span>
             </h2>
           </div>
           <Link

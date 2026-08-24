@@ -16,8 +16,8 @@ interface PromoBannerProps {
  */
 export function PromoBanner({ banner }: PromoBannerProps) {
   return (
-    <section className="border-y border-border bg-accent-muted/30">
-      <div className="container-custom grid items-center gap-8 py-12 md:grid-cols-[auto_1fr_auto] md:py-16">
+    <section className="section-band border-y border-border bg-accent-muted/30">
+      <div className="container-custom grid items-center gap-8 md:grid-cols-[auto_1fr_auto]">
         {banner.imageUrl && (
           <FadeIn className="relative aspect-[16/9] w-full overflow-hidden md:w-64">
             <Image

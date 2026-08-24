@@ -32,8 +32,8 @@ export function TrustStrip() {
 
 export function CTABanner() {
   return (
-    <section className="mesh-light relative overflow-hidden">
-      <div className="container-custom relative z-10 py-16 md:py-20 lg:py-24">
+    <section className="section-padding mesh-light relative overflow-hidden">
+      <div className="container-custom relative z-10">
         <div className="grid items-center gap-12 lg:grid-cols-12 lg:gap-16">
           <FadeIn className="lg:col-span-7">
             <span className="label mb-6 block">Start Here</span>

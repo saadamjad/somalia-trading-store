@@ -91,7 +91,7 @@ export function Header() {
                   "text-xs font-medium uppercase tracking-widest transition-colors duration-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-surface",
                   pathname === item.href
                     ? "text-accent"
-                    : "text-muted-foreground hover:text-foreground"
+                    : "text-muted hover:text-foreground"
                 )}
               >
                 {item.label}
@@ -102,7 +102,7 @@ export function Header() {
           <div className="flex items-center gap-1">
             <button
               onClick={openSearch}
-              className="flex h-10 w-10 items-center justify-center text-muted-foreground transition-colors hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-surface"
+              className="flex h-10 w-10 items-center justify-center text-muted transition-colors hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-surface"
               aria-label="Search products"
             >
               <Search className="h-[18px] w-[18px]" strokeWidth={1.5} />
@@ -110,7 +110,7 @@ export function Header() {
 
             <Link
               href="/wishlist"
-              className="relative flex h-10 w-10 items-center justify-center text-muted-foreground transition-colors hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-surface"
+              className="relative flex h-10 w-10 items-center justify-center text-muted transition-colors hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-surface"
               aria-label={`Wishlist, ${wishlistCount} items`}
             >
               <Heart className="h-[18px] w-[18px]" strokeWidth={1.5} />
@@ -121,7 +121,7 @@ export function Header() {
 
             <button
               onClick={openCart}
-              className="relative flex h-10 w-10 items-center justify-center text-muted-foreground transition-colors hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-surface"
+              className="relative flex h-10 w-10 items-center justify-center text-muted transition-colors hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-surface"
               aria-label={`Cart, ${cartCount} items`}
             >
               <ShoppingCart className="h-[18px] w-[18px]" strokeWidth={1.5} />
@@ -138,7 +138,7 @@ export function Header() {
               <div className="relative hidden lg:block">
                 <button
                   onClick={() => setIsUserMenuOpen((open) => !open)}
-                  className="flex h-10 w-10 items-center justify-center text-muted-foreground transition-colors hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-surface"
+                  className="flex h-10 w-10 items-center justify-center text-muted transition-colors hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-surface"
                   aria-label="Account menu"
                   aria-expanded={isUserMenuOpen}
                 >
@@ -152,7 +152,7 @@ export function Header() {
                     <Link
                       href="/account"
                       onClick={() => setIsUserMenuOpen(false)}
-                      className="flex w-full items-center gap-2 px-4 py-2.5 text-left text-xs font-medium uppercase tracking-widest text-muted-foreground transition-colors hover:text-foreground focus-visible:bg-accent-muted focus-visible:text-foreground focus-visible:outline-none"
+                      className="flex w-full items-center gap-2 px-4 py-2.5 text-left text-xs font-medium uppercase tracking-widest text-muted transition-colors hover:text-foreground focus-visible:bg-accent-muted focus-visible:text-foreground focus-visible:outline-none"
                     >
                       <User className="h-3.5 w-3.5" strokeWidth={1.5} />
                       My Account
@@ -162,7 +162,7 @@ export function Header() {
                         setIsUserMenuOpen(false);
                         void signOut({ callbackUrl: "/" });
                       }}
-                      className="flex w-full items-center gap-2 px-4 py-2.5 text-left text-xs font-medium uppercase tracking-widest text-muted-foreground transition-colors hover:text-foreground focus-visible:bg-accent-muted focus-visible:text-foreground focus-visible:outline-none"
+                      className="flex w-full items-center gap-2 px-4 py-2.5 text-left text-xs font-medium uppercase tracking-widest text-muted transition-colors hover:text-foreground focus-visible:bg-accent-muted focus-visible:text-foreground focus-visible:outline-none"
                     >
                       <LogOut className="h-3.5 w-3.5" strokeWidth={1.5} />
                       Log Out
@@ -174,7 +174,7 @@ export function Header() {
               status !== "loading" && (
                 <Link
                   href="/login"
-                  className="hidden h-10 items-center px-4 text-xs font-medium uppercase tracking-widest text-muted-foreground transition-colors hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-surface lg:flex"
+                  className="hidden h-10 items-center px-4 text-xs font-medium uppercase tracking-widest text-muted transition-colors hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-surface lg:flex"
                 >
                   Log In
                 </Link>
@@ -218,7 +218,7 @@ export function Header() {
                       "block py-3 text-sm font-medium tracking-wide transition-colors focus-visible:outline-none focus-visible:text-accent",
                       pathname === item.href
                         ? "text-accent"
-                        : "text-muted-foreground hover:text-foreground"
+                        : "text-muted hover:text-foreground"
                     )}
                   >
                     {item.label}
@@ -235,14 +235,14 @@ export function Header() {
                   </p>
                   <Link
                     href="/account"
-                    className="flex items-center gap-2 py-2 text-sm font-medium tracking-wide text-muted-foreground transition-colors hover:text-foreground focus-visible:outline-none focus-visible:text-accent"
+                    className="flex items-center gap-2 py-2 text-sm font-medium tracking-wide text-muted transition-colors hover:text-foreground focus-visible:outline-none focus-visible:text-accent"
                   >
                     <User className="h-4 w-4" strokeWidth={1.5} />
                     My Account
                   </Link>
                   <button
                     onClick={() => void signOut({ callbackUrl: "/" })}
-                    className="flex items-center gap-2 py-2 text-sm font-medium tracking-wide text-muted-foreground transition-colors hover:text-foreground focus-visible:outline-none focus-visible:text-accent"
+                    className="flex items-center gap-2 py-2 text-sm font-medium tracking-wide text-muted transition-colors hover:text-foreground focus-visible:outline-none focus-visible:text-accent"
                   >
                     <LogOut className="h-4 w-4" strokeWidth={1.5} />
                     Log Out
@@ -252,7 +252,7 @@ export function Header() {
                 status !== "loading" && (
                   <Link
                     href="/login"
-                    className="block py-2 text-sm font-medium tracking-wide text-muted-foreground transition-colors hover:text-foreground focus-visible:outline-none focus-visible:text-accent"
+                    className="block py-2 text-sm font-medium tracking-wide text-muted transition-colors hover:text-foreground focus-visible:outline-none focus-visible:text-accent"
                   >
                     Log In
                   </Link>

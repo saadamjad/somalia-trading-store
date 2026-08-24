@@ -43,7 +43,7 @@ export function OurStorySection() {
   };
 
   return (
-    <section className="relative overflow-hidden bg-background">
+    <section className="section-padding section-after-band relative overflow-hidden bg-background">
       {/* Ambient background */}
       <div
         className="pointer-events-none absolute inset-0"
@@ -55,7 +55,7 @@ export function OurStorySection() {
         }}
       />
 
-      <div className="container-custom relative z-10 py-16 md:py-20 lg:py-24">
+      <div className="container-custom relative z-10">
         {/* Intro */}
         <FadeIn className="section-heading mx-auto max-w-2xl text-center">
           <span className="label mb-4 block">Our Story</span>
