@@ -127,7 +127,7 @@ export function Header() {
                   <User className="h-[18px] w-[18px]" strokeWidth={1.5} />
                 </button>
                 {isUserMenuOpen && (
-                  <div className="absolute right-0 top-12 w-56 border border-white/10 bg-dark py-2 shadow-xl">
+                  <div className="absolute right-0 top-12 w-56 border border-white/10 bg-dark py-2 shadow-[var(--shadow-xl)]">
                     <p className="truncate border-b border-white/10 px-4 pb-2 text-xs text-white/50">
                       {session.user.name || session.user.email}
                     </p>

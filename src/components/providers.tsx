@@ -15,7 +15,7 @@ export function Providers({ children }: { children: React.ReactNode }) {
         closeButton
         toastOptions={{
           classNames: {
-            toast: "rounded-xl border border-border shadow-lg",
+            toast: "rounded-xl border border-border shadow-[var(--shadow-lg)]",
           },
         }}
       />
