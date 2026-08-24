@@ -32,7 +32,7 @@ export function TrustStrip() {
 
 export function CTABanner() {
   return (
-    <section className="relative overflow-hidden bg-[#0c0c0c]">
+    <section className="relative overflow-hidden bg-dark">
       <div
         className="pointer-events-none absolute inset-0"
         style={{

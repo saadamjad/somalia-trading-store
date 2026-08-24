@@ -45,7 +45,7 @@ export function Header() {
 
   return (
     <>
-      <header className="fixed inset-x-0 top-0 z-50 border-b border-white/10 bg-[#0c0c0c]">
+      <header className="fixed inset-x-0 top-0 z-50 border-b border-white/10 bg-dark">
         <div className="container-custom flex h-[4.5rem] items-center justify-between">
           <Link
             href="/"
@@ -127,7 +127,7 @@ export function Header() {
                   <User className="h-[18px] w-[18px]" strokeWidth={1.5} />
                 </button>
                 {isUserMenuOpen && (
-                  <div className="absolute right-0 top-12 w-56 border border-white/10 bg-[#0c0c0c] py-2 shadow-xl">
+                  <div className="absolute right-0 top-12 w-56 border border-white/10 bg-dark py-2 shadow-xl">
                     <p className="truncate border-b border-white/10 px-4 pb-2 text-xs text-white/50">
                       {session.user.name || session.user.email}
                     </p>
@@ -179,7 +179,7 @@ export function Header() {
 
         {isMobileMenuOpen && (
           <nav
-            className="border-t border-white/10 bg-[#0c0c0c] px-6 py-6 lg:hidden"
+            className="border-t border-white/10 bg-dark px-6 py-6 lg:hidden"
             aria-label="Mobile"
           >
             <ul className="space-y-1">

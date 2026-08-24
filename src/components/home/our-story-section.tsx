@@ -68,7 +68,7 @@ const galleryMoments = [
 
 export function OurStorySection() {
   return (
-    <section className="relative overflow-hidden bg-[#0c0c0c]">
+    <section className="relative overflow-hidden bg-dark">
       {/* Ambient background */}
       <div
         className="pointer-events-none absolute inset-0"
@@ -106,7 +106,7 @@ export function OurStorySection() {
 
         {/* Featured story chapter — full width hero moment */}
         <FadeIn delay={0.08} className="mb-3 mt-12 md:mt-16">
-          <div className="group relative aspect-[16/9] overflow-hidden bg-[#141414] md:aspect-[21/9]">
+          <div className="group relative aspect-[16/9] overflow-hidden bg-dark-surface md:aspect-[21/9]">
             <Image
               src={storyChapters[0].image}
               alt={storyChapters[0].alt}
@@ -133,7 +133,7 @@ export function OurStorySection() {
         <div className="mb-3 grid gap-3 md:grid-cols-2">
           {storyChapters.slice(1).map((chapter, i) => (
             <FadeIn key={chapter.label} delay={0.12 + i * 0.06}>
-              <article className="group relative aspect-[4/3] overflow-hidden bg-[#141414]">
+              <article className="group relative aspect-[4/3] overflow-hidden bg-dark-surface">
                 <Image
                   src={chapter.image}
                   alt={chapter.alt}
@@ -174,7 +174,7 @@ export function OurStorySection() {
           <div className="grid grid-cols-2 gap-2 md:grid-cols-3 md:gap-3 lg:grid-cols-6">
             {galleryMoments.map((moment, i) => (
               <FadeIn key={moment.caption} delay={0.05 * i}>
-                <figure className="group relative aspect-square overflow-hidden bg-[#141414]">
+                <figure className="group relative aspect-square overflow-hidden bg-dark-surface">
                   <Image
                     src={moment.image}
                     alt={moment.alt}

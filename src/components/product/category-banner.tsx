@@ -17,7 +17,7 @@ export function CategoryBanner({ category, productCount }: CategoryBannerProps) 
   const words = category.name.split(" ");
 
   return (
-    <section className="relative overflow-hidden bg-[#0c0c0c] pt-[4.5rem]">
+    <section className="relative overflow-hidden bg-dark pt-[4.5rem]">
       <div
         className="pointer-events-none absolute inset-0"
         style={{
@@ -81,7 +81,7 @@ export function CategoryBanner({ category, productCount }: CategoryBannerProps) 
               {config.highlights.map(({ icon: Icon, label }) => (
                 <div
                   key={label}
-                  className="flex flex-col items-start gap-2 bg-[#141414] px-4 py-4"
+                  className="flex flex-col items-start gap-2 bg-dark-surface px-4 py-4"
                 >
                   <Icon className="h-4 w-4 text-accent" strokeWidth={1.5} />
                   <span className="text-[10px] font-semibold uppercase leading-tight tracking-wider text-white/50">
@@ -99,7 +99,7 @@ export function CategoryBanner({ category, productCount }: CategoryBannerProps) 
             className="lg:col-span-7"
           >
             <div className="grid min-h-[340px] grid-cols-12 grid-rows-[repeat(6,minmax(0,1fr))] gap-2.5 md:min-h-[420px] md:gap-3">
-              <div className="group relative col-span-12 row-span-4 overflow-hidden bg-[#141414] sm:col-span-8 sm:row-span-6">
+              <div className="group relative col-span-12 row-span-4 overflow-hidden bg-dark-surface sm:col-span-8 sm:row-span-6">
                 <Image
                   src={config.images.primary.src}
                   alt={config.images.primary.alt}
@@ -121,7 +121,7 @@ export function CategoryBanner({ category, productCount }: CategoryBannerProps) 
                 )}
               </div>
 
-              <div className="group relative col-span-6 row-span-2 overflow-hidden bg-[#141414] sm:col-span-4 sm:row-span-3">
+              <div className="group relative col-span-6 row-span-2 overflow-hidden bg-dark-surface sm:col-span-4 sm:row-span-3">
                 <Image
                   src={config.images.secondary.src}
                   alt={config.images.secondary.alt}
@@ -132,7 +132,7 @@ export function CategoryBanner({ category, productCount }: CategoryBannerProps) 
                 <div className="absolute inset-0 bg-black/25 transition-colors group-hover:bg-black/10" />
               </div>
 
-              <div className="group relative col-span-6 row-span-2 overflow-hidden bg-[#141414] sm:col-span-4 sm:row-span-3">
+              <div className="group relative col-span-6 row-span-2 overflow-hidden bg-dark-surface sm:col-span-4 sm:row-span-3">
                 <Image
                   src={config.images.tertiary.src}
                   alt={config.images.tertiary.alt}
