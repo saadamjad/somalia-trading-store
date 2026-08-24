@@ -99,8 +99,8 @@ export function HeroSection({ categories, banner }: HeroSectionProps) {
                     sizes="(max-width: 768px) 50vw, 25vw"
                     className="object-cover opacity-60 transition-all duration-700 group-hover:scale-105 group-hover:opacity-75"
                   />
-                  <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/35 to-transparent" />
-                  <div className="absolute inset-x-0 bottom-0 p-4 md:p-5 [text-shadow:0_1px_6px_rgba(0,0,0,0.8)]">
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-transparent to-transparent" />
+                  <div className="absolute inset-x-0 bottom-0 bg-black/80 p-4 backdrop-blur-sm md:p-5">
                     <span className="label mb-1 block text-accent">
                       0{i + 1}
                     </span>

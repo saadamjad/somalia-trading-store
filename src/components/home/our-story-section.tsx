@@ -9,18 +9,16 @@ import { brand } from "@/config/brand";
 const storyChapters = [
   {
     label: "01 — On the Ground",
-    title: "Hands-on leadership at every project site",
-    description:
-      "Our team travels to inspect the equipment and materials we source firsthand — from heavy machinery to factory floors — before anything is offered to our clients.",
+    title: "Hands-on leadership at every site",
+    description: "Inspecting equipment and materials firsthand.",
     image: "/images/our-story/site-visit-road.jpg",
     alt: "Foley General Trading leadership meeting with partners at an international trade expo",
     span: "large" as const,
   },
   {
     label: "02 — Client Partnership",
-    title: "Personal consultations, real product samples",
-    description:
-      "We sit with suppliers and partners face-to-face at international trade expos — reviewing products, specifications, and requirements before any order is placed.",
+    title: "Real conversations, real samples",
+    description: "Face-to-face with suppliers before every order.",
     image: "/images/our-story/client-consultation.jpg",
     alt: "Foley General Trading leadership at an agricultural trading company booth",
     span: "medium" as const,
@@ -28,8 +26,7 @@ const storyChapters = [
   {
     label: "03 — Quality & Production",
     title: "From factory floor to finished product",
-    description:
-      "We work directly with manufacturers overseas, visiting production lines and inspecting machinery to guarantee consistent quality across everything we supply.",
+    description: "Direct oversight of manufacturing quality.",
     image: "/images/our-story/manufacturing-quality.jpg",
     alt: "Quality inspection at a heavy machinery manufacturing facility",
     span: "medium" as const,
@@ -117,15 +114,15 @@ export function OurStorySection() {
               sizes="100vw"
               className="object-cover transition-transform duration-700 group-hover:scale-[1.02]"
             />
-            <div className="absolute inset-0 bg-gradient-to-t from-black via-black/70 to-black/10" />
-            <div className="absolute inset-x-0 bottom-0 p-6 md:p-10 lg:p-12 [text-shadow:0_1px_8px_rgba(0,0,0,0.8)]">
-              <span className="label mb-3 block text-accent">
+            <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
+            <div className="absolute inset-x-0 bottom-0 bg-black/85 p-6 backdrop-blur-sm md:p-8 lg:p-10">
+              <span className="label mb-2 block text-accent">
                 {storyChapters[0].label}
               </span>
-              <h3 className="font-display mb-3 max-w-xl text-xl font-bold text-white md:text-2xl lg:text-3xl">
+              <h3 className="font-display mb-2 max-w-xl text-lg font-bold text-white md:text-2xl lg:text-3xl">
                 {storyChapters[0].title}
               </h3>
-              <p className="max-w-lg text-sm leading-relaxed text-white/80">
+              <p className="max-w-lg text-sm leading-relaxed text-white/70">
                 {storyChapters[0].description}
               </p>
             </div>
@@ -144,15 +141,15 @@ export function OurStorySection() {
                   sizes="(max-width: 768px) 100vw, 50vw"
                   className="object-cover transition-transform duration-700 group-hover:scale-[1.03]"
                 />
-                <div className="absolute inset-0 bg-gradient-to-t from-black via-black/75 to-black/15" />
-                <div className="absolute inset-x-0 bottom-0 p-5 md:p-7 [text-shadow:0_1px_8px_rgba(0,0,0,0.8)]">
-                  <span className="label mb-2 block text-accent">
+                <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-transparent to-transparent" />
+                <div className="absolute inset-x-0 bottom-0 bg-black/85 p-4 backdrop-blur-sm md:p-6">
+                  <span className="label mb-1.5 block text-accent">
                     {chapter.label}
                   </span>
-                  <h3 className="font-display mb-2 text-base font-bold text-white md:text-lg">
+                  <h3 className="font-display mb-1.5 text-sm font-bold text-white md:text-lg">
                     {chapter.title}
                   </h3>
-                  <p className="text-xs leading-relaxed text-white/80 md:text-sm">
+                  <p className="text-xs leading-relaxed text-white/70">
                     {chapter.description}
                   </p>
                 </div>
@@ -186,8 +183,8 @@ export function OurStorySection() {
                     className="object-cover transition-transform duration-500 group-hover:scale-105"
                   />
                   <div className="absolute inset-0 bg-black/10 transition-colors group-hover:bg-black/25" />
-                  <figcaption className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black via-black/70 to-transparent px-3 pb-2.5 pt-6">
-                    <span className="text-[9px] font-semibold uppercase tracking-widest text-white [text-shadow:0_1px_6px_rgba(0,0,0,0.9)]">
+                  <figcaption className="absolute inset-x-0 bottom-0 bg-black/85 px-3 py-2">
+                    <span className="text-[9px] font-semibold uppercase tracking-widest text-white">
                       {moment.caption}
                     </span>
                   </figcaption>

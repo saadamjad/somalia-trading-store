@@ -108,9 +108,9 @@ export function CategoryBanner({ category, productCount }: CategoryBannerProps) 
                   sizes="(max-width: 640px) 100vw, 55vw"
                   className="object-cover transition-transform duration-700 group-hover:scale-[1.03]"
                 />
-                <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/20 to-transparent" />
+                <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
                 {config.images.primary.featured && (
-                  <div className="absolute inset-x-0 bottom-0 p-5 [text-shadow:0_1px_8px_rgba(0,0,0,0.8)]">
+                  <div className="absolute inset-x-0 bottom-0 bg-black/85 p-5 backdrop-blur-sm">
                     <span className="label mb-1 block text-accent">
                       {config.images.primary.featuredLabel}
                     </span>
