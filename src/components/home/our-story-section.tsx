@@ -1,10 +1,12 @@
 "use client";
 
+import { useRef } from "react";
 import Image from "next/image";
 import Link from "next/link";
-import { ArrowUpRight } from "lucide-react";
+import { ArrowUpRight, ChevronLeft, ChevronRight } from "lucide-react";
 import { FadeIn } from "@/components/ui/motion";
 import { brand } from "@/config/brand";
+import { galleryMoments } from "@/config/gallery";
 
 const storyChapters = [
   {
@@ -30,40 +32,16 @@ const storyChapters = [
   },
 ];
 
-const galleryMoments = [
-  {
-    image: "/images/our-story/our-team.jpg",
-    alt: "Foley General Trading leadership at an international trade fair",
-    caption: "Representing our business",
-  },
-  {
-    image: "/images/our-story/community-event.jpg",
-    alt: "Foley General Trading at the UNIDO Somalia trade programme booth",
-    caption: "Industry partnerships",
-  },
-  {
-    image: "/images/our-story/paved-project.jpg",
-    alt: "Inspecting heavy construction equipment before purchase",
-    caption: "Equipment sourcing",
-  },
-  {
-    image: "/images/our-story/hollow-blocks-stock.jpg",
-    alt: "Production equipment at an overseas manufacturing facility",
-    caption: "Ready to supply",
-  },
-  {
-    image: "/images/our-story/global-manufacturing.jpg",
-    alt: "Touring a machinery manufacturing plant",
-    caption: "Global partnerships",
-  },
-  {
-    image: "/images/our-story/partnership-office.jpg",
-    alt: "Sealing a strategic partnership with an overseas supplier",
-    caption: "Trusted partners",
-  },
-];
-
 export function OurStorySection() {
+  const scrollerRef = useRef<HTMLDivElement>(null);
+
+  const scrollByAmount = (direction: "left" | "right") => {
+    const el = scrollerRef.current;
+    if (!el) return;
+    const tileWidth = el.querySelector("[data-gallery-tile]")?.clientWidth ?? 240;
+    el.scrollBy({ left: direction === "left" ? -tileWidth - 12 : tileWidth + 12, behavior: "smooth" });
+  };
+
   return (
     <section className="relative overflow-hidden bg-background">
       {/* Ambient background */}
@@ -121,7 +99,7 @@ export function OurStorySection() {
           ))}
         </div>
 
-        {/* Gallery strip — smaller authentic moments */}
+        {/* Gallery strip — horizontal scroller of authentic moments */}
         <FadeIn delay={0.2} className="mb-10 mt-12 md:mt-14">
           <div className="mb-6 flex items-end justify-between gap-4">
             <div>
@@ -130,30 +108,70 @@ export function OurStorySection() {
                 Moments that define who we are
               </p>
             </div>
+            <div className="flex items-center gap-4">
+              <Link
+                href="/gallery"
+                className="hidden items-center gap-2 text-xs font-semibold uppercase tracking-widest text-foreground transition-colors hover:text-accent-text sm:inline-flex"
+              >
+                View All
+                <ArrowUpRight className="h-3.5 w-3.5" />
+              </Link>
+              <div className="hidden items-center gap-2 md:flex">
+                <button
+                  type="button"
+                  onClick={() => scrollByAmount("left")}
+                  aria-label="Scroll gallery left"
+                  className="flex h-9 w-9 items-center justify-center border border-border-strong text-foreground transition-colors hover:border-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                >
+                  <ChevronLeft className="h-4 w-4" strokeWidth={1.5} />
+                </button>
+                <button
+                  type="button"
+                  onClick={() => scrollByAmount("right")}
+                  aria-label="Scroll gallery right"
+                  className="flex h-9 w-9 items-center justify-center border border-border-strong text-foreground transition-colors hover:border-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                >
+                  <ChevronRight className="h-4 w-4" strokeWidth={1.5} />
+                </button>
+              </div>
+            </div>
           </div>
 
-          <div className="grid grid-cols-2 gap-2 md:grid-cols-3 md:gap-3 lg:grid-cols-6">
-            {galleryMoments.map((moment, i) => (
-              <FadeIn key={moment.caption} delay={0.05 * i}>
-                <figure className="group border border-border bg-surface">
-                  <div className="relative aspect-square overflow-hidden bg-muted/10">
-                    <Image
-                      src={moment.image}
-                      alt={moment.alt}
-                      fill
-                      sizes="(max-width: 768px) 50vw, 16vw"
-                      className="object-cover transition-transform duration-500 group-hover:scale-105"
-                    />
-                  </div>
-                  <figcaption className="px-3 py-2">
-                    <span className="text-[9px] font-semibold uppercase tracking-widest text-muted-foreground">
-                      {moment.caption}
-                    </span>
-                  </figcaption>
-                </figure>
-              </FadeIn>
+          <div
+            ref={scrollerRef}
+            className="scrollbar-hide -mx-4 flex snap-x snap-mandatory gap-3 overflow-x-auto scroll-smooth px-4 pb-2"
+          >
+            {galleryMoments.map((moment) => (
+              <figure
+                key={moment.caption}
+                data-gallery-tile
+                className="w-[65vw] shrink-0 snap-start border border-border bg-surface sm:w-56 md:w-60"
+              >
+                <div className="relative aspect-square overflow-hidden bg-muted/10">
+                  <Image
+                    src={moment.image}
+                    alt={moment.alt}
+                    fill
+                    sizes="(max-width: 768px) 65vw, 240px"
+                    className="object-cover transition-transform duration-500 hover:scale-105"
+                  />
+                </div>
+                <figcaption className="px-3 py-2">
+                  <span className="text-[9px] font-semibold uppercase tracking-widest text-muted-foreground">
+                    {moment.caption}
+                  </span>
+                </figcaption>
+              </figure>
             ))}
           </div>
+
+          <Link
+            href="/gallery"
+            className="mt-4 inline-flex items-center gap-2 text-xs font-semibold uppercase tracking-widest text-foreground transition-colors hover:text-accent-text sm:hidden"
+          >
+            View All
+            <ArrowUpRight className="h-3.5 w-3.5" />
+          </Link>
         </FadeIn>
 
         {/* Closing CTA */}

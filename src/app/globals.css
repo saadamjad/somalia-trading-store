@@ -280,6 +280,19 @@ body {
   text-wrap: balance;
 }
 
+/* Hides the scrollbar on horizontally-scrollable containers (e.g. the gallery
+   scroller) while keeping the element natively scrollable via touch/trackpad/
+   drag — the scroll affordance comes from partially-visible edge tiles and
+   the optional chevron buttons instead. */
+.scrollbar-hide {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;
+}
+
 @keyframes marquee {
   from {
     transform: translateX(0);

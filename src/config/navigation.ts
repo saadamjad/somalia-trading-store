@@ -23,6 +23,7 @@ export const mainNav = [
 export const footerNav = {
   company: [
     { label: "About Us", href: "/about" },
+    { label: "Gallery", href: "/gallery" },
     { label: "Contact", href: "/contact" },
     { label: "FAQ", href: "/faq" },
   ],
