@@ -5,7 +5,8 @@ import { footerNav } from "@/config/navigation";
 
 export function Footer() {
   return (
-    <footer className="border-t border-border bg-surface">
+    <footer className="relative border-t border-border bg-surface">
+      <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-accent/50 to-transparent" />
       <div className="container-custom py-14 md:py-16">
         <div className="grid gap-10 md:grid-cols-12">
           <div className="md:col-span-4">
@@ -13,7 +14,7 @@ export function Footer() {
               href="/"
               className="font-display mb-5 inline-flex items-center gap-2.5 text-base font-bold focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
             >
-              <span className="relative h-9 w-9 shrink-0 bg-white p-1">
+              <span className="relative h-10 w-10 shrink-0 border border-border bg-white p-1.5 shadow-(--shadow-sm)">
                 <Image
                   src="/images/brand/fgt-logo.svg"
                   alt=""
@@ -36,7 +37,7 @@ export function Footer() {
                   <li key={link.href}>
                     <Link
                       href={link.href}
-                      className="text-sm text-muted transition-colors hover:text-foreground focus-visible:outline-none focus-visible:text-foreground focus-visible:underline"
+                      className="relative inline-block text-sm text-muted transition-colors duration-(--duration-base) hover:text-foreground hover:pl-1 focus-visible:outline-none focus-visible:text-foreground focus-visible:underline"
                     >
                       {link.label}
                     </Link>
@@ -51,7 +52,7 @@ export function Footer() {
                   <li key={link.label}>
                     <Link
                       href={link.href}
-                      className="text-sm text-muted transition-colors hover:text-foreground focus-visible:outline-none focus-visible:text-foreground focus-visible:underline"
+                      className="relative inline-block text-sm text-muted transition-colors duration-(--duration-base) hover:text-foreground hover:pl-1 focus-visible:outline-none focus-visible:text-foreground focus-visible:underline"
                     >
                       {link.label}
                     </Link>
@@ -66,7 +67,7 @@ export function Footer() {
                   <li key={link.href}>
                     <Link
                       href={link.href}
-                      className="text-sm text-muted transition-colors hover:text-foreground focus-visible:outline-none focus-visible:text-foreground focus-visible:underline"
+                      className="relative inline-block text-sm text-muted transition-colors duration-(--duration-base) hover:text-foreground hover:pl-1 focus-visible:outline-none focus-visible:text-foreground focus-visible:underline"
                     >
                       {link.label}
                     </Link>

@@ -1,4 +1,4 @@
-import { Star } from "lucide-react";
+import { Quote, Star } from "lucide-react";
 import { FadeIn } from "@/components/ui/motion";
 import { SectionHeader } from "@/components/ui/section-header";
 
@@ -39,7 +39,11 @@ export function ReviewsSection() {
         <div className="grid gap-px bg-border md:grid-cols-3">
           {reviews.map((review, i) => (
             <FadeIn key={review.name} delay={i * 0.08}>
-              <article className="flex h-full flex-col bg-surface p-8 md:p-10">
+              <article className="group relative flex h-full flex-col bg-surface p-8 transition-all duration-500 hover:-translate-y-1 hover:shadow-(--shadow-lg) md:p-10">
+                <Quote
+                  className="absolute right-6 top-6 h-8 w-8 text-accent-muted transition-colors duration-500 group-hover:text-accent/20"
+                  strokeWidth={1.5}
+                />
                 <div className="mb-5 flex gap-1">
                   {Array.from({ length: review.rating }).map((_, j) => (
                     <Star

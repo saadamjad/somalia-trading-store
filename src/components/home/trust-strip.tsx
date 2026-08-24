@@ -49,10 +49,10 @@ export function CTABanner() {
             <div className="flex flex-wrap gap-3">
               <Link
                 href="/shop"
-                className="inline-flex h-14 items-center justify-center gap-3 bg-accent px-8 text-sm font-semibold text-foreground transition-colors hover:bg-accent-hover"
+                className="group inline-flex h-14 items-center justify-center gap-3 bg-accent px-8 text-sm font-semibold text-foreground shadow-(--shadow-sm) transition-all duration-(--duration-base) hover:bg-accent-hover hover:shadow-(--shadow-md)"
               >
                 Explore Catalogue
-                <ArrowUpRight className="h-4 w-4" />
+                <ArrowUpRight className="h-4 w-4 transition-transform duration-(--duration-base) group-hover:translate-x-0.5" />
               </Link>
               <Link
                 href="/about"

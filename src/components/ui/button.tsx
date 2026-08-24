@@ -4,22 +4,22 @@ import { cva, type VariantProps } from "class-variance-authority";
 import { cn } from "@/lib/utils";
 
 const buttonVariants = cva(
-  "inline-flex items-center justify-center gap-2.5 whitespace-nowrap text-sm font-semibold transition-all duration-(--duration-base) ease-(--ease-standard) focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50",
+  "inline-flex items-center justify-center gap-2.5 whitespace-nowrap text-sm font-semibold transition-all duration-(--duration-base) ease-(--ease-standard) focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 [&_svg]:transition-transform [&_svg]:duration-(--duration-base) [&_svg]:ease-(--ease-standard) hover:[&_svg]:translate-x-0.5",
   {
     variants: {
       variant: {
         default:
-          "bg-foreground text-background hover:bg-foreground/90 active:scale-[0.98]",
+          "bg-foreground text-background shadow-(--shadow-sm) hover:bg-foreground/90 hover:shadow-(--shadow-md) active:scale-[0.98] active:shadow-(--shadow-sm)",
         accent:
-          "bg-accent text-foreground hover:bg-accent-hover active:scale-[0.98]",
+          "bg-accent text-foreground shadow-(--shadow-sm) hover:bg-accent-hover hover:shadow-(--shadow-md) hover:-translate-y-px active:scale-[0.98] active:translate-y-0 active:shadow-(--shadow-sm)",
         secondary:
           "border border-border-strong bg-transparent text-foreground hover:border-foreground hover:bg-foreground hover:text-background",
         outline:
-          "border border-border-strong bg-transparent text-foreground hover:border-foreground",
+          "border border-border-strong bg-transparent text-foreground hover:border-foreground hover:bg-accent-muted/40",
         ghost:
           "text-foreground hover:bg-accent-muted",
         destructive:
-          "bg-destructive text-white hover:bg-destructive/90",
+          "bg-destructive text-white shadow-(--shadow-sm) hover:bg-destructive/90 hover:shadow-(--shadow-md)",
         link: "text-foreground underline-offset-4 hover:underline",
       },
       size: {

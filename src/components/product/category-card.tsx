@@ -23,7 +23,7 @@ export function CategoryCard({
     <Link
       href={`/shop/${category.slug}`}
       className={cn(
-        "group relative flex flex-col overflow-hidden border border-border bg-surface transition-all duration-500 hover:shadow-(--shadow-md)",
+        "group relative flex flex-col overflow-hidden border border-border bg-surface transition-all duration-500 hover:-translate-y-1 hover:border-border-strong hover:shadow-(--shadow-lg)",
         className
       )}
     >

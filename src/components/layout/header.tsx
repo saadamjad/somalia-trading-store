@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import { useSession, signOut } from "next-auth/react";
 import { Heart, LogOut, Menu, Search, ShoppingCart, User, X } from "lucide-react";
 import { mainNav } from "@/config/navigation";
@@ -22,6 +23,8 @@ export function Header() {
   const wishlistCount = useWishlistStore((s) => s.getCount());
   const { data: session, status } = useSession();
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
+  const [isScrolled, setIsScrolled] = useState(false);
+  const shouldReduceMotion = useReducedMotion();
   const {
     isMobileMenuOpen,
     toggleMobileMenu,
@@ -43,9 +46,24 @@ export function Header() {
     closeMobileMenu();
   }, [pathname, closeMobileMenu]);
 
+  // Subtle elevation once the page scrolls past the header — gives the fixed
+  // header a sense of depth against page content instead of a flat, always-on
+  // shadow. Passive listener, no layout thrash (only toggles a boolean).
+  useEffect(() => {
+    const onScroll = () => setIsScrolled(window.scrollY > 8);
+    onScroll();
+    window.addEventListener("scroll", onScroll, { passive: true });
+    return () => window.removeEventListener("scroll", onScroll);
+  }, []);
+
   return (
     <>
-      <header className="fixed inset-x-0 top-0 z-50 border-b border-border bg-surface">
+      <header
+        className={cn(
+          "fixed inset-x-0 top-0 z-50 border-b bg-surface transition-shadow duration-(--duration-base)",
+          isScrolled ? "border-border shadow-(--shadow-sm)" : "border-transparent"
+        )}
+      >
         <div className="container-custom flex h-(--header-height) items-center justify-between">
           <Link
             href="/"
@@ -179,12 +197,18 @@ export function Header() {
           </div>
         </div>
 
+        <AnimatePresence>
         {isMobileMenuOpen && (
-          <nav
+          <motion.nav
             id="mobile-nav"
-            className="border-t border-border bg-surface px-6 py-6 lg:hidden"
+            initial={shouldReduceMotion ? { opacity: 0 } : { opacity: 0, height: 0 }}
+            animate={shouldReduceMotion ? { opacity: 1 } : { opacity: 1, height: "auto" }}
+            exit={shouldReduceMotion ? { opacity: 0 } : { opacity: 0, height: 0 }}
+            transition={{ duration: shouldReduceMotion ? 0.01 : 0.25, ease: [0.4, 0, 0.2, 1] }}
+            className="overflow-hidden border-t border-border bg-surface px-6 lg:hidden"
             aria-label="Mobile"
           >
+            <div className="py-6">
             <ul className="space-y-1">
               {mainNav.map((item) => (
                 <li key={item.href}>
@@ -235,8 +259,10 @@ export function Header() {
                 )
               )}
             </div>
-          </nav>
+            </div>
+          </motion.nav>
         )}
+        </AnimatePresence>
       </header>
 
       <MiniCartDrawer />

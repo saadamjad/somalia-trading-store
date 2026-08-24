@@ -25,8 +25,8 @@ export function StatsTrustSection() {
         <div className="grid grid-cols-2 gap-px border border-border bg-border md:grid-cols-4">
           {stats.map((stat, i) => (
             <FadeIn key={stat.label} delay={i * 0.06}>
-              <div className="bg-background px-6 py-8 text-center md:px-8 md:py-10">
-                <p className="font-display text-3xl font-bold text-foreground md:text-4xl">
+              <div className="group bg-background px-6 py-8 text-center transition-colors duration-500 hover:bg-accent-muted/30 md:px-8 md:py-10">
+                <p className="font-display text-3xl font-bold text-foreground transition-colors duration-500 group-hover:text-accent-text md:text-4xl">
                   {stat.value}
                 </p>
                 <p className="mt-2 text-xs font-semibold uppercase tracking-widest text-muted">

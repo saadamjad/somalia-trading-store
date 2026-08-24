@@ -111,10 +111,10 @@ export function OurStorySection() {
             <div className="flex items-center gap-4">
               <Link
                 href="/gallery"
-                className="hidden items-center gap-2 text-xs font-semibold uppercase tracking-widest text-foreground transition-colors hover:text-accent-text sm:inline-flex"
+                className="group hidden items-center gap-2 text-xs font-semibold uppercase tracking-widest text-foreground transition-colors hover:text-accent-text sm:inline-flex"
               >
                 View All
-                <ArrowUpRight className="h-3.5 w-3.5" />
+                <ArrowUpRight className="h-3.5 w-3.5 transition-transform duration-(--duration-base) group-hover:translate-x-0.5" />
               </Link>
               <div className="hidden items-center gap-2 md:flex">
                 <button
@@ -167,10 +167,10 @@ export function OurStorySection() {
 
           <Link
             href="/gallery"
-            className="mt-4 inline-flex items-center gap-2 text-xs font-semibold uppercase tracking-widest text-foreground transition-colors hover:text-accent-text sm:hidden"
+            className="group mt-4 inline-flex items-center gap-2 text-xs font-semibold uppercase tracking-widest text-foreground transition-colors hover:text-accent-text sm:hidden"
           >
             View All
-            <ArrowUpRight className="h-3.5 w-3.5" />
+            <ArrowUpRight className="h-3.5 w-3.5 transition-transform duration-(--duration-base) group-hover:translate-x-0.5" />
           </Link>
         </FadeIn>
       </div>

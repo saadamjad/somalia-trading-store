@@ -50,10 +50,10 @@ export default async function ShopPage() {
             </p>
             <Link
               href="/about"
-              className="inline-flex items-center gap-2 text-xs font-semibold uppercase tracking-widest text-foreground transition-colors hover:text-accent"
+              className="group inline-flex items-center gap-2 text-xs font-semibold uppercase tracking-widest text-foreground transition-colors hover:text-accent"
             >
               Get in Touch
-              <ArrowUpRight className="h-3.5 w-3.5" />
+              <ArrowUpRight className="h-3.5 w-3.5 transition-transform duration-(--duration-base) group-hover:translate-x-0.5" />
             </Link>
           </FadeIn>
         </div>

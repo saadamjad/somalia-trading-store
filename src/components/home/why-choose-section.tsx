@@ -45,14 +45,16 @@ export function WhyChooseSection() {
           </p>
         </FadeIn>
 
-        <div className="grid gap-px bg-border sm:grid-cols-2 lg:grid-cols-4">
+        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
           {pillars.map((pillar, i) => (
             <FadeIn key={pillar.title} delay={i * 0.06}>
-              <div className="h-full bg-background p-8">
-                <pillar.icon
-                  className="mb-5 h-5 w-5 text-accent"
-                  strokeWidth={1.5}
-                />
+              <div className="group h-full border border-border bg-background p-8 transition-all duration-500 hover:-translate-y-1 hover:border-accent/40 hover:shadow-(--shadow-md)">
+                <span className="mb-5 flex h-11 w-11 items-center justify-center rounded-full bg-accent-muted transition-colors duration-500 group-hover:bg-accent/20">
+                  <pillar.icon
+                    className="h-5 w-5 text-accent-text"
+                    strokeWidth={1.5}
+                  />
+                </span>
                 <h3 className="font-display mb-3 font-semibold">
                   {pillar.title}
                 </h3>

@@ -103,10 +103,10 @@ export function ProductDetailClient({
                   key={img}
                   onClick={() => setSelectedImage(i)}
                   className={cn(
-                    "relative h-20 w-20 overflow-hidden rounded-lg border-2 transition-colors",
+                    "relative h-20 w-20 overflow-hidden rounded-lg border-2 transition-all duration-(--duration-base)",
                     selectedImage === i
                       ? "border-accent"
-                      : "border-transparent"
+                      : "border-transparent opacity-70 hover:opacity-100"
                   )}
                   aria-label={`View image ${i + 1}`}
                 >

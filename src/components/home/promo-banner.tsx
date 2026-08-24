@@ -41,10 +41,10 @@ export function PromoBanner({ banner }: PromoBannerProps) {
           <FadeIn delay={0.15}>
             <Link
               href={banner.linkUrl}
-              className="inline-flex h-12 items-center justify-center gap-2 bg-accent px-6 text-sm font-semibold text-foreground transition-colors hover:bg-accent-hover"
+              className="group inline-flex h-12 items-center justify-center gap-2 bg-accent px-6 text-sm font-semibold text-foreground shadow-(--shadow-sm) transition-all duration-(--duration-base) hover:bg-accent-hover hover:shadow-(--shadow-md)"
             >
               {banner.ctaText}
-              <ArrowUpRight className="h-4 w-4" />
+              <ArrowUpRight className="h-4 w-4 transition-transform duration-(--duration-base) group-hover:translate-x-0.5" />
             </Link>
           </FadeIn>
         )}

@@ -100,10 +100,10 @@ export default async function AboutPage() {
             <span className="label mb-4 block">Values</span>
             <h2 className="font-display text-3xl font-bold">Core Values</h2>
           </FadeIn>
-          <div className="grid gap-px bg-border sm:grid-cols-2 lg:grid-cols-3">
+          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
             {values.map((value, i) => (
               <FadeIn key={value.title} delay={i * 0.05}>
-                <div className="bg-background p-8">
+                <div className="h-full border border-border bg-background p-8 transition-all duration-500 hover:-translate-y-1 hover:border-accent/40 hover:shadow-(--shadow-md)">
                   <h3 className="font-display mb-2 font-semibold">{value.title}</h3>
                   <p className="text-sm leading-relaxed text-muted">
                     {value.description}

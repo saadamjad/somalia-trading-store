@@ -122,7 +122,7 @@ export function ProductCard({
     <article className={cn("group", className)}>
       <Link
         href={productUrl}
-        className="relative mb-5 block aspect-[3/4] overflow-hidden bg-muted/10"
+        className="relative mb-5 block aspect-[3/4] overflow-hidden bg-muted/10 shadow-(--shadow-sm) transition-shadow duration-500 group-hover:shadow-(--shadow-lg)"
       >
         <Image
           src={product.images[0]}
@@ -143,7 +143,7 @@ export function ProductCard({
             inWishlist ? "Remove from wishlist" : "Add to wishlist"
           }
           className={cn(
-            "absolute right-4 top-4 flex h-9 w-9 items-center justify-center bg-white/90 transition-colors hover:bg-white",
+            "absolute right-4 top-4 flex h-9 w-9 items-center justify-center bg-white/90 shadow-(--shadow-sm) transition-all duration-(--duration-base) hover:scale-110 hover:bg-white",
             inWishlist && "text-accent"
           )}
         >
@@ -172,7 +172,7 @@ export function ProductCard({
           </span>
           <button
             onClick={handleAddToCart}
-            className="flex h-8 w-8 items-center justify-center border border-border-strong transition-colors hover:border-foreground"
+            className="flex h-8 w-8 items-center justify-center border border-border-strong transition-all duration-(--duration-base) hover:border-foreground hover:bg-foreground hover:text-background"
             aria-label="Add to cart"
           >
             <ArrowUpRight className="h-3.5 w-3.5" strokeWidth={1.5} />
