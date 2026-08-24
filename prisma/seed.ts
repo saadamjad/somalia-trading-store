@@ -13,10 +13,8 @@ const categories = [
       "Building materials, doors, hardware, and construction supplies for residential, commercial, and infrastructure projects.",
     shortDescription:
       "Building materials, doors, hardware, and supplies for every project scale.",
-    image:
-      "https://images.unsplash.com/photo-1678555815116-52c1b10517f5?w=900&q=80",
-    heroImage:
-      "https://images.unsplash.com/photo-1722604676113-36d5e770519a?w=1600&q=80",
+    image: "/images/products/construction-material/wooden-doors-trio-display.jpg",
+    heroImage: "/images/products/construction-material/wooden-door-living-room.jpg",
     accentColor: "#8B7355",
   },
   {
@@ -63,9 +61,10 @@ const products = [
       "A quality wooden interior door built from timber with a smooth lacquer finish. Suitable for homes, offices, and commercial interiors.",
     price: "160.00",
     images: [
-      "https://images.unsplash.com/photo-1678555815116-52c1b10517f5?w=1200&q=80",
-      "https://images.unsplash.com/photo-1722604676113-36d5e770519a?w=1200&q=80",
-      "https://images.unsplash.com/photo-1642499804098-a7cbaf79c151?w=1200&q=80",
+      "/images/products/construction-material/wooden-door-single-panel.jpg",
+      "/images/products/construction-material/wooden-door-panel-detail.jpg",
+      "/images/products/construction-material/wooden-doors-collection-angled.jpg",
+      "/images/products/construction-material/wooden-doors-catalog-collage.jpg",
     ],
     specifications: {
       Material: "Wood",

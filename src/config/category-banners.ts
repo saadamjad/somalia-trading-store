@@ -34,19 +34,19 @@ export const categoryBannerConfig: Record<CategorySlug, CategoryBannerConfig> = 
     ],
     images: {
       primary: {
-        src: "https://images.unsplash.com/photo-1678555815116-52c1b10517f5?w=1200&q=80",
-        alt: "Premium wooden interior door",
+        src: "/images/products/construction-material/wooden-doors-trio-display.jpg",
+        alt: "Three premium wooden interior doors in grey, walnut, and oak finishes",
         featured: true,
         featuredLabel: "Featured",
         featuredTitle: "Premium Wooden Doors",
       },
       secondary: {
-        src: "https://images.unsplash.com/photo-1722604676113-36d5e770519a?w=1200&q=80",
-        alt: "Interior door in modern hallway",
+        src: "/images/products/construction-material/wooden-door-living-room.jpg",
+        alt: "Walnut interior door installed in a modern living room",
       },
       tertiary: {
-        src: "https://images.unsplash.com/photo-1642499804098-a7cbaf79c151?w=1200&q=80",
-        alt: "Wooden door in residential space",
+        src: "/images/products/construction-material/wooden-door-dining-room.jpg",
+        alt: "Wooden interior door installed in a dining room setting",
       },
     },
     footerTags: ["Wood Finish", "Commercial", "Residential"],
