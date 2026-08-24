@@ -23,31 +23,34 @@ export function CategoryCard({
     <Link
       href={`/shop/${category.slug}`}
       className={cn(
-        "group relative flex flex-col justify-end overflow-hidden bg-dark-surface transition-all duration-500",
-        variant === "large" ? "min-h-[420px]" : "min-h-[320px]",
+        "group relative flex flex-col overflow-hidden border border-border bg-surface transition-all duration-500 hover:shadow-(--shadow-md)",
         className
       )}
     >
-      <Image
-        src={category.image}
-        alt={category.name}
-        fill
-        sizes="(max-width: 768px) 100vw, 33vw"
-        className="object-cover opacity-40 transition-all duration-700 group-hover:scale-[1.03] group-hover:opacity-55"
-      />
-      <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-transparent" />
+      <div
+        className={cn(
+          "relative w-full overflow-hidden bg-muted/10",
+          variant === "large" ? "aspect-[4/3]" : "aspect-square"
+        )}
+      >
+        <Image
+          src={category.image}
+          alt={category.name}
+          fill
+          sizes="(max-width: 768px) 100vw, 33vw"
+          className="object-cover transition-transform duration-700 group-hover:scale-[1.03]"
+        />
+      </div>
 
-      <div className="relative bg-black/80 p-7 backdrop-blur-sm md:p-9">
-        <span className="label mb-3 block text-accent">
-          Category 0{index + 1}
-        </span>
-        <h3 className="font-display mb-3 text-2xl font-bold text-white md:text-3xl">
+      <div className="flex flex-1 flex-col p-7 md:p-9">
+        <span className="label mb-3 block">Category 0{index + 1}</span>
+        <h3 className="font-display mb-3 text-2xl font-bold text-foreground md:text-3xl">
           {category.name}
         </h3>
-        <p className="mb-6 max-w-xs text-sm leading-relaxed text-white/70">
+        <p className="mb-6 max-w-xs text-sm leading-relaxed text-muted">
           {category.shortDescription}
         </p>
-        <span className="inline-flex items-center gap-2 text-xs font-semibold uppercase tracking-widest text-accent transition-all group-hover:gap-3">
+        <span className="mt-auto inline-flex items-center gap-2 text-xs font-semibold uppercase tracking-widest text-accent-text transition-all group-hover:gap-3">
           View Products
           <ArrowUpRight className="h-3.5 w-3.5" />
         </span>

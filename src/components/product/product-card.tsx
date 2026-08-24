@@ -122,7 +122,7 @@ export function ProductCard({
     <article className={cn("group", className)}>
       <Link
         href={productUrl}
-        className="relative mb-5 block aspect-[3/4] overflow-hidden bg-dark-surface"
+        className="relative mb-5 block aspect-[3/4] overflow-hidden bg-muted/10"
       >
         <Image
           src={product.images[0]}

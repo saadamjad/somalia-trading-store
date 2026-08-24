@@ -32,7 +32,7 @@ export default async function AdminLayout({ children }: { children: React.ReactN
     <div className="flex min-h-screen pt-(--header-height)">
       <aside className="hidden w-56 shrink-0 border-r border-border bg-surface md:block">
         <div className="p-6">
-          <span className="label mb-1 block text-accent">Admin</span>
+          <span className="label mb-1 block">Admin</span>
           <p className="text-sm text-muted">{session.name || session.email}</p>
         </div>
         <nav className="flex flex-col gap-1 px-3" aria-label="Admin">

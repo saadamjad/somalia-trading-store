@@ -264,7 +264,7 @@ function PeriodLink({ period, active }: { period: DashboardPeriod; active: boole
       href={period === "30d" ? "/admin" : `/admin?period=${period}`}
       className={
         active
-          ? "rounded-md bg-accent px-3 py-1.5 text-sm font-medium text-white"
+          ? "rounded-md bg-accent px-3 py-1.5 text-sm font-medium text-foreground"
           : "rounded-md px-3 py-1.5 text-sm font-medium text-muted hover:bg-accent-muted"
       }
       aria-current={active ? "page" : undefined}

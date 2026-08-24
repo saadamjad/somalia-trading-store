@@ -28,12 +28,12 @@ interface HeroSectionProps {
 
 export function HeroSection({ categories, banner }: HeroSectionProps) {
   return (
-    <section className="mesh-dark relative min-h-screen overflow-hidden">
+    <section className="mesh-light relative min-h-screen overflow-hidden pt-(--header-height)">
       <div
         className="pointer-events-none absolute inset-0 opacity-[0.03]"
         style={{
           backgroundImage:
-            "linear-gradient(rgba(255,255,255,0.5) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.5) 1px, transparent 1px)",
+            "linear-gradient(rgba(12,12,12,0.5) 1px, transparent 1px), linear-gradient(90deg, rgba(12,12,12,0.5) 1px, transparent 1px)",
           backgroundSize: "80px 80px",
         }}
       />
@@ -52,11 +52,11 @@ export function HeroSection({ categories, banner }: HeroSectionProps) {
             </div>
 
             {banner ? (
-              <h1 className="font-display text-balance mb-8 text-[clamp(2.75rem,7vw,5.5rem)] font-bold leading-[0.95] tracking-tight text-white">
+              <h1 className="font-display text-balance mb-8 text-[clamp(2.75rem,7vw,5.5rem)] font-bold leading-[0.95] tracking-tight text-foreground">
                 {banner.title}
               </h1>
             ) : (
-              <h1 className="font-display text-balance mb-8 text-[clamp(2.75rem,7vw,5.5rem)] font-bold leading-[0.95] tracking-tight text-white">
+              <h1 className="font-display text-balance mb-8 text-[clamp(2.75rem,7vw,5.5rem)] font-bold leading-[0.95] tracking-tight text-foreground">
                 Built for
                 <br />
                 <span className="text-accent">Industry.</span>
@@ -65,7 +65,7 @@ export function HeroSection({ categories, banner }: HeroSectionProps) {
               </h1>
             )}
 
-            <p className="mb-10 max-w-lg text-base leading-relaxed text-white/55 md:text-lg">
+            <p className="mb-10 max-w-lg text-base leading-relaxed text-muted md:text-lg">
               {banner?.subtitle || brand.description}
             </p>
 
@@ -88,7 +88,7 @@ export function HeroSection({ categories, banner }: HeroSectionProps) {
                 <Link
                   key={cat.slug}
                   href={`/shop/${cat.slug}`}
-                  className={`group relative overflow-hidden bg-dark-surface ${
+                  className={`group relative overflow-hidden border border-border bg-muted/10 ${
                     i === 0 ? "col-span-2 aspect-[16/7]" : "aspect-square"
                   }`}
                 >
@@ -97,10 +97,10 @@ export function HeroSection({ categories, banner }: HeroSectionProps) {
                     alt={cat.name}
                     fill
                     sizes="(max-width: 768px) 50vw, 25vw"
-                    className="object-cover opacity-60 transition-all duration-700 group-hover:scale-105 group-hover:opacity-75"
+                    className="object-cover transition-transform duration-700 group-hover:scale-105"
                   />
-                  <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-transparent to-transparent" />
-                  <div className="absolute inset-x-0 bottom-0 bg-black/80 p-4 backdrop-blur-sm md:p-5">
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/10 to-transparent" />
+                  <div className="absolute inset-x-0 bottom-0 p-4 md:p-5">
                     <span className="label mb-1 block text-accent">
                       0{i + 1}
                     </span>
@@ -119,7 +119,7 @@ export function HeroSection({ categories, banner }: HeroSectionProps) {
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ delay: 0.6, duration: 0.6 }}
-          className="mt-16 grid grid-cols-2 gap-px border border-white/10 bg-white/10 md:grid-cols-4"
+          className="mt-16 grid grid-cols-2 gap-px border border-border bg-border md:grid-cols-4"
         >
           {[
             { label: "Industries", value: "3" },
@@ -127,11 +127,11 @@ export function HeroSection({ categories, banner }: HeroSectionProps) {
             { label: "Market", value: "Somalia" },
             { label: "Focus", value: "Quality" },
           ].map((stat) => (
-            <div key={stat.label} className="bg-dark-surface px-6 py-5">
-              <p className="font-display text-2xl font-bold text-white md:text-3xl">
+            <div key={stat.label} className="bg-surface px-6 py-5">
+              <p className="font-display text-2xl font-bold text-foreground md:text-3xl">
                 {stat.value}
               </p>
-              <p className="mt-1 text-xs text-white/40">{stat.label}</p>
+              <p className="mt-1 text-xs text-muted-foreground">{stat.label}</p>
             </div>
           ))}
         </motion.div>

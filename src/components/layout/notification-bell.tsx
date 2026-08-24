@@ -49,7 +49,7 @@ export function NotificationBell() {
   return (
     <Link
       href="/account/notifications"
-      className="relative flex h-10 w-10 items-center justify-center text-white/70 transition-colors hover:text-white"
+      className="relative flex h-10 w-10 items-center justify-center text-muted-foreground transition-colors hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-surface"
       aria-label={`Notifications, ${unreadCount} unread`}
     >
       <Bell className="h-[18px] w-[18px]" strokeWidth={1.5} />

@@ -17,24 +17,16 @@ export default async function ShopPage() {
 
   return (
     <>
-      <section className="mesh-dark relative overflow-hidden pt-(--header-height)">
-        <div
-          className="pointer-events-none absolute inset-0 opacity-[0.03]"
-          style={{
-            backgroundImage:
-              "linear-gradient(rgba(255,255,255,0.5) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.5) 1px, transparent 1px)",
-            backgroundSize: "64px 64px",
-          }}
-        />
+      <section className="mesh-light relative overflow-hidden pt-(--header-height)">
         <div className="container-custom relative z-10 py-20 md:py-28">
           <FadeIn>
-            <span className="label mb-4 block text-accent">Catalogue</span>
-            <h1 className="font-display mb-5 max-w-2xl text-4xl font-bold text-white md:text-6xl">
+            <span className="label mb-4 block">Catalogue</span>
+            <h1 className="font-display mb-5 max-w-2xl text-4xl font-bold text-foreground md:text-6xl">
               Browse by
               <br />
               <span className="text-accent">Category</span>
             </h1>
-            <p className="max-w-lg text-sm leading-relaxed text-white/50 md:text-base">
+            <p className="max-w-lg text-sm leading-relaxed text-muted md:text-base">
               Select a category to explore products — construction materials,
               road interlocks, and fishing products.
             </p>

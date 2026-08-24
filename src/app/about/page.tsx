@@ -26,14 +26,14 @@ export default async function AboutPage() {
 
   return (
     <>
-      <section className="mesh-dark relative overflow-hidden pt-(--header-height)">
+      <section className="mesh-light relative overflow-hidden pt-(--header-height)">
         <div className="container-custom py-24 md:py-32">
           <FadeIn>
-            <span className="label mb-6 block text-accent">About</span>
-            <h1 className="font-display mb-6 max-w-3xl text-4xl font-bold text-white md:text-6xl">
+            <span className="label mb-6 block">About</span>
+            <h1 className="font-display mb-6 max-w-3xl text-4xl font-bold text-foreground md:text-6xl">
               Your Trusted Trading Partner in Somalia
             </h1>
-            <p className="max-w-xl text-base leading-relaxed text-white/50">
+            <p className="max-w-xl text-base leading-relaxed text-muted">
               {brand.description}
             </p>
           </FadeIn>
@@ -131,22 +131,22 @@ export default async function AboutPage() {
         </div>
       </section>
 
-      <section className="mesh-dark section-padding">
+      <section className="mesh-light section-padding border-t border-border">
         <div className="container-custom text-center">
           <FadeIn>
-            <h2 className="font-display mb-4 text-3xl font-bold text-white md:text-4xl">
+            <h2 className="font-display mb-4 text-3xl font-bold text-foreground md:text-4xl">
               Get in Touch
             </h2>
-            <p className="mx-auto mb-8 max-w-md text-white/50">
+            <p className="mx-auto mb-8 max-w-md text-muted">
               Have a project or product inquiry? Contact us or browse our
               catalogue.
             </p>
-            <div className="mb-8 flex flex-col items-center gap-2 text-sm text-white/60">
+            <div className="mb-8 flex flex-col items-center gap-2 text-sm text-muted-foreground">
               {brand.contact.phones.map((phone) => (
                 <a
                   key={phone}
                   href={`tel:${phone.replace(/\s/g, "")}`}
-                  className="transition-colors hover:text-accent"
+                  className="transition-colors hover:text-accent-text"
                 >
                   {phone}
                 </a>

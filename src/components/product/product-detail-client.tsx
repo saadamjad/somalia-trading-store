@@ -78,7 +78,7 @@ export function ProductDetailClient({
 
       <div className="grid gap-10 lg:grid-cols-2 lg:gap-16">
         <div>
-          <div className="relative mb-4 aspect-square overflow-hidden bg-dark-surface">
+          <div className="relative mb-4 aspect-square overflow-hidden bg-muted/10">
             <motion.div
               key={selectedImage}
               initial={{ opacity: 0 }}

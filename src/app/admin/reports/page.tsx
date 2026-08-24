@@ -92,7 +92,7 @@ export default async function AdminReportsPage({ searchParams }: PageProps) {
             aria-current={type === query.type ? "page" : undefined}
             className={
               type === query.type
-                ? "rounded-md bg-accent px-3 py-1.5 text-sm font-medium text-white"
+                ? "rounded-md bg-accent px-3 py-1.5 text-sm font-medium text-foreground"
                 : "rounded-md px-3 py-1.5 text-sm font-medium text-muted hover:bg-accent-muted"
             }
           >
