@@ -99,7 +99,7 @@ test.describe("Customer critical path", () => {
     await page.goto("/");
     await expect(page.getByRole("heading", { level: 1 }).first()).toBeVisible();
 
-    await page.getByRole("link", { name: "Explore Catalogue" }).click();
+    await page.getByRole("link", { name: "Explore Catalogue" }).first().click();
     await expect(page).toHaveURL(/\/shop$/);
 
     await page.getByRole("link", { name: /Construction Materials/i }).first().click();
