@@ -63,6 +63,7 @@ export default function CartPage() {
                     src={product.images[0]}
                     alt={product.name}
                     fill
+                    sizes="96px"
                     className="object-cover"
                   />
                 </div>

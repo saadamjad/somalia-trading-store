@@ -19,6 +19,7 @@ export function Footer() {
                   src="/images/brand/fgt-logo.svg"
                   alt=""
                   fill
+                  sizes="40px"
                   className="object-contain p-0.5"
                 />
               </span>

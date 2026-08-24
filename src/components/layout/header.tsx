@@ -74,6 +74,7 @@ export function Header() {
                 src="/images/brand/fgt-logo.svg"
                 alt=""
                 fill
+                sizes="36px"
                 className="object-contain p-0.5"
               />
             </span>

@@ -114,6 +114,7 @@ export function ProductDetailClient({
                     src={img}
                     alt=""
                     fill
+                    sizes="80px"
                     className="object-cover"
                   />
                 </button>

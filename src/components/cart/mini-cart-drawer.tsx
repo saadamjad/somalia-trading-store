@@ -55,6 +55,7 @@ export function MiniCartDrawer() {
                       src={product.images[0]}
                       alt={product.name}
                       fill
+                      sizes="80px"
                       className="object-cover"
                     />
                   </div>
