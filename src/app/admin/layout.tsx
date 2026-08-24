@@ -29,7 +29,7 @@ export default async function AdminLayout({ children }: { children: React.ReactN
   }
 
   return (
-    <div className="flex min-h-screen pt-[4.5rem]">
+    <div className="flex min-h-screen pt-(--header-height)">
       <aside className="hidden w-56 shrink-0 border-r border-border bg-surface md:block">
         <div className="p-6">
           <span className="label mb-1 block text-accent">Admin</span>
