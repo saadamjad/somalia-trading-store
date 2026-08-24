@@ -5,6 +5,7 @@ import Link from "next/link";
 import { Minus, Plus, ShoppingBag, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
+import { EmptyState } from "@/components/ui/empty-state";
 import { useCartStore } from "@/stores/cart-store";
 import { useCartProducts } from "@/hooks/use-cart-products";
 import { useCartStockValidation } from "@/hooks/use-cart-stock-validation";
@@ -23,16 +24,17 @@ export default function CartPage() {
 
   if (!isLoading && items.length === 0) {
     return (
-      <div className="container-custom flex min-h-[60vh] flex-col items-center justify-center py-24 text-center">
-        <ShoppingBag className="mb-6 h-20 w-20 text-muted" />
-        <h1 className="font-display mb-2 text-3xl font-bold">Your Cart is Empty</h1>
-        <p className="mb-8 max-w-md text-muted">
-          Looks like you haven&apos;t added any products yet. Browse our
-          catalogue and find what you need.
-        </p>
-        <Button asChild size="lg">
-          <Link href="/shop">Shop Products</Link>
-        </Button>
+      <div className="container-custom min-h-[60vh] py-24">
+        <EmptyState
+          icon={ShoppingBag}
+          title="Your Cart is Empty"
+          description="Looks like you haven't added any products yet. Browse our catalogue and find what you need."
+          action={
+            <Button asChild size="lg">
+              <Link href="/shop">Shop Products</Link>
+            </Button>
+          }
+        />
       </div>
     );
   }

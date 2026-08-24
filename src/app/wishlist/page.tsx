@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { Heart } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { EmptyState } from "@/components/ui/empty-state";
 import { ProductCard } from "@/components/product/product-card";
 import { useWishlistStore } from "@/stores/wishlist-store";
 import type { Product } from "@/lib/types/product";
@@ -40,18 +41,17 @@ export default function WishlistPage() {
 
   if (products.length === 0) {
     return (
-      <div className="container-custom flex min-h-[60vh] flex-col items-center justify-center py-24 text-center">
-        <Heart className="mb-6 h-20 w-20 text-muted" />
-        <h1 className="font-display mb-2 text-3xl font-bold">
-          Your Wishlist is Empty
-        </h1>
-        <p className="mb-8 max-w-md text-muted">
-          Save products you love by clicking the heart icon on any product
-          card.
-        </p>
-        <Button asChild size="lg">
-          <Link href="/shop">Browse Products</Link>
-        </Button>
+      <div className="container-custom min-h-[60vh] py-24">
+        <EmptyState
+          icon={Heart}
+          title="Your Wishlist is Empty"
+          description="Save products you love by clicking the heart icon on any product card."
+          action={
+            <Button asChild size="lg">
+              <Link href="/shop">Browse Products</Link>
+            </Button>
+          }
+        />
       </div>
     );
   }

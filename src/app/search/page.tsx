@@ -2,6 +2,7 @@ import Link from "next/link";
 import { Search } from "lucide-react";
 import { ProductCard } from "@/components/product/product-card";
 import { Button } from "@/components/ui/button";
+import { EmptyState } from "@/components/ui/empty-state";
 import { createPageMetadata } from "@/config/seo";
 import { productService } from "@/server/services/product-service";
 
@@ -27,25 +28,29 @@ export default async function SearchPage({ searchParams }: SearchPageProps) {
       </h1>
 
       {!query ? (
-        <div className="flex min-h-[40vh] flex-col items-center justify-center text-center">
-          <Search className="mb-4 h-16 w-16 text-muted" />
-          <p className="text-muted">Enter a search term to find products.</p>
-          <Button asChild className="mt-6">
-            <Link href="/shop">Browse Catalogue</Link>
-          </Button>
+        <div className="min-h-[40vh]">
+          <EmptyState
+            icon={Search}
+            title="Enter a search term to find products."
+            action={
+              <Button asChild>
+                <Link href="/shop">Browse Catalogue</Link>
+              </Button>
+            }
+          />
         </div>
       ) : results.length === 0 ? (
-        <div className="flex min-h-[40vh] flex-col items-center justify-center text-center">
-          <Search className="mb-4 h-16 w-16 text-muted" />
-          <h2 className="font-display mb-2 text-xl font-semibold">
-            No results for &ldquo;{query}&rdquo;
-          </h2>
-          <p className="mb-6 text-muted">
-            Try different keywords or browse our categories.
-          </p>
-          <Button asChild variant="outline">
-            <Link href="/shop">Browse All Products</Link>
-          </Button>
+        <div className="min-h-[40vh]">
+          <EmptyState
+            icon={Search}
+            title={`No results for "${query}"`}
+            description="Try different keywords or browse our categories."
+            action={
+              <Button asChild variant="outline">
+                <Link href="/shop">Browse All Products</Link>
+              </Button>
+            }
+          />
         </div>
       ) : (
         <>

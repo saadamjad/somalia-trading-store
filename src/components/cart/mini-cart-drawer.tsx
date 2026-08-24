@@ -4,6 +4,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { Minus, Plus, ShoppingBag, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { EmptyState } from "@/components/ui/empty-state";
 import {
   Sheet,
   SheetContent,
@@ -32,18 +33,16 @@ export function MiniCartDrawer() {
 
         <div className="flex-1 overflow-y-auto px-6 py-4">
           {items.length === 0 ? (
-            <div className="flex flex-col items-center justify-center py-16 text-center">
-              <ShoppingBag className="mb-4 h-16 w-16 text-muted" />
-              <h3 className="font-display mb-2 text-lg font-semibold">
-                Your cart is empty
-              </h3>
-              <p className="mb-6 text-sm text-muted">
-                Browse our products and add items to get started.
-              </p>
-              <Button asChild onClick={closeCart}>
-                <Link href="/shop">Shop Products</Link>
-              </Button>
-            </div>
+            <EmptyState
+              icon={ShoppingBag}
+              title="Your cart is empty"
+              description="Browse our products and add items to get started."
+              action={
+                <Button asChild onClick={closeCart}>
+                  <Link href="/shop">Shop Products</Link>
+                </Button>
+              }
+            />
           ) : (
             <ul className="space-y-4">
               {items.map(({ product, quantity }) => (

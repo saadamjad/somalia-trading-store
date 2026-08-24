@@ -8,6 +8,7 @@ import {
   FilterPanel,
 } from "@/components/product/filter-panel";
 import { Button } from "@/components/ui/button";
+import { EmptyState } from "@/components/ui/empty-state";
 import { Input } from "@/components/ui/input";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { getFiltersForCategory } from "@/config/filters";
@@ -178,17 +179,15 @@ export function ProductListing({ category, initialSearch = "" }: ProductListingP
           {isLoading ? (
             <div className="py-24 text-center text-sm text-muted">Loading products…</div>
           ) : items.length === 0 ? (
-            <div className="py-24 text-center">
-              <p className="font-display mb-2 text-xl font-semibold">
-                No products found
-              </p>
-              <p className="mb-6 text-sm text-muted">
-                Try adjusting your filters.
-              </p>
-              <Button variant="outline" onClick={clearFilters}>
-                Clear filters
-              </Button>
-            </div>
+            <EmptyState
+              title="No products found"
+              description="Try adjusting your filters."
+              action={
+                <Button variant="outline" onClick={clearFilters}>
+                  Clear filters
+                </Button>
+              }
+            />
           ) : (
             <div className="grid gap-12 sm:grid-cols-2 xl:grid-cols-3">
               {items.map((product) => (
