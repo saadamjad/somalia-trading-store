@@ -33,11 +33,47 @@ test.describe("Customer critical path", () => {
   });
 
   test("checkout with an empty cart is handled gracefully", async () => {
-    // No login required to observe this — checkout redirects to /login first for an
-    // anonymous visitor, which is itself the correct graceful handling (no crash, no
-    // fake order). Confirm that redirect happens cleanly.
+    // Checkout no longer requires login (guest checkout) — an anonymous visitor with
+    // an empty cart stays on /checkout and sees the "Nothing to Checkout" empty
+    // state, not a redirect. Confirm that renders cleanly, no crash, no fake order.
     await page.goto("/checkout");
-    await expect(page).toHaveURL(/\/login/);
+    await expect(page).toHaveURL(/\/checkout$/);
+    await expect(page.getByRole("heading", { name: "Nothing to Checkout" })).toBeVisible();
+  });
+
+  test("guest checkout: place an order with no account, no login", async () => {
+    // Uses its own throwaway context (never logs in) so this never touches the
+    // customer session/cart the rest of this serial suite shares — see
+    // order-service.ts createGuestOrder for the server-side behavior this exercises.
+    const guestContext = await page.context().browser()!.newContext();
+    const guest = await guestContext.newPage();
+
+    await guest.goto("/shop/construction-materials/premium-wooden-interior-door");
+    await guest.getByRole("button", { name: "Add to Cart" }).click();
+    await expect(guest.getByText(/added to cart/i)).toBeVisible();
+
+    await guest.goto("/cart");
+    await guest.getByRole("link", { name: "Proceed to Checkout" }).click();
+    // No redirect to /login — guest checkout stays on /checkout.
+    await expect(guest).toHaveURL(/\/checkout$/);
+    await expect(guest.getByText("Checking out as a guest")).toBeVisible();
+
+    await guest.getByLabel("Full Name *").fill("E2E Guest Buyer");
+    await guest.getByLabel("Email *").fill(uniqueTestEmail("e2e-guest"));
+    await guest.getByLabel("Recipient Name *").fill("E2E Guest Buyer");
+    await guest.getByLabel("Phone *").fill("+252611234567");
+    await guest.getByLabel("Address Line 1 *").fill("456 Guest Street");
+    await guest.getByLabel("City *").fill("Mogadishu");
+    await guest.getByLabel("Country *").fill("Somalia");
+
+    await guest.getByRole("button", { name: "Place Order" }).click();
+
+    // A guest has no session, so confirmation is the public page, not
+    // /account/orders/[id] — see checkout-form.tsx and checkout/confirmation/page.tsx.
+    await expect(guest).toHaveURL(/\/checkout\/confirmation\?orderNumber=/, { timeout: 15_000 });
+    await expect(guest.getByRole("heading", { name: "Order Placed" })).toBeVisible();
+
+    await guestContext.close();
   });
 
   test("register a new customer account", async () => {
