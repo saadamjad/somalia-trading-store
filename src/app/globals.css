@@ -1,34 +1,109 @@
 @import "tailwindcss";
 
+/*
+ * DESIGN TOKEN ARCHITECTURE — three layers, single source of truth.
+ *
+ * 1. PRIMITIVES  — raw values (colors, radii, shadows, durations). Never
+ *    referenced directly by components; only Layer 2/3 may reference these.
+ * 2. SEMANTIC     — named by purpose (background, text-muted, accent, border,
+ *    success...). This is what most components consume. Changing a primitive
+ *    here propagates everywhere that semantic token is used, automatically.
+ * 3. COMPONENT    — narrow, only added where a component's value genuinely
+ *    differs from its semantic parent (header height, radius/shadow/motion
+ *    scales). Most components should consume Layer 2 directly.
+ *
+ * THEME SWITCHING: only Layer 2 (semantic) needs to change to support a
+ * future theme (dark mode, alt brand). Scope a second block under
+ * `[data-theme="dark"] { ... }` that redefines the same semantic names —
+ * Layer 1 primitives and Layer 3 component tokens need zero changes, and
+ * no component needs to change either, since components only ever consume
+ * Layer 2/3 names. See the commented example below `:root`.
+ */
+
 :root {
-  --background: #faf9f6;
-  --foreground: #0c0c0c;
-  --surface: #ffffff;
-  --primary: #0c0c0c;
-  --primary-foreground: #faf9f6;
-  --accent: #c8a24a;
-  --accent-hover: #b8923f;
-  --accent-muted: rgba(200, 162, 74, 0.12);
-  --muted: #6b6b6b;
-  --muted-foreground: #8a8a8a;
-  --border: rgba(12, 12, 12, 0.08);
-  --border-strong: rgba(12, 12, 12, 0.14);
-  --dark: #0c0c0c;
-  --dark-surface: #141414;
-  --success: #2d6a4f;
-  --destructive: #c0392b;
-  --ring: #c8a24a;
+  /* ---- Layer 1: Primitives ---- */
+  --gray-950: #0c0c0c;
+  --gray-900: #141414;
+  --gray-500: #6b6b6b;
+  --gray-400: #8a8a8a;
+  --gray-200: rgba(12, 12, 12, 0.08);
+  --gray-300: rgba(12, 12, 12, 0.14);
+  --cream-50: #faf9f6;
+  --white: #ffffff;
+  --gold-500: #c8a24a;
+  --gold-600: #b8923f;
+  --gold-100: rgba(200, 162, 74, 0.12);
+  --green-700: #2d6a4f;
+  --red-600: #c0392b;
+
+  /* ---- Layer 2: Semantic ---- */
+  --background: var(--cream-50);
+  --foreground: var(--gray-950);
+  --surface: var(--white);
+  --card: var(--surface);
+  --primary: var(--gray-950);
+  --primary-foreground: var(--cream-50);
+  --secondary: var(--gray-950);
+  --accent: var(--gold-500);
+  --accent-hover: var(--gold-600);
+  --accent-muted: var(--gold-100);
+  --accent-light: var(--gold-100);
+  --muted: var(--gray-500);
+  --muted-foreground: var(--gray-400);
+  --border: var(--gray-200);
+  --border-strong: var(--gray-300);
+  --dark: var(--gray-950);
+  --dark-surface: var(--gray-900);
+  --success: var(--green-700);
+  --destructive: var(--red-600);
+  --ring: var(--gold-500);
+
+  /* ---- Layer 3: Component tokens ---- */
+  --header-height: 4.5rem;
+  --radius-sm: 0.25rem;
+  --radius-md: 0.5rem;
+  --radius-lg: 0.75rem;
+  --radius-xl: 1rem;
+  --radius-pill: 9999px;
+  --shadow-sm: 0 1px 2px rgba(12, 12, 12, 0.06);
+  --shadow-md: 0 4px 12px rgba(12, 12, 12, 0.08);
+  --shadow-lg: 0 10px 25px rgba(12, 12, 12, 0.1);
+  --shadow-xl: 0 20px 40px rgba(12, 12, 12, 0.12);
+  --shadow-elevated: 0 25px 50px rgba(12, 12, 12, 0.18);
+  --duration-fast: 150ms;
+  --duration-base: 250ms;
+  --duration-slow: 400ms;
+  --ease-standard: cubic-bezier(0.4, 0, 0.2, 1);
+  --ease-emphasized: cubic-bezier(0.16, 1, 0.3, 1);
 }
+
+/*
+ * Future dark theme — only Layer 2 semantic names get redefined here.
+ * Uncomment and refine when dark mode is actually built:
+ *
+ * [data-theme="dark"] {
+ *   --background: var(--gray-950);
+ *   --foreground: var(--cream-50);
+ *   --surface: var(--gray-900);
+ *   --card: var(--surface);
+ *   --muted-foreground: var(--gray-500);
+ *   --border: rgba(255, 255, 255, 0.08);
+ *   --border-strong: rgba(255, 255, 255, 0.14);
+ * }
+ */
 
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
   --color-surface: var(--surface);
+  --color-card: var(--card);
   --color-primary: var(--primary);
   --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
   --color-accent: var(--accent);
   --color-accent-hover: var(--accent-hover);
   --color-accent-muted: var(--accent-muted);
+  --color-accent-light: var(--accent-light);
   --color-muted: var(--muted);
   --color-muted-foreground: var(--muted-foreground);
   --color-border: var(--border);
