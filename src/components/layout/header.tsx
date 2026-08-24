@@ -46,10 +46,10 @@ export function Header() {
   return (
     <>
       <header className="fixed inset-x-0 top-0 z-50 border-b border-white/10 bg-dark">
-        <div className="container-custom flex h-[4.5rem] items-center justify-between">
+        <div className="container-custom flex h-[var(--header-height)] items-center justify-between">
           <Link
             href="/"
-            className="font-display flex items-center gap-3 text-sm font-bold tracking-tight text-white transition-colors md:text-base"
+            className="font-display flex items-center gap-3 text-sm font-bold tracking-tight text-white transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-dark md:text-base"
           >
             <span className="relative h-9 w-9 shrink-0 bg-white p-1">
               <Image
@@ -70,7 +70,7 @@ export function Header() {
                 key={item.href}
                 href={item.href}
                 className={cn(
-                  "text-xs font-medium uppercase tracking-widest transition-colors duration-300",
+                  "text-xs font-medium uppercase tracking-widest transition-colors duration-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-dark",
                   pathname === item.href
                     ? "text-accent"
                     : "text-white/60 hover:text-white"
@@ -84,7 +84,7 @@ export function Header() {
           <div className="flex items-center gap-1">
             <button
               onClick={openSearch}
-              className="flex h-10 w-10 items-center justify-center text-white/70 transition-colors hover:text-white"
+              className="flex h-10 w-10 items-center justify-center text-white/70 transition-colors hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-dark"
               aria-label="Search products"
             >
               <Search className="h-[18px] w-[18px]" strokeWidth={1.5} />
@@ -92,7 +92,7 @@ export function Header() {
 
             <Link
               href="/wishlist"
-              className="relative flex h-10 w-10 items-center justify-center text-white/70 transition-colors hover:text-white"
+              className="relative flex h-10 w-10 items-center justify-center text-white/70 transition-colors hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-dark"
               aria-label={`Wishlist, ${wishlistCount} items`}
             >
               <Heart className="h-[18px] w-[18px]" strokeWidth={1.5} />
@@ -103,7 +103,7 @@ export function Header() {
 
             <button
               onClick={openCart}
-              className="relative flex h-10 w-10 items-center justify-center text-white/70 transition-colors hover:text-white"
+              className="relative flex h-10 w-10 items-center justify-center text-white/70 transition-colors hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-dark"
               aria-label={`Cart, ${cartCount} items`}
             >
               <ShoppingCart className="h-[18px] w-[18px]" strokeWidth={1.5} />
@@ -120,7 +120,7 @@ export function Header() {
               <div className="relative hidden lg:block">
                 <button
                   onClick={() => setIsUserMenuOpen((open) => !open)}
-                  className="flex h-10 w-10 items-center justify-center text-white/70 transition-colors hover:text-white"
+                  className="flex h-10 w-10 items-center justify-center text-white/70 transition-colors hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-dark"
                   aria-label="Account menu"
                   aria-expanded={isUserMenuOpen}
                 >
@@ -134,7 +134,7 @@ export function Header() {
                     <Link
                       href="/account"
                       onClick={() => setIsUserMenuOpen(false)}
-                      className="flex w-full items-center gap-2 px-4 py-2.5 text-left text-xs font-medium uppercase tracking-widest text-white/70 transition-colors hover:text-white"
+                      className="flex w-full items-center gap-2 px-4 py-2.5 text-left text-xs font-medium uppercase tracking-widest text-white/70 transition-colors hover:text-white focus-visible:bg-white/5 focus-visible:text-white focus-visible:outline-none"
                     >
                       <User className="h-3.5 w-3.5" strokeWidth={1.5} />
                       My Account
@@ -144,7 +144,7 @@ export function Header() {
                         setIsUserMenuOpen(false);
                         void signOut({ callbackUrl: "/" });
                       }}
-                      className="flex w-full items-center gap-2 px-4 py-2.5 text-left text-xs font-medium uppercase tracking-widest text-white/70 transition-colors hover:text-white"
+                      className="flex w-full items-center gap-2 px-4 py-2.5 text-left text-xs font-medium uppercase tracking-widest text-white/70 transition-colors hover:text-white focus-visible:bg-white/5 focus-visible:text-white focus-visible:outline-none"
                     >
                       <LogOut className="h-3.5 w-3.5" strokeWidth={1.5} />
                       Log Out
@@ -156,7 +156,7 @@ export function Header() {
               status !== "loading" && (
                 <Link
                   href="/login"
-                  className="hidden h-10 items-center px-4 text-xs font-medium uppercase tracking-widest text-white/70 transition-colors hover:text-white lg:flex"
+                  className="hidden h-10 items-center px-4 text-xs font-medium uppercase tracking-widest text-white/70 transition-colors hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-dark lg:flex"
                 >
                   Log In
                 </Link>
@@ -165,8 +165,10 @@ export function Header() {
 
             <button
               onClick={toggleMobileMenu}
-              className="flex h-10 w-10 items-center justify-center text-white lg:hidden"
-              aria-label="Open menu"
+              className="flex h-10 w-10 items-center justify-center text-white lg:hidden focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-dark"
+              aria-label={isMobileMenuOpen ? "Close menu" : "Open menu"}
+              aria-expanded={isMobileMenuOpen}
+              aria-controls="mobile-nav"
             >
               {isMobileMenuOpen ? (
                 <X className="h-5 w-5" strokeWidth={1.5} />
@@ -179,6 +181,7 @@ export function Header() {
 
         {isMobileMenuOpen && (
           <nav
+            id="mobile-nav"
             className="border-t border-white/10 bg-dark px-6 py-6 lg:hidden"
             aria-label="Mobile"
           >
@@ -188,7 +191,7 @@ export function Header() {
                   <Link
                     href={item.href}
                     className={cn(
-                      "block py-3 text-sm font-medium tracking-wide transition-colors",
+                      "block py-3 text-sm font-medium tracking-wide transition-colors focus-visible:outline-none focus-visible:text-accent",
                       pathname === item.href
                         ? "text-accent"
                         : "text-white/80 hover:text-white"
@@ -208,14 +211,14 @@ export function Header() {
                   </p>
                   <Link
                     href="/account"
-                    className="flex items-center gap-2 py-2 text-sm font-medium tracking-wide text-white/80 transition-colors hover:text-white"
+                    className="flex items-center gap-2 py-2 text-sm font-medium tracking-wide text-white/80 transition-colors hover:text-white focus-visible:outline-none focus-visible:text-accent"
                   >
                     <User className="h-4 w-4" strokeWidth={1.5} />
                     My Account
                   </Link>
                   <button
                     onClick={() => void signOut({ callbackUrl: "/" })}
-                    className="flex items-center gap-2 py-2 text-sm font-medium tracking-wide text-white/80 transition-colors hover:text-white"
+                    className="flex items-center gap-2 py-2 text-sm font-medium tracking-wide text-white/80 transition-colors hover:text-white focus-visible:outline-none focus-visible:text-accent"
                   >
                     <LogOut className="h-4 w-4" strokeWidth={1.5} />
                     Log Out
@@ -225,7 +228,7 @@ export function Header() {
                 status !== "loading" && (
                   <Link
                     href="/login"
-                    className="block py-2 text-sm font-medium tracking-wide text-white/80 transition-colors hover:text-white"
+                    className="block py-2 text-sm font-medium tracking-wide text-white/80 transition-colors hover:text-white focus-visible:outline-none focus-visible:text-accent"
                   >
                     Log In
                   </Link>

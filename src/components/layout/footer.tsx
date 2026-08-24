@@ -11,7 +11,7 @@ export function Footer() {
           <div className="md:col-span-4">
             <Link
               href="/"
-              className="font-display mb-5 inline-flex items-center gap-2.5 text-base font-bold"
+              className="font-display mb-5 inline-flex items-center gap-2.5 text-base font-bold focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
             >
               <span className="relative h-9 w-9 shrink-0 bg-white p-1">
                 <Image
@@ -36,7 +36,7 @@ export function Footer() {
                   <li key={link.href}>
                     <Link
                       href={link.href}
-                      className="text-sm text-muted transition-colors hover:text-foreground"
+                      className="text-sm text-muted transition-colors hover:text-foreground focus-visible:outline-none focus-visible:text-foreground focus-visible:underline"
                     >
                       {link.label}
                     </Link>
@@ -51,7 +51,7 @@ export function Footer() {
                   <li key={link.label}>
                     <Link
                       href={link.href}
-                      className="text-sm text-muted transition-colors hover:text-foreground"
+                      className="text-sm text-muted transition-colors hover:text-foreground focus-visible:outline-none focus-visible:text-foreground focus-visible:underline"
                     >
                       {link.label}
                     </Link>
@@ -66,7 +66,7 @@ export function Footer() {
                   <li key={link.href}>
                     <Link
                       href={link.href}
-                      className="text-sm text-muted transition-colors hover:text-foreground"
+                      className="text-sm text-muted transition-colors hover:text-foreground focus-visible:outline-none focus-visible:text-foreground focus-visible:underline"
                     >
                       {link.label}
                     </Link>
@@ -84,7 +84,7 @@ export function Footer() {
                 <li key={phone}>
                   <a
                     href={`tel:${phone.replace(/\s/g, "")}`}
-                    className="transition-colors hover:text-foreground"
+                    className="transition-colors hover:text-foreground focus-visible:outline-none focus-visible:text-foreground focus-visible:underline"
                   >
                     {phone}
                   </a>
@@ -104,7 +104,7 @@ export function Footer() {
               <Link
                 key={link.href}
                 href={link.href}
-                className="text-xs text-muted-foreground transition-colors hover:text-foreground"
+                className="text-xs text-muted-foreground transition-colors hover:text-foreground focus-visible:outline-none focus-visible:text-foreground focus-visible:underline"
               >
                 {link.label}
               </Link>
