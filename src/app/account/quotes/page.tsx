@@ -5,17 +5,9 @@ import { QuoteDecisionForm } from "@/components/account/quote-decision-form";
 import { getCurrentSession } from "@/server/auth/session";
 import { quoteService } from "@/server/services/quote-service";
 import { formatPrice } from "@/lib/utils";
+import { getQuoteStatusVariant } from "@/lib/status-variants";
 
 export const metadata = { title: "My Account | Quote Requests" };
-
-const STATUS_VARIANT: Record<string, "success" | "secondary" | "destructive" | "outline"> = {
-  NEW: "outline",
-  REVIEWING: "secondary",
-  QUOTED: "secondary",
-  ACCEPTED: "success",
-  DECLINED: "destructive",
-  CONVERTED: "success",
-};
 
 /**
  * Customer's own quote requests — a small, proportionate list (Phase 11 plan: "keep it
@@ -57,7 +49,7 @@ export default async function AccountQuotesPage() {
                       <p className="mt-1 text-sm text-muted">&ldquo;{quote.customerNote}&rdquo;</p>
                     )}
                   </div>
-                  <Badge variant={STATUS_VARIANT[quote.status] ?? "outline"}>{quote.status}</Badge>
+                  <Badge variant={getQuoteStatusVariant(quote.status)}>{quote.status}</Badge>
                 </div>
 
                 <ul className="space-y-1 text-sm">

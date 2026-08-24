@@ -4,6 +4,7 @@ import { AdjustStockDialog } from "@/components/admin/adjust-stock-dialog";
 import { getCurrentSession } from "@/server/auth/session";
 import { getRolePermissions } from "@/server/auth/permissions";
 import { inventoryService } from "@/server/services/inventory-service";
+import { getInventoryStatusVariant } from "@/lib/status-variants";
 
 export const metadata = { title: "Inventory | Admin" };
 
@@ -11,12 +12,6 @@ const STATUS_LABEL: Record<string, string> = {
   in_stock: "In stock",
   low_stock: "Low stock",
   out_of_stock: "Out of stock",
-};
-
-const STATUS_VARIANT: Record<string, "success" | "secondary" | "destructive"> = {
-  in_stock: "success",
-  low_stock: "secondary",
-  out_of_stock: "destructive",
 };
 
 /**
@@ -78,7 +73,7 @@ export default async function AdminInventoryPage() {
                 <td className="px-4 py-3 tabular-nums">{item.quantity}</td>
                 <td className="px-4 py-3 tabular-nums text-muted">{item.lowStockThreshold}</td>
                 <td className="px-4 py-3">
-                  <Badge variant={STATUS_VARIANT[item.status]}>
+                  <Badge variant={getInventoryStatusVariant(item.status)}>
                     {STATUS_LABEL[item.status]}
                   </Badge>
                 </td>

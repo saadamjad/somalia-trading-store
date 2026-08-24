@@ -6,6 +6,13 @@ import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 const REASONS = [
   { value: "MANUAL_ADJUSTMENT", label: "Manual adjustment" },
@@ -114,18 +121,18 @@ export function AdjustStockDialog({
           <Label htmlFor={`reason-${productId}`} className="text-xs">
             Reason
           </Label>
-          <select
-            id={`reason-${productId}`}
-            value={reason}
-            onChange={(e) => setReason(e.target.value as typeof reason)}
-            className="h-9 w-full rounded-md border border-border-strong bg-background px-3 text-sm"
-          >
-            {REASONS.map((r) => (
-              <option key={r.value} value={r.value}>
-                {r.label}
-              </option>
-            ))}
-          </select>
+          <Select value={reason} onValueChange={(v) => setReason(v as typeof reason)}>
+            <SelectTrigger id={`reason-${productId}`}>
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              {REASONS.map((r) => (
+                <SelectItem key={r.value} value={r.value}>
+                  {r.label}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
         </div>
         <div className="min-w-[10rem] flex-1">
           <Label htmlFor={`note-${productId}`} className="text-xs">

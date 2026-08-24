@@ -7,27 +7,12 @@ import { getRolePermissions } from "@/server/auth/permissions";
 import { orderService } from "@/server/services/order-service";
 import { orderAdminQuerySchema } from "@/lib/validations/order";
 import { formatPrice } from "@/lib/utils";
+import { getOrderStatusVariant, getPaymentStatusVariant } from "@/lib/status-variants";
 
 export const metadata = { title: "Orders | Admin" };
 
 const ORDER_STATUSES = ["PENDING", "CONFIRMED", "PROCESSING", "SHIPPED", "DELIVERED", "CANCELLED"] as const;
 const PAYMENT_STATUSES = ["NOT_PAID", "PAID", "REFUNDED", "FAILED"] as const;
-
-const STATUS_VARIANT: Record<string, "success" | "secondary" | "destructive" | "outline"> = {
-  PENDING: "outline",
-  CONFIRMED: "secondary",
-  PROCESSING: "secondary",
-  SHIPPED: "secondary",
-  DELIVERED: "success",
-  CANCELLED: "destructive",
-};
-
-const PAYMENT_VARIANT: Record<string, "success" | "secondary" | "destructive" | "outline"> = {
-  NOT_PAID: "outline",
-  PAID: "success",
-  REFUNDED: "secondary",
-  FAILED: "destructive",
-};
 
 interface PageProps {
   searchParams: Promise<Record<string, string | undefined>>;
@@ -247,10 +232,10 @@ export default async function AdminOrdersPage({ searchParams }: PageProps) {
                 </td>
                 <td className="px-4 py-3 text-muted">{order.itemCount}</td>
                 <td className="px-4 py-3">
-                  <Badge variant={STATUS_VARIANT[order.status] ?? "outline"}>{order.status}</Badge>
+                  <Badge variant={getOrderStatusVariant(order.status)}>{order.status}</Badge>
                 </td>
                 <td className="px-4 py-3">
-                  <Badge variant={PAYMENT_VARIANT[order.paymentStatus] ?? "outline"}>
+                  <Badge variant={getPaymentStatusVariant(order.paymentStatus)}>
                     {order.paymentStatus}
                   </Badge>
                 </td>

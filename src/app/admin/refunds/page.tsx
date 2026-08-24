@@ -7,17 +7,11 @@ import { getRolePermissions } from "@/server/auth/permissions";
 import { refundRequestService } from "@/server/services/refund-request-service";
 import { refundRequestAdminQuerySchema } from "@/lib/validations/refund-request";
 import { formatPrice } from "@/lib/utils";
+import { getRefundStatusVariant } from "@/lib/status-variants";
 
 export const metadata = { title: "Refund Requests | Admin" };
 
 const REFUND_STATUSES = ["REQUESTED", "UNDER_REVIEW", "APPROVED", "REJECTED"] as const;
-
-const STATUS_VARIANT: Record<string, "success" | "secondary" | "destructive" | "outline"> = {
-  REQUESTED: "outline",
-  UNDER_REVIEW: "secondary",
-  APPROVED: "success",
-  REJECTED: "destructive",
-};
 
 interface PageProps {
   searchParams: Promise<Record<string, string | undefined>>;
@@ -125,7 +119,7 @@ export default async function AdminRefundsPage({ searchParams }: PageProps) {
                   {new Date(r.createdAt).toLocaleDateString()}
                 </td>
                 <td className="px-4 py-3">
-                  <Badge variant={STATUS_VARIANT[r.status] ?? "outline"}>{r.status}</Badge>
+                  <Badge variant={getRefundStatusVariant(r.status)}>{r.status}</Badge>
                 </td>
                 <td className="px-4 py-3 text-right font-semibold">
                   {formatPrice(r.order.total, r.order.currency)}

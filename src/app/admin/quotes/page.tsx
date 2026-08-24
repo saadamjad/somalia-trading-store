@@ -6,19 +6,11 @@ import { getCurrentSession } from "@/server/auth/session";
 import { getRolePermissions } from "@/server/auth/permissions";
 import { quoteService } from "@/server/services/quote-service";
 import { quoteAdminQuerySchema } from "@/lib/validations/quote";
+import { getQuoteStatusVariant } from "@/lib/status-variants";
 
 export const metadata = { title: "Quote Requests | Admin" };
 
 const QUOTE_STATUSES = ["NEW", "REVIEWING", "QUOTED", "ACCEPTED", "DECLINED", "CONVERTED"] as const;
-
-const STATUS_VARIANT: Record<string, "success" | "secondary" | "destructive" | "outline"> = {
-  NEW: "outline",
-  REVIEWING: "secondary",
-  QUOTED: "secondary",
-  ACCEPTED: "success",
-  DECLINED: "destructive",
-  CONVERTED: "success",
-};
 
 interface PageProps {
   searchParams: Promise<Record<string, string | undefined>>;
@@ -127,7 +119,7 @@ export default async function AdminQuotesPage({ searchParams }: PageProps) {
                   {new Date(q.createdAt).toLocaleDateString()}
                 </td>
                 <td className="px-4 py-3">
-                  <Badge variant={STATUS_VARIANT[q.status] ?? "outline"}>{q.status}</Badge>
+                  <Badge variant={getQuoteStatusVariant(q.status)}>{q.status}</Badge>
                 </td>
                 <td className="px-4 py-3 text-muted">{q.user ? q.user.email : "Guest"}</td>
               </tr>
