@@ -64,8 +64,8 @@ export default async function AboutPage() {
           <FadeIn delay={0.15}>
             <div className="relative aspect-[4/3] overflow-hidden">
               <Image
-                src="/images/our-story/leadership-site.png"
-                alt="FGT leadership at a project site"
+                src="/images/our-story/leadership-site.jpg"
+                alt="Somalia Trading leadership representing the business internationally"
                 fill
                 className="object-cover"
               />
