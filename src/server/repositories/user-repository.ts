@@ -17,8 +17,9 @@ export const userRepository = {
     name: string;
     email: string;
     phone?: string | null;
-    passwordHash: string;
+    passwordHash?: string | null;
     roleId: string;
+    isGuest?: boolean;
   }) {
     return prisma.user.create({ data });
   },

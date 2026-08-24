@@ -12,9 +12,11 @@ import { cartService, type StockIssue } from "@/server/services/cart-service";
 import { addressService } from "@/server/services/address-service";
 import { inventoryService } from "@/server/services/inventory-service";
 import { notificationService } from "@/server/services/notification-service";
+import { userRepository, roleRepository } from "@/server/repositories/user-repository";
 import type {
   OrderAdminQueryInput,
   OrderCreateInput,
+  GuestOrderCreateInput,
 } from "@/lib/validations/order";
 import type { Order, OrderItem, OrderStatus, Prisma } from "@/generated/prisma/client";
 
@@ -41,6 +43,19 @@ export class OrderNotFoundError extends Error {
   constructor() {
     super("Order not found.");
     this.name = "OrderNotFoundError";
+  }
+}
+
+/**
+ * Thrown when a guest checkout's email belongs to an existing, real (non-guest)
+ * account. Guest checkout has no password check — silently attaching the order to
+ * that account would let anyone place an order "as" another user just by typing
+ * their email. See order-service.ts `createGuestOrder`.
+ */
+export class EmailBelongsToExistingAccountError extends Error {
+  constructor() {
+    super("An account already exists with this email. Please log in to continue.");
+    this.name = "EmailBelongsToExistingAccountError";
   }
 }
 
@@ -476,6 +491,103 @@ export const orderService = {
       customerNote,
       orderItemsInput,
       clearCart: true,
+    });
+
+    return toOrderView(created);
+  },
+
+  /**
+   * Guest checkout: no session required. The client's cart lives only in
+   * localStorage for a guest (cart-store.ts), so `input.items` — not a server Cart
+   * row — is the source of "what's being ordered". Still re-prices every line from
+   * the current Product rows and re-checks stock server-side, exactly like the
+   * authenticated path — the only difference is where the item list comes from.
+   *
+   * Finds-or-creates a `User` row by email so `Order.userId` (a required FK, not
+   * nullable — see schema.prisma) has somewhere to point: an existing account is
+   * reused as-is (so a returning guest, or someone who already registered with this
+   * email, doesn't get a duplicate/shadow account); a brand-new email gets a
+   * password-less `isGuest: true` account. That account can't log in until a real
+   * password is set via the normal forgot-password flow (auth-service.ts
+   * `verifyCredentials` already rejects a null passwordHash).
+   */
+  async createGuestOrder(input: GuestOrderCreateInput): Promise<OrderView> {
+    const email = input.email.trim().toLowerCase();
+
+    let user = await userRepository.findByEmail(email);
+    if (user) {
+      // A real (non-guest) account already owns this email — guest checkout has no
+      // password check, so silently attaching the order here would let anyone place
+      // an order "as" that account just by typing its email. Reject instead of
+      // reusing it; a returning GUEST (isGuest: true, e.g. ordered before without
+      // ever setting a password) is fine to reuse, since no real account is impersonated.
+      if (!user.isGuest) {
+        throw new EmailBelongsToExistingAccountError();
+      }
+    } else {
+      const customerRole = await roleRepository.findByName("customer");
+      if (!customerRole) {
+        throw new Error("The 'customer' role is not seeded. Run `npx prisma db seed`.");
+      }
+      user = await userRepository.create({
+        name: input.name,
+        email,
+        passwordHash: null,
+        roleId: customerRole.id,
+        isGuest: true,
+      });
+    }
+
+    // Dedupe by productId (summing quantities) — unlike the authenticated path,
+    // `input.items` is client-supplied with no DB-level uniqueness constraint behind
+    // it (CartItem enforces @@unique([cartId, productId]); a guest has no Cart row).
+    // Without this, a duplicated productId would silently create two OrderItem rows
+    // for the same product instead of one combined line.
+    const itemsByProduct = new Map<string, number>();
+    for (const item of input.items) {
+      itemsByProduct.set(item.productId, (itemsByProduct.get(item.productId) ?? 0) + item.quantity);
+    }
+    const dedupedItems = Array.from(itemsByProduct, ([productId, quantity]) => ({ productId, quantity }));
+
+    const stockIssues = await cartService.validateStock(dedupedItems);
+    if (stockIssues.length > 0) {
+      throw new StockUnavailableError(stockIssues);
+    }
+
+    const productIds = dedupedItems.map((item) => item.productId);
+    const products = await productRepository.findByIds(productIds);
+    const productById = new Map(products.map((p) => [p.id, p]));
+
+    const missing = dedupedItems.filter((item) => !productById.has(item.productId));
+    if (missing.length > 0) {
+      throw new StockUnavailableError(
+        missing.map((item) => ({ productId: item.productId, requested: item.quantity, available: 0 }))
+      );
+    }
+
+    const currency = products[0]?.currency ?? "USD";
+
+    const orderItemsInput = dedupedItems.map((item) => {
+      const product = productById.get(item.productId)!;
+      const unitPrice = Number(product.price);
+      const lineTotal = Math.round(unitPrice * item.quantity * 100) / 100;
+      return {
+        productId: product.id,
+        productName: product.name,
+        sku: product.sku ?? null,
+        unitPrice,
+        quantity: item.quantity,
+        lineTotal,
+      };
+    });
+
+    const created = await persistOrder({
+      userId: user.id,
+      shipping: shippingFromInline(input.shippingAddress),
+      currency,
+      customerNote: input.customerNote ? input.customerNote : null,
+      orderItemsInput,
+      clearCart: false,
     });
 
     return toOrderView(created);

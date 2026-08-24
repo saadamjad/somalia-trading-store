@@ -69,7 +69,7 @@ export const accountService = {
     const isChangingEmail = nextEmail !== undefined && nextEmail !== user.email;
 
     if (isChangingEmail) {
-      if (!input.currentPassword) {
+      if (!input.currentPassword || !user.passwordHash) {
         throw new InvalidCurrentPasswordError();
       }
       const isValid = await verifyPassword(input.currentPassword, user.passwordHash);
@@ -96,6 +96,13 @@ export const accountService = {
   async changePassword(userId: string, input: ChangePasswordInput) {
     const user = await userRepository.findById(userId);
     if (!user) throw new UserNotFoundError();
+
+    // A guest-checkout account (order-service.ts createGuestOrder) has no
+    // passwordHash to verify against — it must set its first password via
+    // forgot-password/reset-password instead of "change password".
+    if (!user.passwordHash) {
+      throw new InvalidCurrentPasswordError();
+    }
 
     const isValid = await verifyPassword(input.currentPassword, user.passwordHash);
     if (!isValid) {

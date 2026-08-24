@@ -37,7 +37,10 @@ export const authService = {
     if (!normalizedEmail || !password) return null;
 
     const userWithRole = await userRepository.findByEmailWithRole(normalizedEmail);
-    if (!userWithRole) return null;
+    // Guest-checkout accounts (order-service.ts `createGuestOrder`) have no
+    // passwordHash — never a valid login target until a real password is set
+    // (e.g. via the forgot-password flow).
+    if (!userWithRole || !userWithRole.passwordHash) return null;
 
     const isValid = await verifyPassword(password, userWithRole.passwordHash);
     if (!isValid) return null;

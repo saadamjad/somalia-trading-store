@@ -43,7 +43,8 @@ describe("authService", () => {
       });
 
       expect(stored.passwordHash).not.toBe("PlainTextPass1");
-      expect(stored.passwordHash.length).toBeGreaterThan(20);
+      expect(stored.passwordHash).not.toBeNull();
+      expect(stored.passwordHash!.length).toBeGreaterThan(20);
       expect(stored.role.name).toBe("customer");
     });
 

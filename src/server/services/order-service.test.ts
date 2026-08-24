@@ -9,6 +9,7 @@ import {
   StockUnavailableError,
   OrderNotFoundError,
   InvalidStatusTransitionError,
+  EmailBelongsToExistingAccountError,
 } from "@/server/services/order-service";
 
 const runId = `${Date.now()}-${Math.floor(Math.random() * 100000)}`;
@@ -403,6 +404,86 @@ describe("orderService.createOrder", () => {
         pageSize: 20,
       });
       expect(byWrongStatus.items.some((i) => i.id === order.id)).toBe(false);
+    });
+  });
+
+  describe("createGuestOrder", () => {
+    it("creates a PENDING/NOT_PAID order and a password-less isGuest User for a brand-new email", async () => {
+      const productId = await createProduct("guest-new", 5);
+      const email = uniqueEmail("guest-new");
+
+      const order = await orderService.createGuestOrder({
+        name: "Guest Buyer",
+        email,
+        shippingAddress: SAMPLE_ADDRESS,
+        items: [{ productId, quantity: 2 }],
+      });
+
+      expect(order.status).toBe("PENDING");
+      expect(order.paymentStatus).toBe("NOT_PAID");
+
+      const user = await prisma.user.findUniqueOrThrow({ where: { email: email.toLowerCase() } });
+      expect(user.isGuest).toBe(true);
+      expect(user.passwordHash).toBeNull();
+    });
+
+    it("reuses the same guest User (no duplicate account) on a second order from the same email", async () => {
+      const productId = await createProduct("guest-repeat", 5);
+      const email = uniqueEmail("guest-repeat");
+
+      const first = await orderService.createGuestOrder({
+        name: "Guest Buyer",
+        email,
+        shippingAddress: SAMPLE_ADDRESS,
+        items: [{ productId, quantity: 1 }],
+      });
+      const second = await orderService.createGuestOrder({
+        name: "Guest Buyer",
+        email,
+        shippingAddress: SAMPLE_ADDRESS,
+        items: [{ productId, quantity: 1 }],
+      });
+
+      const firstOrder = await prisma.order.findUniqueOrThrow({ where: { id: first.id } });
+      const secondOrder = await prisma.order.findUniqueOrThrow({ where: { id: second.id } });
+      expect(secondOrder.userId).toBe(firstOrder.userId);
+    });
+
+    it("rejects guest checkout when the email belongs to an existing REAL (non-guest) account", async () => {
+      const customer = await createCustomer("guest-collision");
+      const productId = await createProduct("guest-collision", 5);
+
+      await expect(
+        orderService.createGuestOrder({
+          name: "Impersonator",
+          email: customer.email,
+          shippingAddress: SAMPLE_ADDRESS,
+          items: [{ productId, quantity: 1 }],
+        })
+      ).rejects.toThrow(EmailBelongsToExistingAccountError);
+    });
+
+    it("dedupes a duplicated productId in items by summing quantity into one order line", async () => {
+      const productId = await createProduct("guest-dedupe", 10, "5.00");
+      const email = uniqueEmail("guest-dedupe");
+
+      const order = await orderService.createGuestOrder({
+        name: "Guest Buyer",
+        email,
+        shippingAddress: SAMPLE_ADDRESS,
+        items: [
+          { productId, quantity: 2 },
+          { productId, quantity: 3 },
+        ],
+      });
+
+      const stored = await prisma.order.findUniqueOrThrow({
+        where: { id: order.id },
+        include: { items: true },
+      });
+      expect(stored.items).toHaveLength(1);
+      expect(stored.items[0]!.quantity).toBe(5);
+      expect(Number(stored.items[0]!.lineTotal)).toBe(25);
     });
   });
 });

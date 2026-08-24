@@ -59,11 +59,12 @@ export function CheckoutForm({
   customer,
   initialAddresses,
 }: {
-  customer: { name: string; email: string };
+  /** null when checking out as a guest (no session) — see checkout/page.tsx. */
+  customer: { name: string; email: string } | null;
   initialAddresses: CheckoutAddressDTO[];
 }) {
   const router = useRouter();
-  const { clearCart } = useCartStore();
+  const { items: rawItems, clearCart } = useCartStore();
   const { lineItems: items, subtotal, isLoading } = useCartProducts();
 
   const defaultAddress = initialAddresses.find((a) => a.isDefault) ?? initialAddresses[0];
@@ -72,6 +73,8 @@ export function CheckoutForm({
   );
   const [useNewAddress, setUseNewAddress] = useState(initialAddresses.length === 0);
   const [newAddress, setNewAddress] = useState<NewAddressForm>(EMPTY_NEW_ADDRESS);
+  const [guestName, setGuestName] = useState("");
+  const [guestEmail, setGuestEmail] = useState("");
   const [customerNote, setCustomerNote] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -85,6 +88,11 @@ export function CheckoutForm({
     setError(null);
     setStockIssues([]);
 
+    if (!customer && (!guestName.trim() || !guestEmail.trim())) {
+      setError("Please enter your name and email.");
+      return;
+    }
+
     if (!useNewAddress && !selectedAddressId) {
       setError("Please select a shipping address.");
       return;
@@ -92,13 +100,25 @@ export function CheckoutForm({
 
     setSubmitting(true);
     try {
+      const body = customer
+        ? {
+            ...(useNewAddress
+              ? { shippingAddress: newAddress }
+              : { addressId: selectedAddressId }),
+            ...(customerNote.trim() ? { customerNote: customerNote.trim() } : {}),
+          }
+        : {
+            name: guestName.trim(),
+            email: guestEmail.trim(),
+            shippingAddress: newAddress,
+            items: rawItems,
+            ...(customerNote.trim() ? { customerNote: customerNote.trim() } : {}),
+          };
+
       const res = await fetch("/api/orders", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          ...(useNewAddress ? { shippingAddress: newAddress } : { addressId: selectedAddressId }),
-          ...(customerNote.trim() ? { customerNote: customerNote.trim() } : {}),
-        }),
+        body: JSON.stringify(body),
       });
 
       const data = await res.json().catch(() => ({}));
@@ -111,11 +131,18 @@ export function CheckoutForm({
       }
 
       // Server has already persisted the order, decremented inventory, and cleared
-      // the server cart inside one transaction — clearing the local store here just
-      // keeps the client UI in sync with that already-committed server state.
+      // the server cart (logged-in path only — see order-service.ts createGuestOrder)
+      // inside one transaction — clearing the local store here just keeps the client
+      // UI in sync with that already-committed server state.
       clearCart();
       toast.success("Order placed.");
-      router.push(`/account/orders/${data.item.id}?placed=1`);
+      // A guest has no session, so /account/orders/[id] (an authenticated route)
+      // isn't reachable — show an unauthenticated confirmation instead.
+      router.push(
+        customer
+          ? `/account/orders/${data.item.id}?placed=1`
+          : `/checkout/confirmation?orderNumber=${encodeURIComponent(data.item.orderNumber)}`
+      );
     } catch (err) {
       setError(err instanceof Error ? err.message : "Could not place your order.");
     } finally {
@@ -141,9 +168,44 @@ export function CheckoutForm({
         <Card>
           <CardContent className="space-y-2 p-6">
             <h2 className="font-display text-lg font-semibold">Contact Information</h2>
-            <p className="text-sm text-muted">
-              {customer.name} &middot; {customer.email}
-            </p>
+            {customer ? (
+              <p className="text-sm text-muted">
+                {customer.name} &middot; {customer.email}
+              </p>
+            ) : (
+              <>
+                <p className="mb-2 text-sm text-muted">
+                  Checking out as a guest.{" "}
+                  <Link href="/login?callbackUrl=/checkout" className="font-medium text-accent underline">
+                    Log in
+                  </Link>{" "}
+                  if you have an account.
+                </p>
+                <div className="grid gap-4 sm:grid-cols-2">
+                  <div>
+                    <Label htmlFor="guestName">Full Name *</Label>
+                    <Input
+                      id="guestName"
+                      required
+                      value={guestName}
+                      onChange={(e) => setGuestName(e.target.value)}
+                      className="mt-1.5"
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="guestEmail">Email *</Label>
+                    <Input
+                      id="guestEmail"
+                      type="email"
+                      required
+                      value={guestEmail}
+                      onChange={(e) => setGuestEmail(e.target.value)}
+                      className="mt-1.5"
+                    />
+                  </div>
+                </div>
+              </>
+            )}
           </CardContent>
         </Card>
 

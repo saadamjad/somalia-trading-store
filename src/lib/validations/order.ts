@@ -43,6 +43,31 @@ export type OrderCreateInput = z.infer<typeof orderCreateSchema>;
 export type InlineShippingAddressInput = z.infer<typeof inlineShippingAddressSchema>;
 
 /**
+ * Body for POST /api/orders when there is no session (guest checkout). The client's
+ * cart lives only in localStorage for a guest (cart-store.ts) — there is no server
+ * cart to read from — so `items` here is the guest's local cart contents. Same
+ * no-price/no-quantity-trust guarantee as the authenticated path still holds: `items`
+ * only carries productId + quantity, never a price, and order-service.ts re-prices
+ * every line from the current Product rows before creating the order.
+ */
+export const guestOrderCreateSchema = z.object({
+  email: z.string().trim().email({ message: "A valid email is required." }),
+  name: z.string().trim().min(1, { message: "Name is required." }),
+  shippingAddress: inlineShippingAddressSchema,
+  customerNote: z.string().trim().max(1000).optional().or(z.literal("")),
+  items: z
+    .array(
+      z.object({
+        productId: z.string().trim().min(1),
+        quantity: z.number().int().min(1),
+      })
+    )
+    .min(1, { message: "Your cart is empty." }),
+});
+
+export type GuestOrderCreateInput = z.infer<typeof guestOrderCreateSchema>;
+
+/**
  * Phase 9: customer-facing order-history filter — `/account/orders?status=...`. A
  * customer may filter their OWN orders by status; there is deliberately no equivalent
  * for paymentStatus here (spec §5 — order status and payment status are kept as

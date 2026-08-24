@@ -1,4 +1,3 @@
-import { redirect } from "next/navigation";
 import { getCurrentSession } from "@/server/auth/session";
 import { addressService } from "@/server/services/address-service";
 import { CheckoutForm } from "@/components/checkout/checkout-form";
@@ -6,28 +5,22 @@ import { CheckoutForm } from "@/components/checkout/checkout-form";
 export const metadata = { title: "Checkout" };
 
 /**
- * Checkout-auth-required decision (Phase 8, docs/IMPLEMENTATION_PLAN.md): Cart and
- * Address are already user-scoped models (Phase 6/7), and the customer flow described
- * in the audit/plan calls for "login/register where required." Rather than building a
- * second, parallel guest-checkout path (inline address only, no server cart to read
- * from), checkout requires an authenticated session — same gate as every other
- * `/account/*` page (see src/app/account/layout.tsx). This is the safer, simpler
- * choice: order-service.createOrder always reads the AUTHORITATIVE server cart for a
- * known userId, never a client-submitted cart.
+ * Guest checkout is allowed — login is optional here, unlike every other
+ * `/account/*` page. A logged-in customer still gets their saved addresses and an
+ * order tied to their real account (unchanged); a guest gets inline contact +
+ * address fields and an order tied to a password-less account created behind the
+ * scenes (order-service.ts `createGuestOrder`) — see CheckoutForm for the client-side
+ * branch on `customer === null`.
  */
 export default async function CheckoutPage() {
   const session = await getCurrentSession();
-  if (!session) {
-    redirect("/login?callbackUrl=/checkout");
-  }
-
-  const addresses = await addressService.listForUser(session.userId);
+  const addresses = session ? await addressService.listForUser(session.userId) : [];
 
   return (
     <div className="container-custom py-24 md:py-28">
       <h1 className="font-display mb-8 text-3xl font-bold">Checkout</h1>
       <CheckoutForm
-        customer={{ name: session.name, email: session.email }}
+        customer={session ? { name: session.name, email: session.email } : null}
         initialAddresses={addresses.map((address) => ({
           id: address.id,
           recipientName: address.recipientName,

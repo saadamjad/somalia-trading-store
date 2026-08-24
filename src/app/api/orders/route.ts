@@ -1,7 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
-import { requireSession } from "@/server/auth/session";
+import { requireSession, getCurrentSession } from "@/server/auth/session";
 import { orderService } from "@/server/services/order-service";
-import { orderCreateSchema, orderCustomerQuerySchema } from "@/lib/validations/order";
+import {
+  orderCreateSchema,
+  orderCustomerQuerySchema,
+  guestOrderCreateSchema,
+} from "@/lib/validations/order";
 import { toErrorResponse } from "@/server/lib/api-errors";
 import { checkRateLimit, getClientIp, RATE_LIMITS } from "@/server/lib/rate-limit";
 
@@ -23,11 +27,16 @@ export async function GET(request: NextRequest) {
 }
 
 /**
- * POST /api/orders — creates a real order from the caller's server-side cart. No
- * price, quantity, or product data is ever accepted from the client here — see
- * src/lib/validations/order.ts. `status`/`paymentStatus` are always PENDING/NOT_PAID
- * on creation (docs/DECISIONS.md D-007) — there is no request field that can change
- * that.
+ * POST /api/orders — creates a real order. No price, quantity, or product data is
+ * ever trusted from the client — see src/lib/validations/order.ts. `status`/
+ * `paymentStatus` are always PENDING/NOT_PAID on creation (docs/DECISIONS.md D-007)
+ * — there is no request field that can change that.
+ *
+ * Two paths, chosen by whether a session exists (not by a client-supplied flag):
+ *  - Logged in: reads the caller's server-side cart (unchanged from before).
+ *  - No session: guest checkout — `items` comes from the request body (the guest's
+ *    local cart, cart-store.ts), and order-service.ts `createGuestOrder` finds/creates
+ *    a password-less User row so Order.userId still has a real account to point to.
  */
 export async function POST(request: NextRequest) {
   try {
@@ -40,9 +49,15 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const session = await requireSession();
-
+    const session = await getCurrentSession();
     const body = await request.json();
+
+    if (!session) {
+      const input = guestOrderCreateSchema.parse(body);
+      const order = await orderService.createGuestOrder(input);
+      return NextResponse.json({ item: order }, { status: 201 });
+    }
+
     const input = orderCreateSchema.parse(body);
     const order = await orderService.createOrder(session.userId, input);
 

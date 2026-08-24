@@ -11,10 +11,11 @@ vi.mock("@/server/auth/session", async (importOriginal) => {
   return {
     ...actual,
     requireSession: vi.fn(),
+    getCurrentSession: vi.fn(),
   };
 });
 
-import { requireSession, UnauthenticatedError } from "@/server/auth/session";
+import { requireSession, getCurrentSession, UnauthenticatedError } from "@/server/auth/session";
 
 function makeRequest(url: string, init?: ConstructorParameters<typeof NextRequest>[1]) {
   return new NextRequest(new URL(url, "http://localhost:3000"), init);
@@ -80,11 +81,15 @@ describe("GET/POST /api/orders", () => {
     await prisma.$disconnect();
   });
 
-  it("rejects unauthenticated GET and POST with 401", async () => {
+  it("rejects unauthenticated GET with 401", async () => {
     vi.mocked(requireSession).mockRejectedValue(new UnauthenticatedError());
 
     const getRes = await GET(makeRequest("http://localhost:3000/api/orders"));
     expect(getRes.status).toBe(401);
+  });
+
+  it("rejects an unauthenticated POST that omits guest fields (invalid guest input, not a 401 — see order-service.ts createGuestOrder)", async () => {
+    vi.mocked(getCurrentSession).mockResolvedValue(null);
 
     const postRes = await POST(
       makeRequest("http://localhost:3000/api/orders", {
@@ -93,7 +98,7 @@ describe("GET/POST /api/orders", () => {
         body: JSON.stringify({ addressId: "does-not-matter" }),
       })
     );
-    expect(postRes.status).toBe(401);
+    expect(postRes.status).toBe(400);
   });
 
   it("POST creates a real PENDING/NOT_PAID order for the caller and GET lists only their own orders", async () => {
@@ -105,6 +110,7 @@ describe("GET/POST /api/orders", () => {
     await cartService.setItem(customer.userId, productId, 2);
 
     vi.mocked(requireSession).mockResolvedValue(customer);
+    vi.mocked(getCurrentSession).mockResolvedValue(customer);
     const postRes = await POST(
       makeRequest("http://localhost:3000/api/orders", {
         method: "POST",
@@ -135,6 +141,7 @@ describe("GET/POST /api/orders", () => {
   it("rejects an order-creation request with neither addressId nor shippingAddress", async () => {
     const customer = await createCustomer("bad-input");
     vi.mocked(requireSession).mockResolvedValue(customer);
+    vi.mocked(getCurrentSession).mockResolvedValue(customer);
 
     const res = await POST(
       makeRequest("http://localhost:3000/api/orders", {
@@ -144,5 +151,35 @@ describe("GET/POST /api/orders", () => {
       })
     );
     expect(res.status).toBe(400);
+  });
+
+  it("POST creates a guest order (no session) and its User row is password-less/isGuest", async () => {
+    vi.mocked(getCurrentSession).mockResolvedValue(null);
+    const productId = await createProduct("guest-checkout", 10);
+    const email = uniqueEmail("guest");
+
+    const postRes = await POST(
+      makeRequest("http://localhost:3000/api/orders", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          name: "Guest Buyer",
+          email,
+          shippingAddress: SAMPLE_ADDRESS,
+          items: [{ productId, quantity: 1 }],
+        }),
+      })
+    );
+    expect(postRes.status).toBe(201);
+    const created = await postRes.json();
+    expect(created.item.status).toBe("PENDING");
+    expect(created.item.paymentStatus).toBe("NOT_PAID");
+
+    const guestUser = await prisma.user.findUniqueOrThrow({ where: { email } });
+    expect(guestUser.isGuest).toBe(true);
+    expect(guestUser.passwordHash).toBeNull();
+
+    const stored = await prisma.order.findUniqueOrThrow({ where: { id: created.item.id } });
+    expect(stored.userId).toBe(guestUser.id);
   });
 });

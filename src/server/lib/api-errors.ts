@@ -14,6 +14,7 @@ import {
 } from "@/server/services/account-service";
 import { EmailAlreadyRegisteredError } from "@/server/services/auth-service";
 import {
+  EmailBelongsToExistingAccountError,
   EmptyCartError,
   InvalidStatusTransitionError,
   OrderNotFoundError,
@@ -110,6 +111,9 @@ export function toErrorResponse(error: unknown): NextResponse {
     return NextResponse.json({ error: error.message }, { status: 400 });
   }
   if (error instanceof EmailAlreadyRegisteredError) {
+    return NextResponse.json({ error: error.message }, { status: 409 });
+  }
+  if (error instanceof EmailBelongsToExistingAccountError) {
     return NextResponse.json({ error: error.message }, { status: 409 });
   }
   if (isPrismaUniqueConstraintError(error)) {

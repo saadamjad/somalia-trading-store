@@ -147,10 +147,16 @@ model RolePermission {
 model User {
   id            String    @id @default(cuid())
   email         String    @unique
-  passwordHash  String
+  // Nullable: guest-checkout orders (order-service.ts `createGuestOrder`) create a
+  // User row with no password and no session — the account exists only to satisfy
+  // Order.userId's foreign key and to give the guest an order history if they later
+  // set a password via the normal forgot-password flow. `verifyPassword`/`authorize`
+  // in auth.ts already reject login when passwordHash is null.
+  passwordHash  String?
   name          String
   phone         String?
   emailVerified DateTime?
+  isGuest       Boolean   @default(false)
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
 
