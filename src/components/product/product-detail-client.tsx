@@ -224,24 +224,26 @@ export function ProductDetailClient({
           <h2 className="font-display mb-4 text-2xl font-bold">
             Specifications
           </h2>
-          <table className="w-full text-sm">
-            <tbody>
-              {Object.entries(product.specifications).map(
-                ([key, value], i) => (
-                  <tr
-                    key={key}
-                    className={cn(
-                      "border-b border-border",
-                      i % 2 === 0 && "bg-accent-light/20"
-                    )}
-                  >
-                    <td className="px-4 py-3 font-medium">{key}</td>
-                    <td className="px-4 py-3 text-muted">{value}</td>
-                  </tr>
-                )
-              )}
-            </tbody>
-          </table>
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <tbody>
+                {Object.entries(product.specifications).map(
+                  ([key, value], i) => (
+                    <tr
+                      key={key}
+                      className={cn(
+                        "border-b border-border",
+                        i % 2 === 0 && "bg-accent-light/20"
+                      )}
+                    >
+                      <td className="px-4 py-3 font-medium">{key}</td>
+                      <td className="px-4 py-3 text-muted">{value}</td>
+                    </tr>
+                  )
+                )}
+              </tbody>
+            </table>
+          </div>
         </div>
       </div>
 

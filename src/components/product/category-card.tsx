@@ -33,18 +33,18 @@ export function CategoryCard({
         alt={category.name}
         fill
         sizes="(max-width: 768px) 100vw, 33vw"
-        className="object-cover opacity-50 transition-all duration-700 group-hover:scale-[1.03] group-hover:opacity-65"
+        className="object-cover opacity-40 transition-all duration-700 group-hover:scale-[1.03] group-hover:opacity-55"
       />
-      <div className="absolute inset-0 bg-gradient-to-t from-black via-black/30 to-transparent" />
+      <div className="absolute inset-0 bg-gradient-to-t from-black via-black/60 to-black/10" />
 
-      <div className="relative p-7 md:p-9">
-        <span className="label mb-3 block text-accent/70">
+      <div className="relative p-7 md:p-9 [text-shadow:0_1px_8px_rgba(0,0,0,0.8)]">
+        <span className="label mb-3 block text-accent">
           Category 0{index + 1}
         </span>
         <h3 className="font-display mb-3 text-2xl font-bold text-white md:text-3xl">
           {category.name}
         </h3>
-        <p className="mb-6 max-w-xs text-sm leading-relaxed text-white/50">
+        <p className="mb-6 max-w-xs text-sm leading-relaxed text-white/80">
           {category.shortDescription}
         </p>
         <span className="inline-flex items-center gap-2 text-xs font-semibold uppercase tracking-widest text-accent transition-all group-hover:gap-3">
