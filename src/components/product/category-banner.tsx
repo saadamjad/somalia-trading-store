@@ -17,7 +17,7 @@ export function CategoryBanner({ category, productCount }: CategoryBannerProps) 
   const words = category.name.split(" ");
 
   return (
-    <section className="relative overflow-hidden bg-dark pt-[4.5rem]">
+    <section className="relative overflow-hidden bg-dark pt-(--header-height)">
       <div
         className="pointer-events-none absolute inset-0"
         style={{

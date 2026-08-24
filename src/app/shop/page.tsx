@@ -17,7 +17,7 @@ export default async function ShopPage() {
 
   return (
     <>
-      <section className="mesh-dark relative overflow-hidden pt-[4.5rem]">
+      <section className="mesh-dark relative overflow-hidden pt-(--header-height)">
         <div
           className="pointer-events-none absolute inset-0 opacity-[0.03]"
           style={{

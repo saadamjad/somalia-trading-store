@@ -73,7 +73,7 @@ export function SearchOverlay() {
 
   return (
     <div className="fixed inset-0 z-[60] flex items-start justify-center bg-black/50 px-4 pt-24 backdrop-blur-sm">
-      <div className="w-full max-w-2xl rounded-xl bg-card p-6 shadow-[var(--shadow-elevated)]">
+      <div className="w-full max-w-2xl rounded-xl bg-card p-6 shadow-(--shadow-elevated)">
         <div className="mb-4 flex items-center justify-between">
           <h2 className="font-display text-lg font-semibold">Search Products</h2>
           <button

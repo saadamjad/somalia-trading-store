@@ -1,5 +1,6 @@
 import { Star } from "lucide-react";
 import { FadeIn } from "@/components/ui/motion";
+import { SectionHeader } from "@/components/ui/section-header";
 
 const reviews = [
   {
@@ -26,14 +27,13 @@ export function ReviewsSection() {
   return (
     <section className="section-padding bg-background pb-12 md:pb-14">
       <div className="container-custom">
-        <FadeIn className="section-heading text-center">
-          <span className="label mb-4 block">Client Feedback</span>
-          <h2 className="font-display text-3xl font-bold md:text-4xl">
-            What Our Clients Say
-          </h2>
-          <p className="mx-auto mt-4 max-w-md text-sm leading-relaxed text-muted">
-            Trusted by contractors, developers, and businesses across Somalia.
-          </p>
+        <FadeIn className="section-heading mx-auto max-w-md text-center">
+          <SectionHeader
+            eyebrow="Client Feedback"
+            title="What Our Clients Say"
+            description="Trusted by contractors, developers, and businesses across Somalia."
+            align="center"
+          />
         </FadeIn>
 
         <div className="grid gap-px bg-border md:grid-cols-3">

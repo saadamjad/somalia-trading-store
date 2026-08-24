@@ -46,7 +46,7 @@ export function Header() {
   return (
     <>
       <header className="fixed inset-x-0 top-0 z-50 border-b border-white/10 bg-dark">
-        <div className="container-custom flex h-[var(--header-height)] items-center justify-between">
+        <div className="container-custom flex h-(--header-height) items-center justify-between">
           <Link
             href="/"
             className="font-display flex items-center gap-3 text-sm font-bold tracking-tight text-white transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-dark md:text-base"
@@ -127,7 +127,7 @@ export function Header() {
                   <User className="h-[18px] w-[18px]" strokeWidth={1.5} />
                 </button>
                 {isUserMenuOpen && (
-                  <div className="absolute right-0 top-12 w-56 border border-white/10 bg-dark py-2 shadow-[var(--shadow-xl)]">
+                  <div className="absolute right-0 top-12 w-56 border border-white/10 bg-dark py-2 shadow-(--shadow-xl)">
                     <p className="truncate border-b border-white/10 px-4 pb-2 text-xs text-white/50">
                       {session.user.name || session.user.email}
                     </p>

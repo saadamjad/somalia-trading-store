@@ -1,4 +1,5 @@
 import { FadeIn } from "@/components/ui/motion";
+import { SectionHeader } from "@/components/ui/section-header";
 import { brand } from "@/config/brand";
 
 const stats = [
@@ -12,16 +13,13 @@ export function StatsTrustSection() {
   return (
     <section className="section-band border-y border-border bg-surface">
       <div className="container-custom">
-        <FadeIn className="section-heading text-center">
-          <span className="label mb-4 block">Trusted Across Somalia</span>
-          <h2 className="font-display text-3xl font-bold md:text-4xl">
-            Built on Reliability
-          </h2>
-          <p className="mx-auto mt-4 max-w-lg text-sm leading-relaxed text-muted">
-            {brand.shortName} supports contractors, developers, and businesses
-            with dependable supply across construction, infrastructure, and
-            marine sectors.
-          </p>
+        <FadeIn className="section-heading mx-auto max-w-lg text-center">
+          <SectionHeader
+            eyebrow="Trusted Across Somalia"
+            title="Built on Reliability"
+            description={`${brand.shortName} supports contractors, developers, and businesses with dependable supply across construction, infrastructure, and marine sectors.`}
+            align="center"
+          />
         </FadeIn>
 
         <div className="grid grid-cols-2 gap-px border border-border bg-border md:grid-cols-4">

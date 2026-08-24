@@ -6,6 +6,8 @@ interface SectionHeaderProps {
   description?: string;
   align?: "left" | "center";
   tone?: "light" | "dark";
+  /** "lg" is the standard page-section heading (h2); "sm" is a compact sub-heading. */
+  size?: "lg" | "sm";
   className?: string;
 }
 
@@ -15,25 +17,46 @@ export function SectionHeader({
   description,
   align = "left",
   tone = "light",
+  size = "lg",
   className,
 }: SectionHeaderProps) {
   return (
     <div className={cn(align === "center" && "text-center", className)}>
       {eyebrow && (
-        <span className="label mb-2 block text-accent">{eyebrow}</span>
+        <span
+          className={cn(
+            "label mb-2 block",
+            tone === "dark" ? "text-accent" : "text-accent",
+            size === "lg" && "mb-4"
+          )}
+        >
+          {eyebrow}
+        </span>
       )}
-      <p
-        className={cn(
-          "font-display text-lg font-semibold md:text-xl",
-          tone === "dark" ? "text-white" : "text-foreground"
-        )}
-      >
-        {title}
-      </p>
+      {size === "lg" ? (
+        <h2
+          className={cn(
+            "font-display text-3xl font-bold md:text-4xl",
+            tone === "dark" ? "text-white" : "text-foreground"
+          )}
+        >
+          {title}
+        </h2>
+      ) : (
+        <p
+          className={cn(
+            "font-display text-lg font-semibold md:text-xl",
+            tone === "dark" ? "text-white" : "text-foreground"
+          )}
+        >
+          {title}
+        </p>
+      )}
       {description && (
         <p
           className={cn(
-            "mt-2 text-sm leading-relaxed",
+            size === "lg" ? "mt-4 text-sm leading-relaxed" : "mt-2 text-sm leading-relaxed",
+            align === "center" && size === "lg" && "mx-auto max-w-lg",
             tone === "dark" ? "text-white/60" : "text-muted"
           )}
         >

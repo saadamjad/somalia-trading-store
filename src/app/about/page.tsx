@@ -26,7 +26,7 @@ export default async function AboutPage() {
 
   return (
     <>
-      <section className="mesh-dark relative overflow-hidden pt-[4.5rem]">
+      <section className="mesh-dark relative overflow-hidden pt-(--header-height)">
         <div className="container-custom py-24 md:py-32">
           <FadeIn>
             <span className="label mb-6 block text-accent">About</span>
