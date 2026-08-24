@@ -17,12 +17,12 @@ import { config } from "dotenv";
 import { PrismaPg } from "@prisma/adapter-pg";
 import { PrismaClient } from "../src/generated/prisma/client";
 
-config({ path: ".env.local" });
+config({ path: process.env.PROD ? ".env.production.local" : ".env.local", override: true });
 
 const adapter = new PrismaPg({ connectionString: process.env.DATABASE_URL });
 const prisma = new PrismaClient({ adapter });
 
-const CATEGORY_IMAGE = "/images/products/construction-material/wooden-doors-trio-display.jpg";
+const CATEGORY_IMAGE = "/images/products/construction-material/wooden-door-living-room.jpg";
 const CATEGORY_HERO_IMAGE = "/images/products/construction-material/wooden-door-living-room.jpg";
 
 const PRODUCT_IMAGES = [

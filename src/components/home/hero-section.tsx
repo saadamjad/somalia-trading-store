@@ -8,6 +8,15 @@ import { Button } from "@/components/ui/button";
 import { brand } from "@/config/brand";
 import type { Category } from "@/lib/types/product";
 
+// Forces specific homepage hero-tile images regardless of what's stored in
+// Category.image — lets us guarantee a specific photo shows here without
+// needing a production DB write. Keyed by category slug; falls back to
+// cat.image (the DB value) for any slug not listed here.
+const HERO_TILE_IMAGE_OVERRIDES: Record<string, string> = {
+  "construction-materials":
+    "/images/products/construction-material/wooden-door-living-room.jpg",
+};
+
 export interface HeroBanner {
   title: string;
   subtitle: string | null;
@@ -93,7 +102,7 @@ export function HeroSection({ categories, banner }: HeroSectionProps) {
                   }`}
                 >
                   <Image
-                    src={cat.image}
+                    src={HERO_TILE_IMAGE_OVERRIDES[cat.slug] ?? cat.image}
                     alt={cat.name}
                     fill
                     sizes="(max-width: 768px) 50vw, 25vw"
