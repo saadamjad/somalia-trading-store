@@ -44,4 +44,19 @@ export const galleryMoments: GalleryMoment[] = [
     alt: "Foley General Trading leadership representing the business internationally",
     caption: "On the world stage",
   },
+  {
+    image: "/images/our-story/client-consultation.jpg",
+    alt: "Foley General Trading leadership at an agricultural trading company booth",
+    caption: "Client consultations",
+  },
+  {
+    image: "/images/our-story/manufacturing-quality.jpg",
+    alt: "Quality inspection at a heavy machinery manufacturing facility",
+    caption: "Quality inspection",
+  },
+  {
+    image: "/images/our-story/site-visit-road.jpg",
+    alt: "Foley General Trading leadership meeting with partners at an international trade expo",
+    caption: "On the ground",
+  },
 ];

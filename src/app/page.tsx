@@ -1,8 +1,5 @@
 import { HeroSection } from "@/components/home/hero-section";
-import {
-  FeaturedProducts,
-  ShopByCategory,
-} from "@/components/home/shop-by-category";
+import { ShopByCategory } from "@/components/home/shop-by-category";
 import { OurStorySection } from "@/components/home/our-story-section";
 import { ReviewsSection } from "@/components/home/reviews-section";
 import { StatsTrustSection } from "@/components/home/stats-trust-section";
@@ -21,9 +18,8 @@ export const metadata = createPageMetadata({
 });
 
 export default async function HomePage() {
-  const [categories, featured, heroBanner, promoBanner] = await Promise.all([
+  const [categories, heroBanner, promoBanner] = await Promise.all([
     productService.getCategories(),
-    productService.getFeatured(),
     bannerService.getActiveForSlot("HOMEPAGE_HERO"),
     bannerService.getActiveForSlot("HOMEPAGE_PROMO"),
   ]);
@@ -35,7 +31,6 @@ export default async function HomePage() {
       <StatsTrustSection />
       {promoBanner && <PromoBanner banner={promoBanner} />}
       <OurStorySection />
-      <FeaturedProducts products={featured} />
       <WhyChooseSection />
       <ReviewsSection />
       <TrustStrip />
