@@ -117,15 +117,15 @@ export function OurStorySection() {
               sizes="100vw"
               className="object-cover transition-transform duration-700 group-hover:scale-[1.02]"
             />
-            <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/30 to-transparent" />
-            <div className="absolute inset-x-0 bottom-0 p-6 md:p-10 lg:p-12">
-              <span className="label mb-3 block text-accent/80">
+            <div className="absolute inset-0 bg-gradient-to-t from-black via-black/70 to-black/10" />
+            <div className="absolute inset-x-0 bottom-0 p-6 md:p-10 lg:p-12 [text-shadow:0_1px_8px_rgba(0,0,0,0.8)]">
+              <span className="label mb-3 block text-accent">
                 {storyChapters[0].label}
               </span>
               <h3 className="font-display mb-3 max-w-xl text-xl font-bold text-white md:text-2xl lg:text-3xl">
                 {storyChapters[0].title}
               </h3>
-              <p className="max-w-lg text-sm leading-relaxed text-white/55">
+              <p className="max-w-lg text-sm leading-relaxed text-white/80">
                 {storyChapters[0].description}
               </p>
             </div>
@@ -144,15 +144,15 @@ export function OurStorySection() {
                   sizes="(max-width: 768px) 100vw, 50vw"
                   className="object-cover transition-transform duration-700 group-hover:scale-[1.03]"
                 />
-                <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/25 to-transparent" />
-                <div className="absolute inset-x-0 bottom-0 p-5 md:p-7">
-                  <span className="label mb-2 block text-accent/70">
+                <div className="absolute inset-0 bg-gradient-to-t from-black via-black/75 to-black/15" />
+                <div className="absolute inset-x-0 bottom-0 p-5 md:p-7 [text-shadow:0_1px_8px_rgba(0,0,0,0.8)]">
+                  <span className="label mb-2 block text-accent">
                     {chapter.label}
                   </span>
                   <h3 className="font-display mb-2 text-base font-bold text-white md:text-lg">
                     {chapter.title}
                   </h3>
-                  <p className="text-xs leading-relaxed text-white/50 md:text-sm">
+                  <p className="text-xs leading-relaxed text-white/80 md:text-sm">
                     {chapter.description}
                   </p>
                 </div>
@@ -185,9 +185,9 @@ export function OurStorySection() {
                     sizes="(max-width: 768px) 50vw, 16vw"
                     className="object-cover transition-transform duration-500 group-hover:scale-105"
                   />
-                  <div className="absolute inset-0 bg-black/0 transition-colors group-hover:bg-black/20" />
-                  <figcaption className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/80 to-transparent px-3 py-3">
-                    <span className="text-[9px] font-semibold uppercase tracking-widest text-white/70">
+                  <div className="absolute inset-0 bg-black/10 transition-colors group-hover:bg-black/25" />
+                  <figcaption className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black via-black/70 to-transparent px-3 pb-2.5 pt-6">
+                    <span className="text-[9px] font-semibold uppercase tracking-widest text-white [text-shadow:0_1px_6px_rgba(0,0,0,0.9)]">
                       {moment.caption}
                     </span>
                   </figcaption>
