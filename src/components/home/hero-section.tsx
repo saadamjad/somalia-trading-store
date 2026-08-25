@@ -9,15 +9,6 @@ import { heroFallback } from "@/config/home";
 import { SafeImage } from "@/components/ui/safe-image";
 import type { Category } from "@/lib/types/product";
 
-// Forces specific homepage hero-tile images regardless of what's stored in
-// Category.image — lets us guarantee a specific photo shows here without
-// needing a production DB write. Keyed by category slug; falls back to
-// cat.image (the DB value) for any slug not listed here.
-const HERO_TILE_IMAGE_OVERRIDES: Record<string, string> = {
-  "construction-materials":
-    "/images/products/construction-material/wooden-door-living-room.jpg",
-};
-
 export interface HeroBanner {
   title: string;
   subtitle: string | null;
@@ -103,7 +94,7 @@ export function HeroSection({ categories, banner }: HeroSectionProps) {
                   }`}
                 >
                   <SafeImage
-                    src={HERO_TILE_IMAGE_OVERRIDES[cat.slug] ?? cat.image}
+                    src={cat.image}
                     alt={cat.name}
                     fill
                     priority={i === 0}

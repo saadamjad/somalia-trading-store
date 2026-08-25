@@ -2,7 +2,11 @@ import { NextResponse } from "next/server";
 import { ZodError } from "zod";
 import { UnauthenticatedError } from "@/server/auth/session";
 import { ForbiddenError } from "@/server/auth/permissions";
-import { CategoryNotFoundError, ProductNotFoundError } from "@/server/services/product-service";
+import {
+  CategoryCycleError,
+  CategoryNotFoundError,
+  ProductNotFoundError,
+} from "@/server/services/product-service";
 import {
   InsufficientStockError,
   InventoryNotFoundError,
@@ -73,6 +77,9 @@ export function toErrorResponse(error: unknown): NextResponse {
     error instanceof NotificationNotFoundError
   ) {
     return NextResponse.json({ error: error.message }, { status: 404 });
+  }
+  if (error instanceof CategoryCycleError) {
+    return NextResponse.json({ error: error.message }, { status: 400 });
   }
   if (error instanceof EmptyCartError) {
     return NextResponse.json({ error: error.message }, { status: 400 });

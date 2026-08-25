@@ -1,3 +1,4 @@
+import { cachedRead, revalidateTag } from "@/lib/server-cache";
 import { categoryRepository } from "@/server/repositories/category-repository";
 import { productRepository } from "@/server/repositories/product-repository";
 import type {
@@ -16,6 +17,8 @@ import {
 } from "@/server/services/product-mappers";
 import { applyFilters, getPriceRange, sortProducts } from "@/lib/filters/apply-filters";
 import { getSearchSuggestions, searchProducts } from "@/lib/search/search-products";
+import { cacheTags } from "@/lib/cache-tags";
+import { deleteBlobsBestEffort } from "@/lib/blob";
 import type { ActiveFilters } from "@/lib/types/filter";
 import type { Category, CategorySlug, Product, SortOption } from "@/lib/types/product";
 
@@ -33,6 +36,13 @@ export class ProductNotFoundError extends Error {
   }
 }
 
+export class CategoryCycleError extends Error {
+  constructor() {
+    super("A category cannot be its own parent or descendant's parent.");
+    this.name = "CategoryCycleError";
+  }
+}
+
 /**
  * Server-side product/category service — Phase 4 replacement for the old in-memory
  * src/lib/services/product-service.ts. Method signatures (getAll, getBySlug,
@@ -42,10 +52,68 @@ export class ProductNotFoundError extends Error {
  * components/route handlers, or fetch through /api/products for client components
  * (see src/app/api/products/route.ts).
  */
+/**
+ * Public read methods are wrapped with `unstable_cache` and tagged so that admin
+ * mutations (below) can call `revalidateTag` to invalidate exactly the cached data
+ * that changed, without a redeploy. Admin-facing reads (getById, admin list pages)
+ * intentionally read straight from the repository, uncached, so an admin always sees
+ * their own just-made edit immediately.
+ */
+const getAllCached = cachedRead(
+  async () => (await productRepository.findAll()).map(toDomainProduct),
+  ["products:getAll"],
+  { tags: [cacheTags.products] }
+);
+
+const getBySlugCached = cachedRead(
+  async (category: CategorySlug, slug: string) => {
+    const row = await productRepository.findBySlug(slug);
+    if (!row || row.category.slug !== category) return undefined;
+    return toDomainProduct(row);
+  },
+  ["products:getBySlug"],
+  { tags: [cacheTags.products] }
+);
+
+const getByCategoryCached = cachedRead(
+  async (category: CategorySlug) => {
+    const categoryRow = await categoryRepository.findBySlug(category);
+    if (!categoryRow) return [];
+    const rows = await productRepository.findByCategoryId(categoryRow.id);
+    return rows.map(toDomainProduct);
+  },
+  ["products:getByCategory"],
+  { tags: [cacheTags.products, cacheTags.categories] }
+);
+
+const getCategoriesCached = cachedRead(
+  async () => {
+    const rows = await categoryRepository.findAll();
+    return Promise.all(
+      rows.map(async (row) => {
+        const subcategories = await categoryRepository.findSubcategories(row.id);
+        return toDomainCategory(row, subcategories);
+      })
+    );
+  },
+  ["categories:getAll"],
+  { tags: [cacheTags.categories] }
+);
+
+const getCategoryCached = cachedRead(
+  async (slug: string) => {
+    const row = await categoryRepository.findBySlug(slug);
+    if (!row) return undefined;
+    const subcategories = await categoryRepository.findSubcategories(row.id);
+    return toDomainCategory(row, subcategories);
+  },
+  ["categories:getBySlug"],
+  { tags: [cacheTags.categories] }
+);
+
 export const productService = {
   async getAll(): Promise<Product[]> {
-    const rows = await productRepository.findAll();
-    return rows.map(toDomainProduct);
+    return getAllCached();
   },
 
   async getById(id: string): Promise<Product | undefined> {
@@ -54,16 +122,11 @@ export const productService = {
   },
 
   async getBySlug(category: CategorySlug, slug: string): Promise<Product | undefined> {
-    const row = await productRepository.findBySlug(slug);
-    if (!row || row.category.slug !== category) return undefined;
-    return toDomainProduct(row);
+    return getBySlugCached(category, slug);
   },
 
   async getByCategory(category: CategorySlug): Promise<Product[]> {
-    const categoryRow = await categoryRepository.findBySlug(category);
-    if (!categoryRow) return [];
-    const rows = await productRepository.findByCategoryId(categoryRow.id);
-    return rows.map(toDomainProduct);
+    return getByCategoryCached(category);
   },
 
   async getByIds(ids: string[]): Promise<Product[]> {
@@ -77,20 +140,11 @@ export const productService = {
   },
 
   async getCategories(): Promise<Category[]> {
-    const rows = await categoryRepository.findAll();
-    return Promise.all(
-      rows.map(async (row) => {
-        const subcategories = await categoryRepository.findSubcategories(row.id);
-        return toDomainCategory(row, subcategories);
-      })
-    );
+    return getCategoriesCached();
   },
 
   async getCategory(slug: string): Promise<Category | undefined> {
-    const row = await categoryRepository.findBySlug(slug);
-    if (!row) return undefined;
-    const subcategories = await categoryRepository.findSubcategories(row.id);
-    return toDomainCategory(row, subcategories);
+    return getCategoryCached(slug);
   },
 
   async getCategoryById(id: string): Promise<Category | undefined> {
@@ -193,6 +247,7 @@ export const productService = {
     };
 
     const row = await productRepository.create(data);
+    revalidateTag(cacheTags.products);
     return toDomainProduct(row);
   },
 
@@ -234,6 +289,15 @@ export const productService = {
     if (availability) data.availability = toPrismaAvailability(availability);
 
     const row = await productRepository.update(id, data);
+    revalidateTag(cacheTags.products);
+
+    if (input.images) {
+      const removedImages = existing.images.filter((url) => !input.images!.includes(url));
+      if (removedImages.length > 0) {
+        void deleteBlobsBestEffort(removedImages, id);
+      }
+    }
+
     return toDomainProduct(row);
   },
 
@@ -241,18 +305,48 @@ export const productService = {
     const existing = await productRepository.findById(id);
     if (!existing) throw new ProductNotFoundError(id);
     await productRepository.delete(id);
+    revalidateTag(cacheTags.products);
+    void deleteBlobsBestEffort(existing.images, id);
   },
 
   async createCategory(input: CategoryCreateInput): Promise<Category> {
     const row = await categoryRepository.create(input);
+    revalidateTag(cacheTags.categories);
     return toDomainCategory(row, []);
   },
 
   async updateCategory(id: string, input: CategoryUpdateInput): Promise<Category> {
     const existing = await categoryRepository.findById(id);
     if (!existing) throw new CategoryNotFoundError(id);
+
+    if (input.parentId) {
+      if (input.parentId === id) {
+        throw new CategoryCycleError();
+      }
+      const allCategories = await categoryRepository.findAll();
+      const byId = new Map(allCategories.map((c) => [c.id, c]));
+      const visited = new Set<string>();
+      let cursorId: string | null | undefined = input.parentId;
+      while (cursorId) {
+        if (cursorId === id) throw new CategoryCycleError();
+        if (visited.has(cursorId)) break; // pre-existing cycle unrelated to this update
+        visited.add(cursorId);
+        cursorId = byId.get(cursorId)?.parentId;
+      }
+    }
+
     const row = await categoryRepository.update(id, input);
     const subcategories = await categoryRepository.findSubcategories(row.id);
+    revalidateTag(cacheTags.categories);
+    revalidateTag(cacheTags.products);
+
+    const removedImages = [existing.image, existing.heroImage].filter(
+      (url) => url !== row.image && url !== row.heroImage
+    );
+    if (removedImages.length > 0) {
+      void deleteBlobsBestEffort(removedImages, id);
+    }
+
     return toDomainCategory(row, subcategories);
   },
 
@@ -260,5 +354,8 @@ export const productService = {
     const existing = await categoryRepository.findById(id);
     if (!existing) throw new CategoryNotFoundError(id);
     await categoryRepository.delete(id);
+    revalidateTag(cacheTags.categories);
+    revalidateTag(cacheTags.products);
+    void deleteBlobsBestEffort([existing.image, existing.heroImage], id);
   },
 };
