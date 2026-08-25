@@ -3,12 +3,37 @@ import { redirect } from "next/navigation";
 import { getCurrentSession } from "@/server/auth/session";
 import { getRolePermissions } from "@/server/auth/permissions";
 
+const NAV_ITEMS: { href: string; label: string; permission: string }[] = [
+  { href: "/admin", label: "Dashboard", permission: "dashboard.view" },
+  { href: "/admin/products", label: "Products", permission: "products.view" },
+  { href: "/admin/categories", label: "Categories", permission: "categories.view" },
+  { href: "/admin/inventory", label: "Inventory", permission: "inventory.view" },
+  { href: "/admin/orders", label: "Orders", permission: "orders.view" },
+  { href: "/admin/refunds", label: "Refunds", permission: "refunds.view" },
+  { href: "/admin/quotes", label: "Quotes", permission: "quotes.view" },
+  { href: "/admin/cms", label: "CMS", permission: "cms.view" },
+  { href: "/admin/reports", label: "Reports", permission: "reports.view" },
+  { href: "/admin/users", label: "Admin Users", permission: "admin_users.view" },
+];
+
 /**
  * Admin shell. Gated on `products.view` (the one seeded permission every
  * admin-capable role is expected to have) as a stand-in for "can enter the admin area
  * at all"; individual pages/actions still enforce their own specific permission
  * (products.create, categories.update, ...). `/admin` itself (see `page.tsx`) is the
  * Phase 13 dashboard — an operational summary, not a redirect.
+ *
+ * Admin User Management & RBAC: every nav link is now conditionally rendered based on
+ * the viewer's actual permissions (previously all unconditional, since only
+ * super_admin — which has everything — existed as a real staff role).
+ *
+ * The mustChangePassword redirect is NOT done here: this layout wraps every /admin/*
+ * route including /admin/change-password itself, and there's no middleware/pathname
+ * primitive in this codebase (deliberately — see docs/DECISIONS.md D-004) to exclude
+ * one route from a layout-level redirect without a fragile workaround. Instead, each
+ * protected page checks `session.mustChangePassword` itself and redirects — see e.g.
+ * admin/page.tsx. /admin/change-password's own page never performs this check on
+ * itself, so no redirect loop.
  */
 export default async function AdminLayout({ children }: { children: React.ReactNode }) {
   const session = await getCurrentSession();
@@ -36,60 +61,18 @@ export default async function AdminLayout({ children }: { children: React.ReactN
           <p className="text-sm text-muted">{session.name || session.email}</p>
         </div>
         <nav className="flex flex-col gap-1 px-3" aria-label="Admin">
-          <Link
-            href="/admin"
-            className="rounded-lg px-3 py-2 text-sm font-medium hover:bg-accent-muted"
-          >
-            Dashboard
-          </Link>
-          <Link
-            href="/admin/products"
-            className="rounded-lg px-3 py-2 text-sm font-medium hover:bg-accent-muted"
-          >
-            Products
-          </Link>
-          <Link
-            href="/admin/categories"
-            className="rounded-lg px-3 py-2 text-sm font-medium hover:bg-accent-muted"
-          >
-            Categories
-          </Link>
-          <Link
-            href="/admin/inventory"
-            className="rounded-lg px-3 py-2 text-sm font-medium hover:bg-accent-muted"
-          >
-            Inventory
-          </Link>
-          <Link
-            href="/admin/orders"
-            className="rounded-lg px-3 py-2 text-sm font-medium hover:bg-accent-muted"
-          >
-            Orders
-          </Link>
-          <Link
-            href="/admin/refunds"
-            className="rounded-lg px-3 py-2 text-sm font-medium hover:bg-accent-muted"
-          >
-            Refunds
-          </Link>
-          <Link
-            href="/admin/quotes"
-            className="rounded-lg px-3 py-2 text-sm font-medium hover:bg-accent-muted"
-          >
-            Quotes
-          </Link>
-          <Link
-            href="/admin/cms"
-            className="rounded-lg px-3 py-2 text-sm font-medium hover:bg-accent-muted"
-          >
-            CMS
-          </Link>
-          <Link
-            href="/admin/reports"
-            className="rounded-lg px-3 py-2 text-sm font-medium hover:bg-accent-muted"
-          >
-            Reports
-          </Link>
+          {NAV_ITEMS.map(
+            (item) =>
+              permissions.has(item.permission) && (
+                <Link
+                  key={item.href}
+                  href={item.href}
+                  className="rounded-lg px-3 py-2 text-sm font-medium hover:bg-accent-muted"
+                >
+                  {item.label}
+                </Link>
+              )
+          )}
         </nav>
       </aside>
       <main className="min-w-0 flex-1 p-6 md:p-10">{children}</main>

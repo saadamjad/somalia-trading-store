@@ -34,6 +34,10 @@ export default async function AdminOrdersPage({ searchParams }: PageProps) {
     redirect("/login?callbackUrl=/admin/orders");
   }
 
+  if (session.mustChangePassword) {
+    redirect("/admin/change-password");
+  }
+
   const permissions = await getRolePermissions(session.role);
   if (!permissions.has("orders.view")) {
     return (

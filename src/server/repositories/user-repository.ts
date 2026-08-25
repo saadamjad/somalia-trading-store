@@ -13,6 +13,14 @@ export const userRepository = {
     return prisma.user.findUnique({ where: { id } });
   },
 
+  findByIdWithRole(id: string) {
+    return prisma.user.findUnique({ where: { id }, include: { role: true } });
+  },
+
+  touchLastLogin(id: string) {
+    return prisma.user.update({ where: { id }, data: { lastLoginAt: new Date() } });
+  },
+
   async create(data: {
     name: string;
     email: string;
@@ -24,8 +32,15 @@ export const userRepository = {
     return prisma.user.create({ data });
   },
 
+  // Clearing mustChangePassword here (not just on the forced-change screen) is safe
+  // and correct for every caller: any legitimate password change — forced-change,
+  // normal account settings, or forgot-password reset — should end the "must change"
+  // state, since its only purpose is "you're still on the temp password."
   updatePasswordHash(userId: string, passwordHash: string) {
-    return prisma.user.update({ where: { id: userId }, data: { passwordHash } });
+    return prisma.user.update({
+      where: { id: userId },
+      data: { passwordHash, mustChangePassword: false },
+    });
   },
 
   /**
@@ -45,6 +60,14 @@ export const userRepository = {
 export const roleRepository = {
   findByName(name: string) {
     return prisma.role.findUnique({ where: { name } });
+  },
+
+  /** The three staff-capable roles, for the Admin User Management role picker. */
+  findStaffRoles() {
+    return prisma.role.findMany({
+      where: { name: { in: ["staff", "admin", "super_admin"] } },
+      orderBy: { name: "asc" },
+    });
   },
 };
 

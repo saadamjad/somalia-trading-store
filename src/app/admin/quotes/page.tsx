@@ -28,6 +28,10 @@ export default async function AdminQuotesPage({ searchParams }: PageProps) {
     redirect("/login?callbackUrl=/admin/quotes");
   }
 
+  if (session.mustChangePassword) {
+    redirect("/admin/change-password");
+  }
+
   const permissions = await getRolePermissions(session.role);
   if (!permissions.has("quotes.view")) {
     return (

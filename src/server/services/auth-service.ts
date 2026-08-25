@@ -39,11 +39,15 @@ export const authService = {
     const userWithRole = await userRepository.findByEmailWithRole(normalizedEmail);
     // Guest-checkout accounts (order-service.ts `createGuestOrder`) have no
     // passwordHash — never a valid login target until a real password is set
-    // (e.g. via the forgot-password flow).
-    if (!userWithRole || !userWithRole.passwordHash) return null;
+    // (e.g. via the forgot-password flow). Deactivated accounts (Admin User
+    // Management & RBAC) are rejected identically to a wrong password — same
+    // anti-enumeration property, no separate "this account is disabled" message.
+    if (!userWithRole || !userWithRole.passwordHash || !userWithRole.active) return null;
 
     const isValid = await verifyPassword(password, userWithRole.passwordHash);
     if (!isValid) return null;
+
+    await userRepository.touchLastLogin(userWithRole.id);
 
     return {
       id: userWithRole.id,

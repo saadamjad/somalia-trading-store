@@ -35,7 +35,7 @@ function uniqueEmail(label: string) {
 async function createCustomer(label: string) {
   const email = uniqueEmail(label);
   const user = await authService.register({ name: `Wishlist Route Test ${label}`, email, password: "PlainTextPass1" });
-  return { userId: user.id, email: user.email, name: `Wishlist Route Test ${label}`, role: "customer" };
+  return { userId: user.id, email: user.email, name: `Wishlist Route Test ${label}`, role: "customer", mustChangePassword: false };
 }
 
 async function createProduct(label: string) {

@@ -99,10 +99,13 @@ function StatusBreakdown({
 }
 
 /**
- * Admin dashboard — Phase 13. Gated on `products.view`, the same stand-in permission
- * `/admin/layout.tsx` uses for "can enter the admin area at all" (this dashboard
- * summarizes every resource type, so it doesn't map cleanly to one narrower
- * permission — see the layout's own comment for the reasoning this follows).
+ * Admin dashboard — Phase 13. Gated on `dashboard.view` (Admin User Management &
+ * RBAC pass), a dedicated permission distinct from `products.view` — the dashboard
+ * summarizes order-value/financial figures across the whole store, so "can see the
+ * product catalog" must not accidentally double as "can see store-wide money
+ * figures." Roles that lack `dashboard.view` (e.g. `staff`) are redirected to
+ * `/admin/products` instead of shown an Access Denied wall as their first landing
+ * screen after login — same security outcome, better first impression.
  *
  * This is an operational overview ("what needs attention right now + basic counts"),
  * not analytics/charts/exports — that's Phase 14. The order-value figure shown here is
@@ -116,16 +119,13 @@ export default async function AdminDashboardPage({ searchParams }: PageProps) {
     redirect("/login?callbackUrl=/admin");
   }
 
+  if (session.mustChangePassword) {
+    redirect("/admin/change-password");
+  }
+
   const permissions = await getRolePermissions(session.role);
-  if (!permissions.has("products.view")) {
-    return (
-      <div className="container-custom flex min-h-[40vh] flex-col items-center justify-center py-24 text-center">
-        <h1 className="font-display mb-2 text-2xl font-bold">Access Denied</h1>
-        <p className="text-muted">
-          Your account does not have permission to view the admin dashboard.
-        </p>
-      </div>
-    );
+  if (!permissions.has("dashboard.view")) {
+    redirect("/admin/products");
   }
 
   const params = await searchParams;

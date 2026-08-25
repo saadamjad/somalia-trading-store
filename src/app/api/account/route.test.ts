@@ -30,7 +30,7 @@ function uniqueEmail(label: string) {
 async function createCustomer(label: string) {
   const email = uniqueEmail(label);
   const user = await authService.register({ name: `Account Route ${label}`, email, password: "PlainTextPass1" });
-  return { userId: user.id, email: user.email, name: `Account Route ${label}`, role: "customer" };
+  return { userId: user.id, email: user.email, name: `Account Route ${label}`, role: "customer", mustChangePassword: false };
 }
 
 describe("GET/PATCH /api/account", () => {

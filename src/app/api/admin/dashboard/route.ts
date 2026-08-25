@@ -6,14 +6,13 @@ import { toErrorResponse } from "@/server/lib/api-errors";
 
 /**
  * GET /api/admin/dashboard — aggregated operational summary for `/admin`. Gated on
- * `products.view`, the same stand-in permission `/admin/layout.tsx` uses for "can
- * enter the admin area at all" (see that file's comment) — the dashboard surfaces a
- * cross-resource summary (orders/customers/products/inventory/refunds/quotes), not a
- * single resource's data, so it doesn't cleanly map to one narrower permission key.
+ * `dashboard.view`, a dedicated permission (Admin User Management & RBAC pass) so
+ * that seeing the product catalog does not implicitly grant visibility into
+ * store-wide order-value/financial figures — see src/app/admin/page.tsx's comment.
  */
 export async function GET(request: NextRequest) {
   try {
-    await requirePermission("products.view");
+    await requirePermission("dashboard.view");
 
     const { searchParams } = new URL(request.url);
     const query = dashboardQuerySchema.parse(Object.fromEntries(searchParams));

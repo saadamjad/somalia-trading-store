@@ -29,6 +29,10 @@ export default async function AdminRefundsPage({ searchParams }: PageProps) {
     redirect("/login?callbackUrl=/admin/refunds");
   }
 
+  if (session.mustChangePassword) {
+    redirect("/admin/change-password");
+  }
+
   const permissions = await getRolePermissions(session.role);
   if (!permissions.has("refunds.view")) {
     return (

@@ -34,6 +34,10 @@ export default async function AdminReportsPage({ searchParams }: PageProps) {
     redirect("/login?callbackUrl=/admin/reports");
   }
 
+  if (session.mustChangePassword) {
+    redirect("/admin/change-password");
+  }
+
   const permissions = await getRolePermissions(session.role);
   if (!permissions.has("reports.view")) {
     return (

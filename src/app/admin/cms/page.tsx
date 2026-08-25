@@ -18,6 +18,10 @@ export default async function AdminCMSPage() {
   const session = await getCurrentSession();
   if (!session) redirect("/login?callbackUrl=/admin/cms");
 
+  if (session.mustChangePassword) {
+    redirect("/admin/change-password");
+  }
+
   const permissions = await getRolePermissions(session.role);
   if (!permissions.has("cms.view")) {
     return (
