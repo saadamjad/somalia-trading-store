@@ -10,8 +10,9 @@ const isDev = process.env.NODE_ENV === "development";
 // undo the ISR/static rendering built for the public shop pages in Phase 4). Instead
 // this uses the "without nonces" pattern the same doc recommends, scoped to what this
 // app actually needs:
-// - `img-src` allows `images.unsplash.com` (see `images.remotePatterns` below) plus
-//   `data:` for small inline/placeholder images.
+// - `img-src` allows `images.unsplash.com` and `*.public.blob.vercel-storage.com`
+//   (admin-uploaded images, see `images.remotePatterns` below) plus `data:` for small
+//   inline/placeholder images.
 // - `script-src`/`style-src` need `'unsafe-inline'` — Next.js injects inline hydration
 //   data and Tailwind/Radix components rely on inline styles; `'unsafe-eval'` is added
 //   only in development (React's dev-mode error reconstruction uses it, never needed
@@ -23,7 +24,7 @@ const cspHeader = `
   default-src 'self';
   script-src 'self' 'unsafe-inline'${isDev ? " 'unsafe-eval'" : ""};
   style-src 'self' 'unsafe-inline';
-  img-src 'self' blob: data: https://images.unsplash.com;
+  img-src 'self' blob: data: https://images.unsplash.com https://*.public.blob.vercel-storage.com;
   font-src 'self' data:;
   connect-src 'self';
   object-src 'none';
@@ -58,6 +59,10 @@ const nextConfig: NextConfig = {
       {
         protocol: "https",
         hostname: "images.unsplash.com",
+      },
+      {
+        protocol: "https",
+        hostname: "*.public.blob.vercel-storage.com",
       },
     ],
   },

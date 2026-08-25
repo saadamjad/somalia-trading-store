@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { ImageUploadField } from "@/components/admin/image-upload-field";
 import type { Category } from "@/lib/types/product";
 
 interface CategoryFormProps {
@@ -118,26 +119,24 @@ export function CategoryForm({ category }: CategoryFormProps) {
       </div>
 
       <div className="grid gap-4 sm:grid-cols-2">
-        <div>
-          <Label htmlFor="image">Image URL *</Label>
-          <Input
-            id="image"
-            required
-            className="mt-1.5"
-            value={form.image}
-            onChange={(e) => setForm((f) => ({ ...f, image: e.target.value }))}
-          />
-        </div>
-        <div>
-          <Label htmlFor="heroImage">Hero Image URL *</Label>
-          <Input
-            id="heroImage"
-            required
-            className="mt-1.5"
-            value={form.heroImage}
-            onChange={(e) => setForm((f) => ({ ...f, heroImage: e.target.value }))}
-          />
-        </div>
+        <ImageUploadField
+          id="image"
+          label="Image"
+          required
+          context="category"
+          hint="Square-ish, shown on category cards. Recommended ~800×800px."
+          value={form.image}
+          onChange={(url) => setForm((f) => ({ ...f, image: url }))}
+        />
+        <ImageUploadField
+          id="heroImage"
+          label="Hero Image"
+          required
+          context="category"
+          hint="Wide banner, shown at the top of the category page. Recommended ~1600×600px."
+          value={form.heroImage}
+          onChange={(url) => setForm((f) => ({ ...f, heroImage: url }))}
+        />
       </div>
 
       <div>

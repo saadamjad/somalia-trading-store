@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { ImageUploadField } from "@/components/admin/image-upload-field";
 import type { BannerView } from "@/server/services/banner-service";
 import type { BannerSlot } from "@/generated/prisma/client";
 
@@ -130,16 +131,14 @@ export function BannerForm({ banner }: BannerFormProps) {
       </div>
 
       <div className="grid gap-4 sm:grid-cols-2">
-        <div>
-          <Label htmlFor="imageUrl">Image URL</Label>
-          <Input
-            id="imageUrl"
-            placeholder="/images/... or https://..."
-            className="mt-1.5"
-            value={form.imageUrl}
-            onChange={(e) => setForm((f) => ({ ...f, imageUrl: e.target.value }))}
-          />
-        </div>
+        <ImageUploadField
+          id="imageUrl"
+          label="Image"
+          context="banner"
+          hint="Wide banner image. Recommended ~1920×800px."
+          value={form.imageUrl}
+          onChange={(url) => setForm((f) => ({ ...f, imageUrl: url }))}
+        />
         <div>
           <Label htmlFor="linkUrl">Link URL</Label>
           <Input

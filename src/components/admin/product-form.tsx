@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { ImageGalleryUploadField } from "@/components/admin/image-gallery-upload-field";
 import type { Category, Product } from "@/lib/types/product";
 
 interface ProductFormProps {
@@ -33,7 +34,7 @@ export function ProductForm({ categories, product }: ProductFormProps) {
     compareAtPrice: product?.compareAtPrice?.toString() ?? "",
     currency: product?.currency ?? "USD",
     priceUnit: product?.priceUnit ?? "",
-    images: product?.images?.join("\n") ?? "",
+    images: product?.images ?? [],
     tags: product?.tags?.join(", ") ?? "",
     purchasingMode: product?.purchasingMode ?? "buy_online",
     availability: product?.availability ?? "in_stock",
@@ -57,10 +58,7 @@ export function ProductForm({ categories, product }: ProductFormProps) {
       compareAtPrice: form.compareAtPrice ? Number(form.compareAtPrice) : undefined,
       currency: form.currency,
       priceUnit: form.priceUnit || undefined,
-      images: form.images
-        .split("\n")
-        .map((s) => s.trim())
-        .filter(Boolean),
+      images: form.images,
       tags: form.tags
         .split(",")
         .map((s) => s.trim())
@@ -238,17 +236,14 @@ export function ProductForm({ categories, product }: ProductFormProps) {
         />
       </div>
 
-      <div>
-        <Label htmlFor="images">Image URLs (one per line) *</Label>
-        <Textarea
-          id="images"
-          required
-          rows={3}
-          className="mt-1.5"
-          value={form.images}
-          onChange={(e) => setForm((f) => ({ ...f, images: e.target.value }))}
-        />
-      </div>
+      <ImageGalleryUploadField
+        id="images"
+        label="Product Images"
+        required
+        hint="First image is used as the main thumbnail. Recommended square, ~1200×1200px."
+        values={form.images}
+        onChange={(urls) => setForm((f) => ({ ...f, images: urls }))}
+      />
 
       <div>
         <Label htmlFor="tags">Tags (comma-separated)</Label>

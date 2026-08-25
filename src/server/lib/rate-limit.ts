@@ -98,4 +98,10 @@ export const RATE_LIMITS = {
   resetPassword: { limit: 10, windowMs: 60_000 },
   checkout: { limit: 10, windowMs: 60_000 },
   quote: { limit: 10, windowMs: 60_000 },
+  /**
+   * First rate-limit policy applied to an authenticated admin route rather than a
+   * public one — uploads are bandwidth/storage-expensive per request, so still worth
+   * bounding even though the caller has already passed a permission check.
+   */
+  adminUpload: { limit: 20, windowMs: 60_000 },
 } as const;
