@@ -1,10 +1,10 @@
 "use client";
 
-import Image from "next/image";
 import Link from "next/link";
 import { ArrowUpRight } from "lucide-react";
 import type { Category } from "@/lib/types/product";
 import { cn } from "@/lib/utils";
+import { SafeImage } from "@/components/ui/safe-image";
 
 interface CategoryCardProps {
   category: Category;
@@ -33,7 +33,7 @@ export function CategoryCard({
           variant === "large" ? "aspect-[4/3]" : "aspect-square"
         )}
       >
-        <Image
+        <SafeImage
           src={category.image}
           alt={category.name}
           fill

@@ -1,6 +1,5 @@
 "use client";
 
-import Image from "next/image";
 import Link from "next/link";
 import { ArrowUpRight, Heart, ShoppingCart } from "lucide-react";
 import { toast } from "sonner";
@@ -9,6 +8,7 @@ import { useCartStore } from "@/stores/cart-store";
 import { useWishlistStore } from "@/stores/wishlist-store";
 import { useUIStore } from "@/stores/ui-store";
 import { calculateDiscount, cn, formatPrice, formatProductPrice } from "@/lib/utils";
+import { SafeImage } from "@/components/ui/safe-image";
 
 interface ProductCardProps {
   product: Product;
@@ -48,7 +48,7 @@ export function ProductCard({
           href={productUrl}
           className="relative aspect-[4/3] overflow-hidden md:aspect-auto md:min-h-[420px]"
         >
-          <Image
+          <SafeImage
             src={product.images[0]}
             alt={product.name}
             fill
@@ -124,7 +124,7 @@ export function ProductCard({
         href={productUrl}
         className="relative mb-5 block aspect-[3/4] overflow-hidden bg-muted/10 shadow-(--shadow-sm) transition-shadow duration-500 group-hover:shadow-(--shadow-lg)"
       >
-        <Image
+        <SafeImage
           src={product.images[0]}
           alt={product.name}
           fill

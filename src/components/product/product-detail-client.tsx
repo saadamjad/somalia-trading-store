@@ -1,7 +1,6 @@
 "use client";
 
 import { useState } from "react";
-import Image from "next/image";
 import Link from "next/link";
 import { Heart, Minus, Plus, ShoppingCart, FileText } from "lucide-react";
 import { toast } from "sonner";
@@ -9,6 +8,7 @@ import { motion } from "framer-motion";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { ProductCard } from "@/components/product/product-card";
+import { SafeImage } from "@/components/ui/safe-image";
 import type { Product } from "@/lib/types/product";
 import { availabilityLabels } from "@/lib/types/product";
 import { useCartStore } from "@/stores/cart-store";
@@ -86,8 +86,8 @@ export function ProductDetailClient({
               transition={{ duration: 0.3 }}
               className="relative h-full w-full"
             >
-              <Image
-                src={product.images[selectedImage]}
+              <SafeImage
+                src={product.images[selectedImage] ?? null}
                 alt={product.name}
                 fill
                 priority
@@ -110,7 +110,7 @@ export function ProductDetailClient({
                   )}
                   aria-label={`View image ${i + 1}`}
                 >
-                  <Image
+                  <SafeImage
                     src={img}
                     alt=""
                     fill

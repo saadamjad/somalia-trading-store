@@ -1,6 +1,5 @@
 "use client";
 
-import Image from "next/image";
 import Link from "next/link";
 import { Minus, Plus, ShoppingBag, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -15,6 +14,7 @@ import { useCartStore } from "@/stores/cart-store";
 import { useCartProducts } from "@/hooks/use-cart-products";
 import { useUIStore } from "@/stores/ui-store";
 import { formatPrice, formatProductPrice } from "@/lib/utils";
+import { SafeImage } from "@/components/ui/safe-image";
 
 export function MiniCartDrawer() {
   const { isCartOpen, closeCart } = useUIStore();
@@ -51,7 +51,7 @@ export function MiniCartDrawer() {
                   className="flex gap-4 border-b border-border pb-4"
                 >
                   <div className="relative h-20 w-20 shrink-0 overflow-hidden rounded-lg">
-                    <Image
+                    <SafeImage
                       src={product.images[0]}
                       alt={product.name}
                       fill

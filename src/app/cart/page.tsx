@@ -1,6 +1,5 @@
 "use client";
 
-import Image from "next/image";
 import Link from "next/link";
 import { Minus, Plus, ShoppingBag, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -10,6 +9,7 @@ import { useCartStore } from "@/stores/cart-store";
 import { useCartProducts } from "@/hooks/use-cart-products";
 import { useCartStockValidation } from "@/hooks/use-cart-stock-validation";
 import { formatPrice, formatProductPrice } from "@/lib/utils";
+import { SafeImage } from "@/components/ui/safe-image";
 
 export default function CartPage() {
   const { updateQuantity, removeItem, clearCart } = useCartStore();
@@ -59,7 +59,7 @@ export default function CartPage() {
             <Card key={product.id}>
               <CardContent className="flex gap-4 p-4">
                 <div className="relative h-24 w-24 shrink-0 overflow-hidden rounded-lg">
-                  <Image
+                  <SafeImage
                     src={product.images[0]}
                     alt={product.name}
                     fill

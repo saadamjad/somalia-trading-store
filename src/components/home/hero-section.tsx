@@ -1,11 +1,11 @@
 "use client";
 
-import Image from "next/image";
 import Link from "next/link";
 import { ArrowUpRight } from "lucide-react";
 import { motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { brand } from "@/config/brand";
+import { SafeImage } from "@/components/ui/safe-image";
 import type { Category } from "@/lib/types/product";
 
 // Forces specific homepage hero-tile images regardless of what's stored in
@@ -101,10 +101,11 @@ export function HeroSection({ categories, banner }: HeroSectionProps) {
                     i === 0 ? "col-span-2 aspect-[16/7]" : "aspect-square"
                   }`}
                 >
-                  <Image
+                  <SafeImage
                     src={HERO_TILE_IMAGE_OVERRIDES[cat.slug] ?? cat.image}
                     alt={cat.name}
                     fill
+                    priority={i === 0}
                     sizes="(max-width: 768px) 50vw, 25vw"
                     className="object-cover transition-transform duration-700 group-hover:scale-105"
                   />
