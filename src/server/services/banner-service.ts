@@ -1,4 +1,6 @@
+import { cachedRead, revalidateTag } from "@/lib/server-cache";
 import { bannerRepository } from "@/server/repositories/banner-repository";
+import { cacheTags } from "@/lib/cache-tags";
 import type { BannerCreateInput, BannerUpdateInput } from "@/lib/validations/cms";
 import type { Banner, BannerSlot } from "@/generated/prisma/client";
 
@@ -55,6 +57,19 @@ function isWithinSchedule(row: Banner, now: Date): boolean {
  * (src/lib/validations/cms.ts) — see the Banner schema comment for the full
  * XSS-prevention rationale.
  */
+/**
+ * Cached at the "all active rows for this slot" level, not the final scheduling
+ * decision — `now` legitimately changes every call and can't be part of the cache
+ * key, but the underlying rows only change when an admin mutates a banner (which
+ * calls `revalidateTag` below), so caching here still eliminates the DB round-trip
+ * on every homepage request while keeping schedule-window evaluation exact.
+ */
+const findActiveBySlotCached = cachedRead(
+  (slot: BannerSlot) => bannerRepository.findActiveBySlot(slot),
+  ["banners:findActiveBySlot"],
+  { tags: [cacheTags.banners] }
+);
+
 export const bannerService = {
   /** Admin — every banner regardless of active/scheduling state. Caller must have checked `cms.view`. */
   async adminList(): Promise<BannerView[]> {
@@ -77,7 +92,7 @@ export const bannerService = {
    * Banner table never breaks a public page.
    */
   async getActiveForSlot(slot: BannerSlot, now: Date = new Date()): Promise<BannerView | null> {
-    const rows = await bannerRepository.findActiveBySlot(slot);
+    const rows = await findActiveBySlotCached(slot);
     const eligible = rows.find((row) => isWithinSchedule(row, now));
     return eligible ? toView(eligible) : null;
   },
@@ -95,6 +110,7 @@ export const bannerService = {
       startsAt: input.startsAt ?? null,
       endsAt: input.endsAt ?? null,
     });
+    revalidateTag(cacheTags.banners);
     return toView(row);
   },
 
@@ -103,6 +119,7 @@ export const bannerService = {
     if (!existing) throw new BannerNotFoundError();
 
     const row = await bannerRepository.update(id, input);
+    revalidateTag(cacheTags.banners);
     return toView(row);
   },
 
@@ -110,5 +127,6 @@ export const bannerService = {
     const existing = await bannerRepository.findById(id);
     if (!existing) throw new BannerNotFoundError();
     await bannerRepository.delete(id);
+    revalidateTag(cacheTags.banners);
   },
 };

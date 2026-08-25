@@ -1,4 +1,6 @@
+import { cachedRead, revalidateTag } from "@/lib/server-cache";
 import { cmsPageRepository } from "@/server/repositories/cms-page-repository";
+import { cacheTags } from "@/lib/cache-tags";
 import type { CMSPageCreateInput, CMSPageUpdateInput } from "@/lib/validations/cms";
 import type { CMSPage, Prisma } from "@/generated/prisma/client";
 
@@ -36,6 +38,15 @@ function toView(row: CMSPage): CMSPageView {
  * of structured blocks (src/lib/validations/cms.ts) by the time it reaches here — never
  * raw HTML — see the CMSPage schema comment for the full XSS-prevention rationale.
  */
+const getPublishedBySlugCached = cachedRead(
+  async (slug: string) => {
+    const row = await cmsPageRepository.findPublishedBySlug(slug);
+    return row ? toView(row) : null;
+  },
+  ["cms-pages:getPublishedBySlug"],
+  { tags: [cacheTags.cmsPages] }
+);
+
 export const cmsPageService = {
   /** Admin — every page regardless of published state. Caller must have checked `cms.view`. */
   async adminList(): Promise<CMSPageView[]> {
@@ -56,8 +67,7 @@ export const cmsPageService = {
    * so an unpublished/nonexistent page never leaks — callers render their own fallback.
    */
   async getPublishedBySlug(slug: string): Promise<CMSPageView | null> {
-    const row = await cmsPageRepository.findPublishedBySlug(slug);
-    return row ? toView(row) : null;
+    return getPublishedBySlugCached(slug);
   },
 
   async create(input: CMSPageCreateInput): Promise<CMSPageView> {
@@ -67,6 +77,7 @@ export const cmsPageService = {
       body: input.body as unknown as Prisma.InputJsonValue,
       published: input.published ?? false,
     });
+    revalidateTag(cacheTags.cmsPages);
     return toView(row);
   },
 
@@ -80,6 +91,7 @@ export const cmsPageService = {
       ...(input.body !== undefined ? { body: input.body as unknown as Prisma.InputJsonValue } : {}),
       ...(input.published !== undefined ? { published: input.published } : {}),
     });
+    revalidateTag(cacheTags.cmsPages);
     return toView(row);
   },
 
@@ -87,5 +99,6 @@ export const cmsPageService = {
     const existing = await cmsPageRepository.findById(id);
     if (!existing) throw new CMSPageNotFoundError();
     await cmsPageRepository.delete(id);
+    revalidateTag(cacheTags.cmsPages);
   },
 };

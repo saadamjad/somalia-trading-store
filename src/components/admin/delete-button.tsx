@@ -5,6 +5,17 @@ import { useRouter } from "next/navigation";
 import { Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 
 interface DeleteButtonProps {
   url: string;
@@ -12,12 +23,12 @@ interface DeleteButtonProps {
   label?: string;
 }
 
-export function DeleteButton({ url, confirmMessage = "Delete this item?", label }: DeleteButtonProps) {
+export function DeleteButton({ url, confirmMessage = "This action cannot be undone.", label }: DeleteButtonProps) {
   const router = useRouter();
   const [isDeleting, setIsDeleting] = useState(false);
+  const [open, setOpen] = useState(false);
 
   const handleDelete = async () => {
-    if (!window.confirm(confirmMessage)) return;
     setIsDeleting(true);
     try {
       const res = await fetch(url, { method: "DELETE" });
@@ -26,6 +37,7 @@ export function DeleteButton({ url, confirmMessage = "Delete this item?", label 
         throw new Error(data.error || "Delete failed.");
       }
       toast.success("Deleted.");
+      setOpen(false);
       router.refresh();
     } catch (error) {
       toast.error(error instanceof Error ? error.message : "Delete failed.");
@@ -35,16 +47,31 @@ export function DeleteButton({ url, confirmMessage = "Delete this item?", label 
   };
 
   return (
-    <Button
-      type="button"
-      variant="outline"
-      size="sm"
-      onClick={handleDelete}
-      disabled={isDeleting}
-      aria-label={label ?? "Delete"}
-    >
-      <Trash2 className="h-4 w-4" />
-      {isDeleting ? "Deleting…" : "Delete"}
-    </Button>
+    <AlertDialog open={open} onOpenChange={(next) => !isDeleting && setOpen(next)}>
+      <AlertDialogTrigger asChild>
+        <Button type="button" variant="outline" size="sm" aria-label={label ?? "Delete"}>
+          <Trash2 className="h-4 w-4" />
+          Delete
+        </Button>
+      </AlertDialogTrigger>
+      <AlertDialogContent onEscapeKeyDown={(e) => isDeleting && e.preventDefault()}>
+        <AlertDialogHeader>
+          <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+          <AlertDialogDescription>{confirmMessage}</AlertDialogDescription>
+        </AlertDialogHeader>
+        <AlertDialogFooter>
+          <AlertDialogCancel disabled={isDeleting}>Cancel</AlertDialogCancel>
+          <AlertDialogAction
+            onClick={(e) => {
+              e.preventDefault();
+              handleDelete();
+            }}
+            disabled={isDeleting}
+          >
+            {isDeleting ? "Deleting…" : "Delete"}
+          </AlertDialogAction>
+        </AlertDialogFooter>
+      </AlertDialogContent>
+    </AlertDialog>
   );
 }

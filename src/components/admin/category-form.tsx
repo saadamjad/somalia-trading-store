@@ -12,10 +12,41 @@ import type { Category } from "@/lib/types/product";
 
 interface CategoryFormProps {
   category?: Category;
+  /** Every category, used to populate the parent-category picker. */
+  allCategories?: Category[];
+}
+
+/**
+ * Every descendant id of `categoryId` within `categories`, so the parent picker can
+ * exclude them — assigning a category as its own descendant's parent would create a
+ * cycle. This is a UX convenience only; the authoritative check is server-side
+ * (CategoryCycleError in product-service.ts).
+ */
+function getDescendantIds(categoryId: string, categories: Category[]): Set<string> {
+  const childrenByParentId = new Map<string, string[]>();
+  for (const c of categories) {
+    if (!c.parentId) continue;
+    const siblings = childrenByParentId.get(c.parentId) ?? [];
+    siblings.push(c.id);
+    childrenByParentId.set(c.parentId, siblings);
+  }
+
+  const descendants = new Set<string>();
+  const queue = [categoryId];
+  while (queue.length > 0) {
+    const current = queue.shift()!;
+    for (const childId of childrenByParentId.get(current) ?? []) {
+      if (!descendants.has(childId)) {
+        descendants.add(childId);
+        queue.push(childId);
+      }
+    }
+  }
+  return descendants;
 }
 
 /** Admin create/edit form. POSTs to /api/categories or PATCHes /api/categories/[id]. */
-export function CategoryForm({ category }: CategoryFormProps) {
+export function CategoryForm({ category, allCategories = [] }: CategoryFormProps) {
   const router = useRouter();
   const isEdit = Boolean(category);
   const [isSaving, setIsSaving] = useState(false);
@@ -29,7 +60,13 @@ export function CategoryForm({ category }: CategoryFormProps) {
     image: category?.image ?? "",
     heroImage: category?.heroImage ?? "",
     accentColor: category?.accentColor ?? "#8B7355",
+    parentId: category?.parentId ?? "",
   });
+
+  const excludedIds = category
+    ? new Set([category.id, ...getDescendantIds(category.id, allCategories)])
+    : new Set<string>();
+  const parentOptions = allCategories.filter((c) => !excludedIds.has(c.id));
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -37,12 +74,13 @@ export function CategoryForm({ category }: CategoryFormProps) {
     setIsSaving(true);
 
     try {
+      const payload = { ...form, parentId: form.parentId || null };
       const res = await fetch(
         isEdit ? `/api/categories/${category!.id}` : "/api/categories",
         {
           method: isEdit ? "PATCH" : "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(form),
+          body: JSON.stringify(payload),
         }
       );
 
@@ -147,6 +185,26 @@ export function CategoryForm({ category }: CategoryFormProps) {
           value={form.heroImage}
           onChange={(url) => setForm((f) => ({ ...f, heroImage: url }))}
         />
+      </div>
+
+      <div>
+        <Label htmlFor="parentId">Parent Category</Label>
+        <select
+          id="parentId"
+          className="mt-1.5 h-10 w-full border border-border-strong bg-transparent px-3 text-sm"
+          value={form.parentId}
+          onChange={(e) => setForm((f) => ({ ...f, parentId: e.target.value }))}
+        >
+          <option value="">None (top-level category)</option>
+          {parentOptions.map((c) => (
+            <option key={c.slug} value={c.id}>
+              {c.name}
+            </option>
+          ))}
+        </select>
+        <p className="mt-1.5 text-xs text-muted-foreground">
+          Optional. Nests this category under another as a subcategory.
+        </p>
       </div>
 
       <div>
