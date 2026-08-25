@@ -3,6 +3,7 @@ import { ArrowUpRight } from "lucide-react";
 import { CategoryCard } from "@/components/product/category-card";
 import { ProductCard } from "@/components/product/product-card";
 import { FadeIn } from "@/components/ui/motion";
+import { shopByCategoryCopy } from "@/config/home";
 import type { Category, Product } from "@/lib/types/product";
 
 export function ShopByCategory({ categories }: { categories: Category[] }) {
@@ -22,8 +23,7 @@ export function ShopByCategory({ categories }: { categories: Category[] }) {
             </h2>
           </div>
           <p className="max-w-sm text-sm leading-relaxed text-muted">
-            Construction materials, road interlocks, and fishing products —
-            three specialised supply divisions.
+            {shopByCategoryCopy.description}
           </p>
         </FadeIn>
 

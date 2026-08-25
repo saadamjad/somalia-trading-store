@@ -1,27 +1,7 @@
 import { Quote, Star } from "lucide-react";
 import { FadeIn } from "@/components/ui/motion";
 import { SectionHeader } from "@/components/ui/section-header";
-
-const reviews = [
-  {
-    name: "Ahmed H.",
-    role: "Contractor, Mogadishu",
-    rating: 5,
-    text: "Reliable supply of paver blocks for our road project. Quality was consistent and delivery was on schedule.",
-  },
-  {
-    name: "Fatima M.",
-    role: "Construction Developer",
-    rating: 5,
-    text: "We sourced interior doors and building materials through FGT. Professional service and fair pricing throughout.",
-  },
-  {
-    name: "Hassan O.",
-    role: "Fishing Equipment Buyer",
-    rating: 5,
-    text: "Good range of fishing rods and gear for our coastal operations. Straightforward ordering and dependable stock.",
-  },
-];
+import { testimonials } from "@/config/home";
 
 export function ReviewsSection() {
   return (
@@ -37,7 +17,7 @@ export function ReviewsSection() {
         </FadeIn>
 
         <div className="grid gap-px bg-border md:grid-cols-3">
-          {reviews.map((review, i) => (
+          {testimonials.map((review, i) => (
             <FadeIn key={review.name} delay={i * 0.08}>
               <article className="group relative flex h-full flex-col bg-surface p-8 transition-all duration-500 hover:-translate-y-1 hover:shadow-(--shadow-lg) md:p-10">
                 <Quote

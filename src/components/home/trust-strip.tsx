@@ -2,16 +2,10 @@ import Link from "next/link";
 import { ArrowUpRight, Phone } from "lucide-react";
 import { FadeIn } from "@/components/ui/motion";
 import { brand } from "@/config/brand";
+import { trustStripItems } from "@/config/home";
 
 export function TrustStrip() {
-  const items = [
-    "Reliable Supply",
-    "Quality Products",
-    "Multi-Industry",
-    "Customer Focus",
-    "Professional Service",
-    "Somalia Market",
-  ];
+  const items = trustStripItems;
 
   return (
     <section className="overflow-hidden border-y border-border bg-accent-muted/30 py-5">

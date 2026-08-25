@@ -5,6 +5,7 @@ import { ArrowUpRight } from "lucide-react";
 import { motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { brand } from "@/config/brand";
+import { heroFallback } from "@/config/home";
 import { SafeImage } from "@/components/ui/safe-image";
 import type { Category } from "@/lib/types/product";
 
@@ -66,11 +67,11 @@ export function HeroSection({ categories, banner }: HeroSectionProps) {
               </h1>
             ) : (
               <h1 className="font-display text-balance mb-8 text-[clamp(2.75rem,7vw,5.5rem)] font-bold leading-[0.95] tracking-tight text-foreground">
-                Built for
+                {heroFallback.headlineLine1}
                 <br />
-                <span className="text-accent">Industry.</span>
+                <span className="text-accent">{heroFallback.headlineAccent}</span>
                 <br />
-                Trusted in Trade.
+                {heroFallback.headlineLine3}
               </h1>
             )}
 
