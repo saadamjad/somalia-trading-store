@@ -50,8 +50,9 @@ This is a step-by-step, first-time setup guide. After the first deploy, day-to-d
 
    Do **not** set `DIRECT_URL` in Vercel — migrations are a deliberate local/manual step (§1.4, §4), not something that should run automatically on every deploy.
 
-4. Deploy. Vercel gives you a `*.vercel.app` URL immediately.
-5. Once deployed, update `AUTH_URL` to match the real URL you're using (the `.vercel.app` one, or your custom domain if you add one), then redeploy (or just push a new commit — Vercel redeploys on every push to `main`).
+4. **Connect a Blob store** (for admin image uploads): Vercel project → Storage tab → Create Database → Blob. Once connected, Vercel sets `BLOB_READ_WRITE_TOKEN` automatically — no manual value needed. Without this, the admin image upload fields will fail with an error; everything else on the site works fine either way.
+5. Deploy. Vercel gives you a `*.vercel.app` URL immediately.
+6. Once deployed, update `AUTH_URL` to match the real URL you're using (the `.vercel.app` one, or your custom domain if you add one), then redeploy (or just push a new commit — Vercel redeploys on every push to `main`).
 
 ### Custom domain (optional)
 

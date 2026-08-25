@@ -86,6 +86,12 @@ Registration and password-reset are handled by `authService` and surfaced throug
 | `/api/admin/cms/banners` | GET, POST | `cms.view` / `cms.manage` | List / create banners. |
 | `/api/admin/cms/banners/[id]` | GET, PATCH, DELETE | `cms.view` / `cms.manage` | Admin banner detail/update/delete. |
 
+## Admin image upload
+
+| Path | Methods | Auth | Purpose |
+|---|---|---|---|
+| `/api/admin/upload?context=product\|category\|banner` | POST | `products.update` / `categories.update` / `cms.manage` (per `context`) | Uploads one image file to Vercel Blob, returns its public URL. Server-side MIME sniffing (not the `Content-Type` header), 5MB cap, rate-limited (`RATE_LIMITS.adminUpload`). Backs the image upload fields in the product/category/banner admin forms. |
+
 ## Notifications
 
 | Path | Methods | Auth | Purpose |

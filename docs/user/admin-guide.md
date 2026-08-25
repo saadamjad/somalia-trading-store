@@ -24,7 +24,11 @@ This creates (or promotes) that email to a full administrator account. From ther
 
 ## Managing products and categories
 
-`/admin/products` lists every product with quick actions to edit or archive. `/admin/products/new` creates a new one — name, description, category, price, images (by URL), specifications, tags, and whether it's available to buy online, quote-only, or both.
+`/admin/products` lists every product with quick actions to edit or archive. `/admin/products/new` creates a new one — name, description, category, price, images, specifications, tags, and whether it's available to buy online, quote-only, or both.
+
+**Uploading images:** every image field (product photos, category image, category hero banner, CMS banners) has an upload button right next to it — click it, pick a photo from your computer, and it uploads and fills in the field automatically once it finishes. You'll see a small preview once an image is set, with an "×" to remove it if you picked the wrong one. You don't need to host images anywhere yourself or paste in a URL — that text field is still there if you ever want to point at an external image instead, but for your own photos, uploading is the normal path. Each field shows a short caption with the recommended size/shape for that image (e.g. product photos work best roughly square).
+
+Accepted files are JPEG, PNG, or WebP, up to 5MB each. If an upload is rejected, the error message will say why (too large, wrong file type, etc.) — nothing is saved until you hit Save on the form itself, so a bad upload never breaks an existing product.
 
 `/admin/categories` works the same way for categories (name, description, images, accent color). A category can't be deleted while it still has products in it, and a product can't be deleted once it's ever appeared in an order — the system protects your order history from being invalidated by a later catalog cleanup.
 
@@ -67,3 +71,19 @@ Banners can be scheduled with a start/end date and given a priority if more than
 ## Reports and exports
 
 `/admin/reports` gives you order, product, customer, inventory, refund, and quote reports with date-range filtering, exportable as CSV, XLSX, or PDF. Reports reflect real data from the database — for very large date ranges with a very high volume of underlying records, the report may only reflect the most recent portion of that data rather than the entire range (this is a known current limitation, not a bug — see `docs/ai/KNOWN_LIMITATIONS.md` if you're technical and want the detail).
+
+## How to update the website
+
+A quick reference for "where do I change X" — most day-to-day changes (products, categories, images, banners, policy pages) are done entirely through the `/admin` area above, no code required. A few things live in small text files in the codebase instead, because they change rarely and don't need a full admin UI. These need a developer to edit and redeploy:
+
+| What | Where |
+| --- | --- |
+| Product/category/banner images | `/admin` — see "Uploading images" above, no code needed |
+| Product, category, order, quote, refund data | `/admin` — all database-backed, no code needed |
+| Homepage/About page written content (headings, testimonials, stats, "Why Choose Us" text, etc.) | `src/config/home.ts` and `src/config/about.ts` |
+| Phone numbers, address, company name/description | `src/config/brand.ts` — used everywhere on the site, so it only needs updating in one place |
+| Header/footer navigation links | `src/config/navigation.ts` |
+| Homepage "Behind the Business" gallery photos | drop image files into `public/images/our-story/` and list them in `src/config/gallery.ts` |
+| Category banner page layout/highlights | `src/config/category-banners.ts` |
+
+If you don't have a developer on hand and need one of these updated, the change itself is small (usually one or two lines in one file) — point whoever's helping you at this table.
