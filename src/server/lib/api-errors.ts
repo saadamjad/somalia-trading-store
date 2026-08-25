@@ -43,6 +43,12 @@ import {
 import { CMSPageNotFoundError } from "@/server/services/cms-page-service";
 import { BannerNotFoundError } from "@/server/services/banner-service";
 import { NotificationNotFoundError } from "@/server/services/notification-service";
+import {
+  AdminUserNotFoundError,
+  CannotModifySelfError,
+  InvalidRoleForAdminAssignmentError,
+  LastSuperAdminError,
+} from "@/server/services/admin-user-service";
 
 /**
  * Translates a thrown error from a route handler into an appropriate HTTP response,
@@ -74,12 +80,22 @@ export function toErrorResponse(error: unknown): NextResponse {
     error instanceof QuoteItemProductNotFoundError ||
     error instanceof CMSPageNotFoundError ||
     error instanceof BannerNotFoundError ||
-    error instanceof NotificationNotFoundError
+    error instanceof NotificationNotFoundError ||
+    error instanceof AdminUserNotFoundError
   ) {
     return NextResponse.json({ error: error.message }, { status: 404 });
   }
   if (error instanceof CategoryCycleError) {
     return NextResponse.json({ error: error.message }, { status: 400 });
+  }
+  if (error instanceof InvalidRoleForAdminAssignmentError) {
+    return NextResponse.json({ error: error.message }, { status: 400 });
+  }
+  if (
+    error instanceof CannotModifySelfError ||
+    error instanceof LastSuperAdminError
+  ) {
+    return NextResponse.json({ error: error.message }, { status: 403 });
   }
   if (error instanceof EmptyCartError) {
     return NextResponse.json({ error: error.message }, { status: 400 });

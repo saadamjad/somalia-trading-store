@@ -317,6 +317,7 @@ const permissionKeys = [
   "products.create",
   "products.update",
   "products.delete",
+  "categories.view",
   "categories.create",
   "categories.update",
   "categories.delete",
@@ -333,7 +334,36 @@ const permissionKeys = [
   "cms.view",
   "cms.manage",
   "reports.view",
+  "dashboard.view",
+  // Admin User Management & RBAC — only super_admin ever holds these (see the "admin"
+  // and "staff" role definitions below), which structurally contains privilege
+  // escalation: nobody who can create/edit another staff account can also grant
+  // admin_users.* to anyone, because nobody but super_admin has it to begin with.
+  "admin_users.view",
+  "admin_users.create",
+  "admin_users.update",
+  "admin_users.deactivate",
+  "admin_users.reset_password",
 ];
+
+// Permissions NOT granted to the "staff" role — operational tasks (catalogue,
+// inventory, order fulfilment, CMS) stay available, but anything that surfaces
+// financial figures (dashboard, reports, refund/quote pricing) or admin-account
+// management does not. This is the concrete, server-enforced answer to "limited
+// access users can't see financial stuff."
+const staffExcludedKeys = new Set([
+  "dashboard.view",
+  "reports.view",
+  "refunds.view",
+  "refunds.manage",
+  "quotes.view",
+  "quotes.manage",
+  "admin_users.view",
+  "admin_users.create",
+  "admin_users.update",
+  "admin_users.deactivate",
+  "admin_users.reset_password",
+]);
 
 async function seedAuth() {
   const permissions = await Promise.all(
@@ -373,6 +403,43 @@ async function seedAuth() {
         },
         update: {},
         create: { roleId: superAdmin.id, permissionId: permission.id },
+      })
+    )
+  );
+
+  // "admin" — every permission except admin_users.* (cannot create/manage other admin
+  // accounts). Sees financial data (dashboard/reports/refunds/quotes) unlike "staff".
+  const admin = await prisma.role.upsert({
+    where: { name: "admin" },
+    update: {},
+    create: { name: "admin" },
+  });
+  const adminPermissions = permissions.filter((p) => !p.key.startsWith("admin_users."));
+  await Promise.all(
+    adminPermissions.map((permission) =>
+      prisma.rolePermission.upsert({
+        where: { roleId_permissionId: { roleId: admin.id, permissionId: permission.id } },
+        update: {},
+        create: { roleId: admin.id, permissionId: permission.id },
+      })
+    )
+  );
+
+  // "staff" — operational only (products/categories/inventory/orders/cms). No
+  // dashboard, reports, refund/quote access, or admin-user management — see
+  // staffExcludedKeys above for the full rationale.
+  const staff = await prisma.role.upsert({
+    where: { name: "staff" },
+    update: {},
+    create: { name: "staff" },
+  });
+  const staffPermissions = permissions.filter((p) => !staffExcludedKeys.has(p.key));
+  await Promise.all(
+    staffPermissions.map((permission) =>
+      prisma.rolePermission.upsert({
+        where: { roleId_permissionId: { roleId: staff.id, permissionId: permission.id } },
+        update: {},
+        create: { roleId: staff.id, permissionId: permission.id },
       })
     )
   );

@@ -1,12 +1,34 @@
 import Link from "next/link";
+import { redirect } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { DeleteButton } from "@/components/admin/delete-button";
 import { productService } from "@/server/services/product-service";
 import { formatProductPrice } from "@/lib/utils";
+import { getCurrentSession } from "@/server/auth/session";
+import { getRolePermissions } from "@/server/auth/permissions";
 
 export const metadata = { title: "Products | Admin" };
 
 export default async function AdminProductsPage() {
+  const session = await getCurrentSession();
+  if (!session) {
+    redirect("/login?callbackUrl=/admin/products");
+  }
+
+  if (session.mustChangePassword) {
+    redirect("/admin/change-password");
+  }
+
+  const permissions = await getRolePermissions(session.role);
+  if (!permissions.has("products.view")) {
+    return (
+      <div className="container-custom flex min-h-[40vh] flex-col items-center justify-center py-24 text-center">
+        <h1 className="font-display mb-2 text-2xl font-bold">Access Denied</h1>
+        <p className="text-muted">Your account does not have permission to view products.</p>
+      </div>
+    );
+  }
+
   const products = await productService.getAll();
 
   return (

@@ -46,7 +46,7 @@ async function createCustomer(label: string) {
     email,
     password: "PlainTextPass1",
   });
-  return { userId: user.id, email: user.email, name: `Refund Route Test ${label}`, role: "customer" };
+  return { userId: user.id, email: user.email, name: `Refund Route Test ${label}`, role: "customer", mustChangePassword: false };
 }
 
 async function createAdminSession(label: string) {

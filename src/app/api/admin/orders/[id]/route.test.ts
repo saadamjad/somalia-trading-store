@@ -45,7 +45,7 @@ async function createSessionForRole(label: string, roleName: string) {
     await prisma.user.update({ where: { id: user.id }, data: { roleId: role.id } });
   }
 
-  return { userId: user.id, email: user.email, name: `Admin Order Id Test ${label}`, role: roleName };
+  return { userId: user.id, email: user.email, name: `Admin Order Id Test ${label}`, role: roleName, mustChangePassword: false };
 }
 
 /** A role with `orders.view` but NOT `orders.update` — for a stricter 403 check on PATCH. */

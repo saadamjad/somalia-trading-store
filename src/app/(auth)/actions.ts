@@ -5,6 +5,7 @@ import { headers } from "next/headers";
 import { AuthError } from "next-auth";
 import { signIn, signOut } from "@/server/auth/auth";
 import { authService, EmailAlreadyRegisteredError } from "@/server/services/auth-service";
+import { userRepository } from "@/server/repositories/user-repository";
 import {
   forgotPasswordSchema,
   loginSchema,
@@ -52,6 +53,18 @@ export async function loginAction(_prevState: ActionState, formData: FormData): 
       return { message: "Invalid email or password." };
     }
     throw error;
+  }
+
+  // Admin User Management & RBAC: a staff/admin account created via /admin/users
+  // starts with mustChangePassword — send them straight to the forced-change screen
+  // instead of the homepage, since the /admin layout's own redirect only fires for
+  // requests already inside /admin/* (this is the very first request after sign-in).
+  // Looked up directly by the just-validated email rather than via getCurrentSession()
+  // — signIn's session cookie isn't guaranteed readable via auth() within this same
+  // action invocation.
+  const user = await userRepository.findByEmail(validated.data.email.trim().toLowerCase());
+  if (user?.mustChangePassword) {
+    redirect("/admin/change-password");
   }
 
   redirect("/");

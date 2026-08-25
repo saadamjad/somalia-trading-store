@@ -1,11 +1,33 @@
 import Link from "next/link";
+import { redirect } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { DeleteButton } from "@/components/admin/delete-button";
 import { productService } from "@/server/services/product-service";
+import { getCurrentSession } from "@/server/auth/session";
+import { getRolePermissions } from "@/server/auth/permissions";
 
 export const metadata = { title: "Categories | Admin" };
 
 export default async function AdminCategoriesPage() {
+  const session = await getCurrentSession();
+  if (!session) {
+    redirect("/login?callbackUrl=/admin/categories");
+  }
+
+  if (session.mustChangePassword) {
+    redirect("/admin/change-password");
+  }
+
+  const permissions = await getRolePermissions(session.role);
+  if (!permissions.has("categories.view")) {
+    return (
+      <div className="container-custom flex min-h-[40vh] flex-col items-center justify-center py-24 text-center">
+        <h1 className="font-display mb-2 text-2xl font-bold">Access Denied</h1>
+        <p className="text-muted">Your account does not have permission to view categories.</p>
+      </div>
+    );
+  }
+
   const categories = await productService.getCategories();
 
   return (

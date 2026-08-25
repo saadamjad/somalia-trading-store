@@ -27,6 +27,10 @@ export default async function AdminInventoryPage() {
     redirect("/login?callbackUrl=/admin/inventory");
   }
 
+  if (session.mustChangePassword) {
+    redirect("/admin/change-password");
+  }
+
   const permissions = await getRolePermissions(session.role);
   if (!permissions.has("inventory.view")) {
     return (

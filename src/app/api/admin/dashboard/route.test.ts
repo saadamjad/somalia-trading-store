@@ -44,7 +44,7 @@ async function createSessionForRole(label: string, roleName: string) {
     await prisma.user.update({ where: { id: user.id }, data: { roleId: role.id } });
   }
 
-  return { userId: user.id, email: user.email, name: `Dashboard Route Test ${label}`, role: roleName };
+  return { userId: user.id, email: user.email, name: `Dashboard Route Test ${label}`, role: roleName, mustChangePassword: false };
 }
 
 describe("GET /api/admin/dashboard — permission enforcement", () => {
