@@ -52,15 +52,6 @@ export const productRepository = {
     });
   },
 
-  findFeatured(limit: number) {
-    return prisma.product.findMany({
-      where: { featured: true },
-      include: withCategory,
-      orderBy: { createdAt: "desc" },
-      take: limit,
-    });
-  },
-
   create(data: ProductCreateInput) {
     return prisma.product.create({ data, include: withCategory });
   },

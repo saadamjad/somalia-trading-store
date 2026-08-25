@@ -65,7 +65,9 @@ export function CategoryForm({ category }: CategoryFormProps) {
     <form onSubmit={handleSubmit} className="max-w-2xl space-y-5">
       {error && (
         <p
+          id="form-error"
           role="alert"
+          aria-live="assertive"
           className="border border-destructive/40 bg-destructive/10 px-4 py-3 text-sm text-destructive"
         >
           {error}
@@ -78,6 +80,8 @@ export function CategoryForm({ category }: CategoryFormProps) {
           <Input
             id="name"
             required
+            aria-invalid={Boolean(error)}
+            aria-describedby={error ? "form-error" : undefined}
             className="mt-1.5"
             value={form.name}
             onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))}
@@ -88,6 +92,8 @@ export function CategoryForm({ category }: CategoryFormProps) {
           <Input
             id="slug"
             required
+            aria-invalid={Boolean(error)}
+            aria-describedby={error ? "form-error" : undefined}
             className="mt-1.5"
             value={form.slug}
             onChange={(e) => setForm((f) => ({ ...f, slug: e.target.value }))}
@@ -100,6 +106,8 @@ export function CategoryForm({ category }: CategoryFormProps) {
         <Textarea
           id="shortDescription"
           required
+          aria-invalid={Boolean(error)}
+          aria-describedby={error ? "form-error" : undefined}
           className="mt-1.5"
           value={form.shortDescription}
           onChange={(e) => setForm((f) => ({ ...f, shortDescription: e.target.value }))}
@@ -112,6 +120,8 @@ export function CategoryForm({ category }: CategoryFormProps) {
           id="description"
           required
           rows={5}
+          aria-invalid={Boolean(error)}
+          aria-describedby={error ? "form-error" : undefined}
           className="mt-1.5"
           value={form.description}
           onChange={(e) => setForm((f) => ({ ...f, description: e.target.value }))}
@@ -144,6 +154,8 @@ export function CategoryForm({ category }: CategoryFormProps) {
         <Input
           id="accentColor"
           required
+          aria-invalid={Boolean(error)}
+          aria-describedby={error ? "form-error" : undefined}
           className="mt-1.5"
           value={form.accentColor}
           onChange={(e) => setForm((f) => ({ ...f, accentColor: e.target.value }))}

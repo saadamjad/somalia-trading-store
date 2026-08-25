@@ -37,6 +37,13 @@
   --green-700: #2d6a4f;
   --red-600: #c0392b;
 
+  /* Product swatch colors — real material/finish options shown in the UI (e.g. paver
+     block color choices), not semantic UI colors. Kept separate from Layer 2 since
+     they represent physical product attributes, not interface meaning. */
+  --swatch-grey: #9ca3af;
+  --swatch-yellow: #d4a017;
+  --swatch-charcoal: #374151;
+
   /* ---- Layer 2: Semantic ---- */
   --background: var(--cream-50);
   --foreground: var(--gray-950);

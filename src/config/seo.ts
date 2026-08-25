@@ -4,7 +4,6 @@ export const siteConfig = {
   name: brand.name,
   description: brand.description,
   url: "https://somalia-trading.com", // EDIT: Update with production URL
-  ogImage: "/og-image.jpg",
 } as const;
 
 export function createPageMetadata({

@@ -77,10 +77,10 @@ export const categoryBannerConfig: Record<CategorySlug, CategoryBannerConfig> = 
       },
     },
     footerColors: [
-      { label: "Grey", color: "#9ca3af" },
-      { label: "Red", color: "#c0392b" },
-      { label: "Yellow", color: "#d4a017" },
-      { label: "Charcoal", color: "#374151" },
+      { label: "Grey", color: "var(--swatch-grey)" },
+      { label: "Red", color: "var(--red-600)" },
+      { label: "Yellow", color: "var(--swatch-yellow)" },
+      { label: "Charcoal", color: "var(--swatch-charcoal)" },
     ],
   },
   "fishing-products": {

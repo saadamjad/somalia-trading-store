@@ -97,7 +97,9 @@ export function ProductForm({ categories, product }: ProductFormProps) {
     <form onSubmit={handleSubmit} className="max-w-2xl space-y-5">
       {error && (
         <p
+          id="form-error"
           role="alert"
+          aria-live="assertive"
           className="border border-destructive/40 bg-destructive/10 px-4 py-3 text-sm text-destructive"
         >
           {error}
@@ -110,6 +112,8 @@ export function ProductForm({ categories, product }: ProductFormProps) {
           <Input
             id="name"
             required
+            aria-invalid={Boolean(error)}
+            aria-describedby={error ? "form-error" : undefined}
             className="mt-1.5"
             value={form.name}
             onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))}
@@ -120,6 +124,8 @@ export function ProductForm({ categories, product }: ProductFormProps) {
           <Input
             id="slug"
             required
+            aria-invalid={Boolean(error)}
+            aria-describedby={error ? "form-error" : undefined}
             className="mt-1.5"
             value={form.slug}
             onChange={(e) => setForm((f) => ({ ...f, slug: e.target.value }))}
@@ -133,6 +139,8 @@ export function ProductForm({ categories, product }: ProductFormProps) {
           <select
             id="categorySlug"
             required
+            aria-invalid={Boolean(error)}
+            aria-describedby={error ? "form-error" : undefined}
             className="mt-1.5 h-10 w-full border border-border-strong bg-transparent px-3 text-sm"
             value={form.categorySlug}
             onChange={(e) => setForm((f) => ({ ...f, categorySlug: e.target.value }))}
@@ -170,6 +178,8 @@ export function ProductForm({ categories, product }: ProductFormProps) {
         <Textarea
           id="shortDescription"
           required
+          aria-invalid={Boolean(error)}
+          aria-describedby={error ? "form-error" : undefined}
           className="mt-1.5"
           value={form.shortDescription}
           onChange={(e) => setForm((f) => ({ ...f, shortDescription: e.target.value }))}
@@ -182,6 +192,8 @@ export function ProductForm({ categories, product }: ProductFormProps) {
           id="description"
           required
           rows={5}
+          aria-invalid={Boolean(error)}
+          aria-describedby={error ? "form-error" : undefined}
           className="mt-1.5"
           value={form.description}
           onChange={(e) => setForm((f) => ({ ...f, description: e.target.value }))}
@@ -197,6 +209,8 @@ export function ProductForm({ categories, product }: ProductFormProps) {
             step="0.01"
             min="0"
             required
+            aria-invalid={Boolean(error)}
+            aria-describedby={error ? "form-error" : undefined}
             className="mt-1.5"
             value={form.price}
             onChange={(e) => setForm((f) => ({ ...f, price: e.target.value }))}

@@ -71,11 +71,6 @@ export const productService = {
     return rows.map(toDomainProduct);
   },
 
-  async getFeatured(limit = 8): Promise<Product[]> {
-    const rows = await productRepository.findFeatured(limit);
-    return rows.map(toDomainProduct);
-  },
-
   async getRelated(product: Product, limit = 4): Promise<Product[]> {
     const categoryProducts = await this.getByCategory(product.category);
     return categoryProducts.filter((p) => p.id !== product.id).slice(0, limit);
