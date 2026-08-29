@@ -5,7 +5,7 @@ This is a summary of every Prisma model, grouped by domain. **`prisma/schema.pri
 ## Identity
 
 - **`User`** — email, bcrypt `passwordHash`, name, phone, `emailVerified` (nullable — no verification gate is enforced yet, D-010). Belongs to one `Role`. Has one `Cart`, one `Wishlist` (both created lazily on first use, not at registration), many `Address`, `Order`, `Quote` (nullable — guest quotes have no `User`), `RefundRequest` (two relations: made vs. reviewed), `Notification`.
-- **`Role`** — a name (`customer`, `super_admin` — see `BUSINESS_RULES.md` for what's actually seeded vs. what's described elsewhere). Has many `RolePermission`.
+- **`Role`** — a name (`customer`, `staff`, `admin`, `super_admin` — see `BUSINESS_RULES.md` for what's actually seeded vs. the richer, still-aspirational role model described elsewhere). Has many `RolePermission`.
 - **`Permission`** — a unique `key` string, `"<resource>.<action>"` convention (e.g. `products.create`).
 - **`RolePermission`** — join table, `@@id([roleId, permissionId])`.
 - **`PasswordResetToken`** — token, `expiresAt`, `usedAt`. Belongs to one `User`. No real email delivery sends this — it's logged to the server console (D-010).

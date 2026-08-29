@@ -5,7 +5,7 @@ import type { Category } from "@/lib/types/product";
 
 export function ShopByCategory({ categories }: { categories: Category[] }) {
   return (
-    <section className="section-padding section-after-hero bg-background">
+    <section className="section-padding bg-background">
       <div className="container-custom">
         <FadeIn className="section-heading flex flex-col justify-between gap-6 md:flex-row md:items-end">
           <div>
