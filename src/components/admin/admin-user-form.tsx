@@ -15,7 +15,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { PERMISSION_GROUPS, roleLabel } from "@/config/permission-labels";
+import { PERMISSION_GROUPS, roleLabel, roleDescription } from "@/config/permission-labels";
 
 interface RoleOption {
   id: string;
@@ -206,6 +206,11 @@ export function AdminUserForm({
               </option>
             ))}
           </select>
+          {selectedRole && (
+            <p className="mt-1.5 text-xs text-muted-foreground">
+              {roleDescription(selectedRole.name)}
+            </p>
+          )}
           {isEditingSelf && (
             <p className="mt-1.5 text-xs text-muted-foreground">
               You cannot change your own role.

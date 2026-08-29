@@ -43,7 +43,7 @@ export function OurStorySection() {
   };
 
   return (
-    <section className="section-padding section-after-band relative overflow-hidden bg-background">
+    <section className="section-padding section-after-hero relative overflow-hidden bg-background">
       {/* Ambient background */}
       <div
         className="pointer-events-none absolute inset-0"
@@ -75,7 +75,7 @@ export function OurStorySection() {
         <div className="mt-12 grid gap-3 md:mt-16 md:grid-cols-3">
           {storyChapters.map((chapter, i) => (
             <FadeIn key={chapter.label} delay={0.08 + i * 0.06}>
-              <article className="h-full border border-border bg-surface">
+              <article className="h-full border border-border bg-surface transition-shadow duration-(--duration-base) hover:shadow-(--shadow-md)">
                 <div className="relative aspect-4/3 overflow-hidden bg-muted/10">
                   <Image
                     src={chapter.image}

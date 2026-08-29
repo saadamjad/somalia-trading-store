@@ -3,23 +3,43 @@ import { FadeIn } from "@/components/ui/motion";
 import { SectionHeader } from "@/components/ui/section-header";
 import { testimonials } from "@/config/home";
 
+// testimonials is a static config import, never mutated at runtime — computed once
+// here rather than on every render, and guarded against an empty array so this can
+// never render "NaN" if that config is ever emptied or made data-driven later.
+const averageRating =
+  testimonials.length > 0
+    ? testimonials.reduce((sum, review) => sum + review.rating, 0) / testimonials.length
+    : 0;
+
 export function ReviewsSection() {
   return (
-    <section className="section-padding bg-background pb-12 md:pb-14">
+    <section className="section-padding bg-background">
       <div className="container-custom">
-        <FadeIn className="section-heading mx-auto max-w-md text-center">
-          <SectionHeader
-            eyebrow="Client Feedback"
-            title="What Our Clients Say"
-            description="Trusted by contractors, developers, and businesses across Somalia."
-            align="center"
-          />
+        <FadeIn className="section-heading flex flex-col justify-between gap-6 md:flex-row md:items-end">
+          <SectionHeader eyebrow="Client Feedback" title="What Our Clients Say" />
+          <div className="flex items-center gap-3">
+            <div className="flex gap-0.5">
+              {Array.from({ length: 5 }).map((_, i) => (
+                <Star
+                  key={i}
+                  className="h-4 w-4 fill-accent text-accent"
+                  strokeWidth={0}
+                />
+              ))}
+            </div>
+            <span className="text-sm font-semibold text-foreground">
+              {averageRating.toFixed(1)}
+            </span>
+            <span className="text-sm text-muted">
+              ({testimonials.length} reviews)
+            </span>
+          </div>
         </FadeIn>
 
-        <div className="grid gap-px bg-border md:grid-cols-3">
+        <div className="grid gap-6 md:grid-cols-3">
           {testimonials.map((review, i) => (
             <FadeIn key={review.name} delay={i * 0.08}>
-              <article className="group relative flex h-full flex-col bg-surface p-8 transition-all duration-500 hover:-translate-y-1 hover:shadow-(--shadow-lg) md:p-10">
+              <article className="group relative flex h-full flex-col border border-border bg-surface p-8 shadow-(--shadow-sm) transition-all duration-500 hover:-translate-y-1 hover:shadow-(--shadow-lg) md:p-10">
                 <Quote
                   className="absolute right-6 top-6 h-8 w-8 text-accent-muted transition-colors duration-500 group-hover:text-accent/20"
                   strokeWidth={1.5}

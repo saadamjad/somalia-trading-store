@@ -139,6 +139,11 @@ export const productService = {
     return categoryProducts.filter((p) => p.id !== product.id).slice(0, limit);
   },
 
+  async getFeatured(limit = 8): Promise<Product[]> {
+    const all = await this.getAll();
+    return all.filter((p) => p.featured).slice(0, limit);
+  },
+
   async getCategories(): Promise<Category[]> {
     return getCategoriesCached();
   },
