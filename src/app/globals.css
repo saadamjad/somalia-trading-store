@@ -87,6 +87,12 @@
   --duration-slow: 400ms;
   --ease-standard: cubic-bezier(0.4, 0, 0.2, 1);
   --ease-emphasized: cubic-bezier(0.16, 1, 0.3, 1);
+
+  /* WhatsApp brand green — deliberately outside the gold/black palette so the
+     floating contact button reads as WhatsApp at a glance. Used only by
+     src/components/layout/whatsapp-button.tsx. */
+  --whatsapp: #25d366;
+  --whatsapp-hover: #20bd5a;
 }
 
 /*
@@ -126,6 +132,8 @@
   --color-success: var(--success);
   --color-destructive: var(--destructive);
   --color-ring: var(--ring);
+  --color-whatsapp: var(--whatsapp);
+  --color-whatsapp-hover: var(--whatsapp-hover);
   --font-sans: var(--font-inter);
   --font-display: "Plus Jakarta Sans", var(--font-inter), system-ui, sans-serif;
 }

@@ -62,8 +62,14 @@ src/
     api/               route handlers — see API.md for the full surface
     shop/, cart/, checkout/, wishlist/, search/, quote/, faq/, about/
                        public-facing pages
-  components/          ui/ (Radix-based primitives), layout/, product/, cart/, checkout/,
-                        account/, admin/, cms/, home/ (marketing sections)
+  components/          ui/ (Radix-based primitives), layout/ (header, footer, and the
+                        site-wide floating WhatsAppButton — src/config/brand.ts
+                        `contact.whatsapp`/`whatsappTopics` is its single config source;
+                        unset the number to disable it everywhere), product/, cart/,
+                        checkout/, account/, admin/, cms/, home/ (marketing sections,
+                        including FeaturedProductsSection — backed by
+                        `productService.getFeatured()`, which filters `Product.featured`;
+                        renders nothing if no product is currently flagged featured)
   server/               server-only code — never bundled to the browser
     services/           business logic (see BUSINESS_RULES.md for the rules encoded here)
     repositories/       Prisma-only data access, no business logic

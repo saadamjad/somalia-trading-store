@@ -26,17 +26,17 @@ export function TrustStrip() {
 
 export function CTABanner() {
   return (
-    <section className="section-padding mesh-light relative overflow-hidden">
+    <section className="section-padding mesh-dark relative overflow-hidden">
       <div className="container-custom relative z-10">
         <div className="grid items-center gap-12 lg:grid-cols-12 lg:gap-16">
           <FadeIn className="lg:col-span-7">
-            <span className="label mb-6 block">Start Here</span>
-            <h2 className="font-display mb-6 text-[clamp(2rem,4vw,3.5rem)] font-bold leading-[1.05] text-foreground">
+            <span className="label text-accent mb-6 block">Start Here</span>
+            <h2 className="font-display mb-6 text-[clamp(2rem,4vw,3.5rem)] font-bold leading-[1.05] text-white">
               Ready to source
               <br />
               <span className="text-accent">quality products?</span>
             </h2>
-            <p className="mb-8 max-w-lg text-sm leading-relaxed text-muted md:text-base">
+            <p className="mb-8 max-w-lg text-sm leading-relaxed text-white/60 md:text-base">
               Browse our catalogue across construction materials, road interlocks,
               and fishing products — select a category to explore the full range.
             </p>
@@ -50,7 +50,7 @@ export function CTABanner() {
               </Link>
               <Link
                 href="/about"
-                className="inline-flex h-14 items-center justify-center border border-border-strong px-8 text-sm font-semibold text-foreground transition-colors hover:border-foreground hover:bg-foreground/5"
+                className="inline-flex h-14 items-center justify-center border border-white/20 px-8 text-sm font-semibold text-white transition-colors hover:border-white/40 hover:bg-white/5"
               >
                 Contact Us
               </Link>
@@ -58,16 +58,16 @@ export function CTABanner() {
           </FadeIn>
 
           <FadeIn delay={0.1} className="lg:col-span-5">
-            <div className="border border-border bg-surface p-8 md:p-10">
-              <p className="label mb-6">Direct Line</p>
+            <div className="border border-white/10 bg-white/5 p-8 backdrop-blur-sm md:p-10">
+              <p className="label text-accent mb-6">Direct Line</p>
               <div className="space-y-4">
                 {brand.contact.phones.map((phone) => (
                   <a
                     key={phone}
                     href={`tel:${phone.replace(/\s/g, "")}`}
-                    className="flex items-center gap-4 text-foreground transition-colors hover:text-accent-text"
+                    className="flex items-center gap-4 text-white transition-colors hover:text-accent"
                   >
-                    <span className="flex h-10 w-10 items-center justify-center border border-border">
+                    <span className="flex h-10 w-10 items-center justify-center border border-white/20">
                       <Phone className="h-4 w-4" strokeWidth={1.5} />
                     </span>
                     <span className="font-display text-lg font-semibold tracking-tight">
@@ -76,7 +76,7 @@ export function CTABanner() {
                   </a>
                 ))}
               </div>
-              <p className="mt-8 text-xs leading-relaxed text-muted-foreground">
+              <p className="mt-8 text-xs leading-relaxed text-white/50">
                 Speak with our team for product availability, project supply,
                 and bulk orders across all categories.
               </p>

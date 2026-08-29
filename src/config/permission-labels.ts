@@ -77,6 +77,20 @@ export const PERMISSION_GROUPS: {
     permissions: [{ key: "reports.view", label: "View Reports" }],
   },
   {
+    label: "Reviews",
+    permissions: [
+      { key: "reviews.view", label: "View Reviews" },
+      { key: "reviews.manage", label: "Moderate Reviews" },
+    ],
+  },
+  {
+    label: "Coupons",
+    permissions: [
+      { key: "coupons.view", label: "View Coupons" },
+      { key: "coupons.manage", label: "Manage Coupons" },
+    ],
+  },
+  {
     label: "Admin Users",
     permissions: [
       { key: "admin_users.view", label: "View Admins" },
@@ -96,4 +110,19 @@ const ROLE_LABELS: Record<string, string> = {
 
 export function roleLabel(roleName: string): string {
   return ROLE_LABELS[roleName] ?? roleName;
+}
+
+// Mirrors the exact access rules seeded in prisma/seed.ts (seedAuth) — keep this in
+// sync if a role's actual permission set there ever changes.
+const ROLE_DESCRIPTIONS: Record<string, string> = {
+  staff:
+    "Day-to-day operations only: products, categories, inventory, orders, and review moderation. No access to the dashboard, reports, refunds, quotes, or admin-user management.",
+  admin:
+    "Full operational and financial access — dashboard, reports, refunds, quotes, and coupons included — but cannot create or manage other admin accounts.",
+  super_admin:
+    "Unrestricted access to everything, including creating, editing, and deactivating other admin accounts.",
+};
+
+export function roleDescription(roleName: string): string {
+  return ROLE_DESCRIPTIONS[roleName] ?? "No description available for this role.";
 }

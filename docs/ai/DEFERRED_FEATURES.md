@@ -7,20 +7,20 @@ These are **confirmed, documented deferrals** — not forgotten work, not broken
 **Decision record:** `docs/DECISIONS.md` D-007.
 No payment gateway is selected or implemented. The order/checkout architecture is deliberately provider-agnostic — `PaymentStatus`/`PaymentStatusHistory` exist as scaffolding, but every order is `PENDING`/`NOT_PAID` unconditionally (see `docs/ai/BUSINESS_RULES.md`, Payment section). **Do not implement Stripe/PayPal/a mobile-money integration/etc. without an explicit client decision on which provider to use.** When the decision is made, the integration point is the checkout flow plus a new "payment update" write path to `Order.paymentStatus` — it should not require rewriting cart/checkout/orders/customers/admin/inventory.
 
-## Shipping calculation
+## Shipping calculation — RESOLVED (flat $0)
 
-**Decision record:** `docs/DECISIONS.md` D-008.
-No shipping-charge calculation, courier integration, or delivery-zone logic exists. `Order.subtotal`/`Order.total` are equal today by construction, specifically so a `shippingAmount` field can be added later without a breaking schema change. Do not hardcode a shipping fee or invent a delivery-zone model without a client decision on carriers/zones/rates.
+**Decision record:** `docs/DECISIONS.md` D-008 (shipping half resolved; tax half still deferred — see below).
+Client confirmed a flat shipping fee of **$0 (free shipping)** rather than a carrier/zone-based model. `Order.shippingAmount` is a real field now, computed by `FLAT_SHIPPING_AMOUNT` in `src/server/services/order-service.ts` and included in every order's `total`. No courier integration or delivery-zone logic exists — if the business later wants zone/carrier-based rates, that's a new (larger) decision, not implied by this resolution.
 
 ## Tax / VAT
 
 **Decision record:** `docs/DECISIONS.md` D-008 (same entry as shipping).
 No tax/VAT calculation exists anywhere. Same "kept a field slot open, didn't build the logic" pattern as shipping — a `taxAmount` field can be added later. Do not invent a tax rate or jurisdiction model without a client decision.
 
-## Real email delivery
+## Real email delivery — RESOLVED
 
-**Decision records:** `docs/DECISIONS.md` D-010 (password reset / verification), D-011 (order/refund/quote notifications).
-No SMTP/email-provider integration exists. Password-reset links are logged to the server console (`authService.requestPasswordReset`); order/refund/quote notification emails are logged via `src/server/services/email-notifier.ts`'s `send()` stub (`[email-notifier] would send email to X: subject Y`). Both interim behaviors are intentional development-time stand-ins, not bugs. **The integration point is a single function** — `emailNotifier.send`'s implementation — so wiring in a real provider (Resend, SES, Postmark, SendGrid) requires no changes to any call site (`order-service.ts`, `refund-request-service.ts`, `quote-service.ts`, `auth-service.ts`). Do not pick a provider and wire it in without a client decision — this also unblocks the email-verification-required gate on login, which is a separate open decision (D-010: "decide whether unverified accounts should be restricted — not decided yet").
+**Decision records:** `docs/DECISIONS.md` D-010, D-011 (both now marked resolved).
+Resend is now wired in as the real provider behind `src/server/services/email-notifier.ts`'s `send()` (requires `RESEND_API_KEY`/`FROM_EMAIL` env vars — see `.env.example`). Password resets (`authService.requestPasswordReset`) and order/refund/quote notifications all deliver real email now. Still open, separately: whether an email-verification-required gate should block login/checkout for unverified accounts (D-010's remaining open item) — that is a product-policy decision, not a delivery-mechanism one, and is unaffected by this resolution.
 
 ## Somali (i18n)
 
@@ -28,9 +28,9 @@ Not implemented — English only (`<html lang="en">`), no translation library, n
 
 ## Object storage for product images
 
-Product images are currently served from the repo (`/public/images/...`) or hotlinked from Unsplash, not a dedicated object storage/CDN. Flagged in Phase 17 as deferred, not yet warranted at the current catalog size (~9 products). Revisit if the catalog grows significantly or image-upload-by-admins becomes a real requirement (currently, admin product images are set via URL string, not file upload).
+Admin-uploaded product/category/banner images now go through real file upload to Vercel Blob storage (`POST /api/admin/upload` — see `API.md`), not a URL-string field or the local `/public/images/...` tree. Static marketing/story imagery (About page, homepage Our Story section, gallery) still lives in `/public/images/...` or is occasionally hotlinked from Unsplash — that part of this deferral (a dedicated CDN for *static* site imagery, as opposed to admin-uploaded content) is still accurate. Revisit if static-asset volume grows enough to matter for build size/CDN caching.
 
-## Operating currency
+## Operating currency — RESOLVED (USD)
 
-**Decision record:** `docs/DECISIONS.md` D-006 — still an open business decision, not deferred-and-forgotten.
-`currency` defaults to `"USD"` throughout (`Product.currency`, `Order.currency`, `Quote.currency`) as a **development placeholder only** — the actual currency the business will transact in (USD, Somali Shilling, or another) has not been confirmed by the client. The schema stores currency as a plain string field specifically so changing it doesn't require a schema migration, but every piece of UI copy, formatting logic, and seed data currently assumes USD. Do not assume USD is final, and do not hardcode a different currency either — surface this as still needing a client decision if it comes up.
+**Decision record:** `docs/DECISIONS.md` D-006 — resolved 2026-08-30.
+Client confirmed **USD** as the real operating currency, not a placeholder. `currency` remains a plain string field (`Product.currency`, `Order.currency`, `Quote.currency`) rather than a closed TS literal, so no code change was needed for this confirmation — and none would be needed if the business changes currency in the future either.
