@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
+import { useTranslations } from "next-intl";
 import { Heart, Minus, Plus, ShoppingCart, FileText } from "lucide-react";
 import { toast } from "sonner";
 import { motion } from "framer-motion";
@@ -10,8 +11,7 @@ import { Button } from "@/components/ui/button";
 import { ProductCard } from "@/components/product/product-card";
 import { ProductReviews } from "@/components/product/product-reviews";
 import { SafeImage } from "@/components/ui/safe-image";
-import type { Product } from "@/lib/types/product";
-import { availabilityLabels } from "@/lib/types/product";
+import type { Product, Availability } from "@/lib/types/product";
 import { useCartStore } from "@/stores/cart-store";
 import { useWishlistStore } from "@/stores/wishlist-store";
 import { useUIStore } from "@/stores/ui-store";
@@ -46,6 +46,13 @@ export function ProductDetailClient({
   categoryName,
   variants,
 }: ProductDetailClientProps) {
+  const t = useTranslations("product");
+  const availabilityLabels: Record<Availability, string> = {
+    in_stock: t("availability.inStock"),
+    limited: t("availability.limited"),
+    out_of_stock: t("availability.outStock"),
+    made_to_order: t("availability.madeToOrder"),
+  };
   const [selectedImage, setSelectedImage] = useState(0);
   const [quantity, setQuantity] = useState(1);
   const addItem = useCartStore((s) => s.addItem);
@@ -78,12 +85,12 @@ export function ProductDetailClient({
 
   const handleAddToCart = () => {
     if (hasVariants && !selectedVariant) {
-      toast.error("Please select an option before adding to cart.");
+      toast.error(t("actions.selectOptionFirst"));
       return;
     }
     addItem(product.id, quantity, selectedVariant?.id);
     openCart();
-    toast.success(`${product.name} added to cart`);
+    toast.success(t("actions.addedToCart", { name: product.name }));
   };
 
   const availabilityVariant =
@@ -99,7 +106,7 @@ export function ProductDetailClient({
         <ol className="flex flex-wrap items-center gap-2">
           <li>
             <Link href="/" className="hover:text-accent">
-              Home
+              {t("breadcrumb.home")}
             </Link>
           </li>
           <li>/</li>
@@ -148,7 +155,7 @@ export function ProductDetailClient({
                       ? "border-accent"
                       : "border-transparent opacity-70 hover:opacity-100"
                   )}
-                  aria-label={`View image ${i + 1}`}
+                  aria-label={t("gallery.viewImage", { index: i + 1 })}
                 >
                   <SafeImage
                     src={img}
@@ -174,7 +181,7 @@ export function ProductDetailClient({
               {availabilityLabels[product.availability]}
             </Badge>
             {product.sku && (
-              <span className="text-sm text-muted">SKU: {product.sku}</span>
+              <span className="text-sm text-muted">{t("sku", { sku: product.sku })}</span>
             )}
           </div>
 
@@ -231,24 +238,24 @@ export function ProductDetailClient({
               ))}
               {selectedVariant && selectedVariant.status === "out_of_stock" && (
                 <p role="alert" className="text-sm font-medium text-destructive">
-                  This option is out of stock.
+                  {t("variants.outOfStock")}
                 </p>
               )}
               {!selectedVariant && Object.keys(selectedAttributes).length > 0 && (
                 <p role="alert" className="text-sm font-medium text-destructive">
-                  That combination isn&apos;t available.
+                  {t("variants.unavailable")}
                 </p>
               )}
             </div>
           )}
 
           <div className="mb-6 flex items-center gap-4">
-            <span className="text-sm font-medium">Quantity</span>
+            <span className="text-sm font-medium">{t("quantity.label")}</span>
             <div className="flex items-center gap-2">
               <button
                 onClick={() => setQuantity(Math.max(1, quantity - 1))}
                 className="flex h-9 w-9 items-center justify-center border border-border hover:bg-accent-muted"
-                aria-label="Decrease quantity"
+                aria-label={t("quantity.decrease")}
               >
                 <Minus className="h-4 w-4" />
               </button>
@@ -258,7 +265,7 @@ export function ProductDetailClient({
               <button
                 onClick={() => setQuantity(quantity + 1)}
                 className="flex h-9 w-9 items-center justify-center border border-border hover:bg-accent-muted"
-                aria-label="Increase quantity"
+                aria-label={t("quantity.increase")}
               >
                 <Plus className="h-4 w-4" />
               </button>
@@ -274,14 +281,14 @@ export function ProductDetailClient({
                 disabled={variantStockBlocked}
               >
                 <ShoppingCart className="h-5 w-5" />
-                Add to Cart
+                {t("actions.addToCart")}
               </Button>
             )}
             {product.purchasingMode !== "buy_online" && (
               <Button asChild size="lg" variant={product.purchasingMode === "quote_only" ? "default" : "outline"} className="w-full">
                 <Link href={`/quote?product=${product.id}`}>
                   <FileText className="h-5 w-5" />
-                  Request a Quote
+                  {t("actions.requestQuote")}
                 </Link>
               </Button>
             )}
@@ -292,14 +299,14 @@ export function ProductDetailClient({
               onClick={() => {
                 toggleItem(product.id);
                 toast.success(
-                  inWishlist ? "Removed from wishlist" : "Added to wishlist"
+                  inWishlist ? t("actions.removedFromWishlist") : t("actions.addedToWishlist")
                 );
               }}
             >
               <Heart
                 className={cn("h-5 w-5", inWishlist && "fill-destructive text-destructive")}
               />
-              {inWishlist ? "Remove from Wishlist" : "Add to Wishlist"}
+              {inWishlist ? t("actions.removeFromWishlist") : t("actions.addToWishlist")}
             </Button>
           </div>
         </div>
@@ -307,12 +314,12 @@ export function ProductDetailClient({
 
       <div className="mt-16 grid gap-12 lg:grid-cols-2">
         <div>
-          <h2 className="font-display mb-4 text-2xl font-bold">Description</h2>
+          <h2 className="font-display mb-4 text-2xl font-bold">{t("description.title")}</h2>
           <p className="leading-relaxed text-muted">{product.description}</p>
         </div>
         <div>
           <h2 className="font-display mb-4 text-2xl font-bold">
-            Specifications
+            {t("specifications.title")}
           </h2>
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
@@ -342,7 +349,7 @@ export function ProductDetailClient({
       {related.length > 0 && (
         <section className="mt-20">
           <h2 className="font-display mb-8 text-2xl font-bold">
-            Related Products
+            {t("related.title")}
           </h2>
           <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
             {related.map((p) => (

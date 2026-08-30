@@ -1,1 +1,66 @@
-{}
+{
+  "breadcrumb": {
+    "home": "Home"
+  },
+  "availability": {
+    "inStock": "In Stock",
+    "limited": "Limited Stock",
+    "outStock": "Out of Stock",
+    "madeToOrder": "Made to Order"
+  },
+  "sku": "SKU: {sku}",
+  "variants": {
+    "outOfStock": "This option is out of stock.",
+    "unavailable": "That combination isn't available."
+  },
+  "quantity": {
+    "label": "Quantity",
+    "decrease": "Decrease quantity",
+    "increase": "Increase quantity"
+  },
+  "actions": {
+    "addToCart": "Add to Cart",
+    "addedToCart": "{name} added to cart",
+    "selectOptionFirst": "Please select an option before adding to cart.",
+    "requestQuote": "Request a Quote",
+    "addToWishlist": "Add to Wishlist",
+    "removeFromWishlist": "Remove from Wishlist",
+    "addedToWishlist": "Added to wishlist",
+    "removedFromWishlist": "Removed from wishlist"
+  },
+  "gallery": {
+    "viewImage": "View image {index}"
+  },
+  "description": {
+    "title": "Description"
+  },
+  "specifications": {
+    "title": "Specifications"
+  },
+  "related": {
+    "title": "Related Products"
+  },
+  "reviews": {
+    "title": "Customer Reviews",
+    "summary": "{rating} out of 5 ({count, plural, one {# review} other {# reviews}})",
+    "loading": "Loading reviews…",
+    "loadError": "Couldn't load reviews right now. Please try again later.",
+    "empty": "No reviews yet — be the first to share your experience.",
+    "verifiedPurchase": "Verified Purchase",
+    "authorDate": "{author} · {date}",
+    "writeReview": "Write a Review",
+    "ratingLabel": "Rating",
+    "starLabel": "{count, plural, one {# star} other {# stars}}",
+    "titleLabel": "Title (optional)",
+    "bodyLabel": "Your Review",
+    "submit": "Submit Review",
+    "submitting": "Submitting…",
+    "loginPrompt": "Log in",
+    "loginSuffix": "to write a review.",
+    "selectRating": "Please select a star rating.",
+    "writeBody": "Please write a review.",
+    "alreadyReviewed": "You've already reviewed this product.",
+    "submitSuccess": "Thanks! Your review will appear once it's approved.",
+    "submitError": "Something went wrong submitting your review. Please try again."
+  }
+}
