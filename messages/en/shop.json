@@ -1,1 +1,104 @@
-{}
+{
+  "catalogue": {
+    "eyebrow": "Catalogue",
+    "titleLine1": "Browse by",
+    "titleLine2": "Category",
+    "description": "Select a category to explore products — construction materials, road interlocks, and fishing products.",
+    "helpText": "Need help choosing? Contact our team directly.",
+    "getInTouch": "Get in Touch"
+  },
+  "categoryCard": {
+    "categoryIndex": "Category 0{index}",
+    "viewProducts": "View Products"
+  },
+  "categoryBanner": {
+    "productCount": "{count, plural, one {# product} other {# products}} in catalogue"
+  },
+  "search": {
+    "title": "Search Results",
+    "emptyPrompt": "Enter a search term to find products.",
+    "browseCatalogue": "Browse Catalogue",
+    "noResults": "No results for \"{query}\"",
+    "noResultsDescription": "Try different keywords or browse our categories.",
+    "browseAll": "Browse All Products",
+    "resultCount": "{count, plural, one {# result} other {# results}} for “{query}”"
+  },
+  "listing": {
+    "searchPlaceholder": "Search in category...",
+    "filtersButton": "Filters",
+    "sortLabel": "Sort products",
+    "itemCount": "{count, plural, one {# item} other {# items}}",
+    "loading": "Loading products…",
+    "empty": {
+      "title": "No products found",
+      "description": "Try adjusting your filters."
+    },
+    "clearFilters": "Clear filters"
+  },
+  "sort": {
+    "featured": "Featured",
+    "newest": "Newest",
+    "priceLowHigh": "Price: Low to High",
+    "priceHighLow": "Price: High to Low"
+  },
+  "filters": {
+    "title": "Filters",
+    "clearAll": "Clear all",
+    "applyFullRange": "Apply full range",
+    "labels": {
+      "productType": "Product Type",
+      "paverType": "Paver Type",
+      "material": "Material",
+      "availability": "Availability",
+      "priceRange": "Price Range",
+      "color": "Color",
+      "brand": "Brand"
+    },
+    "options": {
+      "Doors": "Doors",
+      "Building Materials": "Building Materials",
+      "Hardware": "Hardware",
+      "Accessories": "Accessories",
+      "Wood": "Wood",
+      "Steel": "Steel",
+      "Composite": "Composite",
+      "Mixed": "Mixed",
+      "In Stock": "In Stock",
+      "Limited Stock": "Limited Stock",
+      "Made to Order": "Made to Order",
+      "Interlocking Pavers": "Interlocking Pavers",
+      "Hexagonal Pavers": "Hexagonal Pavers",
+      "Geometric Pavers": "Geometric Pavers",
+      "Hollow Concrete Blocks": "Hollow Concrete Blocks",
+      "Paver Installation Materials": "Paver Installation Materials",
+      "Kerbstones": "Kerbstones",
+      "Concrete": "Concrete",
+      "Reinforced Concrete": "Reinforced Concrete",
+      "Grey": "Grey",
+      "Charcoal": "Charcoal",
+      "Red": "Red",
+      "Rods": "Rods",
+      "Reels": "Reels",
+      "Lines": "Lines",
+      "Hooks": "Hooks",
+      "Lures": "Lures",
+      "Storage": "Storage",
+      "ProMarine": "ProMarine",
+      "OceanPro": "OceanPro",
+      "CoastalGear": "CoastalGear",
+      "Carbon Fiber": "Carbon Fiber",
+      "Aluminum": "Aluminum",
+      "Stainless Steel": "Stainless Steel",
+      "Plastic": "Plastic"
+    }
+  },
+  "productCard": {
+    "addToCart": "Add to Cart",
+    "addToCartAriaLabel": "Add to cart",
+    "addedToCart": "{name} added to cart",
+    "addToWishlist": "Add to wishlist",
+    "removeFromWishlist": "Remove from wishlist",
+    "addedToWishlist": "Added to wishlist",
+    "removedFromWishlist": "Removed from wishlist"
+  }
+}

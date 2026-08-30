@@ -2,6 +2,7 @@
 
 import Image from "next/image";
 import { motion, useReducedMotion } from "framer-motion";
+import { useTranslations } from "next-intl";
 import type { Category } from "@/lib/types/product";
 import { getCategoryBannerConfig } from "@/config/category-banners";
 
@@ -12,6 +13,7 @@ interface CategoryBannerProps {
 
 export function CategoryBanner({ category, productCount }: CategoryBannerProps) {
   const config = getCategoryBannerConfig(category);
+  const t = useTranslations("shop.categoryBanner");
   const shouldReduceMotion = useReducedMotion();
   const ease = [0.16, 1, 0.3, 1] as const;
   const words = category.name.split(" ");
@@ -130,7 +132,7 @@ export function CategoryBanner({ category, productCount }: CategoryBannerProps) 
       <div className="relative z-10 border-t border-border">
         <div className="container-custom flex flex-col gap-4 py-4 sm:flex-row sm:items-center sm:justify-between">
           <span className="text-xs text-muted-foreground">
-            {productCount} product{productCount !== 1 ? "s" : ""} in catalogue
+            {t("productCount", { count: productCount })}
           </span>
           {config.footerColors ? (
             <div className="flex flex-wrap items-center gap-x-6 gap-y-2">

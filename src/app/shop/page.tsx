@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { ArrowUpRight } from "lucide-react";
+import { getTranslations } from "next-intl/server";
 import { CategoryCard } from "@/components/product/category-card";
 import { FadeIn } from "@/components/ui/motion";
 import { brand } from "@/config/brand";
@@ -14,21 +15,21 @@ export const metadata = createPageMetadata({
 
 export default async function ShopPage() {
   const categories = await productService.getCategories();
+  const t = await getTranslations("shop.catalogue");
 
   return (
     <>
       <section className="mesh-light relative overflow-hidden pt-(--header-height)">
         <div className="container-custom relative z-10 py-20 md:py-28">
           <FadeIn>
-            <span className="label mb-4 block">Catalogue</span>
+            <span className="label mb-4 block">{t("eyebrow")}</span>
             <h1 className="font-display mb-5 max-w-2xl text-4xl font-bold text-foreground md:text-6xl">
-              Browse by
+              {t("titleLine1")}
               <br />
-              <span className="text-accent">Category</span>
+              <span className="text-accent">{t("titleLine2")}</span>
             </h1>
             <p className="max-w-lg text-sm leading-relaxed text-muted md:text-base">
-              Select a category to explore products — construction materials,
-              road interlocks, and fishing products.
+              {t("description")}
             </p>
           </FadeIn>
         </div>
@@ -46,13 +47,13 @@ export default async function ShopPage() {
 
           <FadeIn delay={0.2} className="mt-12 text-center">
             <p className="mb-2 text-sm text-muted">
-              Need help choosing? Contact our team directly.
+              {t("helpText")}
             </p>
             <Link
               href="/about"
               className="group inline-flex items-center gap-2 text-xs font-semibold uppercase tracking-widest text-foreground transition-colors hover:text-accent"
             >
-              Get in Touch
+              {t("getInTouch")}
               <ArrowUpRight className="h-3.5 w-3.5 transition-transform duration-(--duration-base) group-hover:translate-x-0.5" />
             </Link>
           </FadeIn>

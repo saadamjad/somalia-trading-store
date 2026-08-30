@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { SlidersHorizontal } from "lucide-react";
+import { useTranslations } from "next-intl";
 import { ProductCard } from "@/components/product/product-card";
 import {
   ActiveFilterPills,
@@ -15,11 +16,11 @@ import { getFiltersForCategory } from "@/config/filters";
 import type { ActiveFilters } from "@/lib/types/filter";
 import type { CategorySlug, Product, SortOption } from "@/lib/types/product";
 
-const sortOptions: { value: SortOption; label: string }[] = [
-  { value: "featured", label: "Featured" },
-  { value: "newest", label: "Newest" },
-  { value: "price-asc", label: "Price: Low to High" },
-  { value: "price-desc", label: "Price: High to Low" },
+const sortOptionKeys: { value: SortOption; labelKey: string }[] = [
+  { value: "featured", labelKey: "featured" },
+  { value: "newest", labelKey: "newest" },
+  { value: "price-asc", labelKey: "priceLowHigh" },
+  { value: "price-desc", labelKey: "priceHighLow" },
 ];
 
 interface ProductListingProps {
@@ -43,6 +44,8 @@ const EMPTY_RESULT: QueryResult = { items: [], total: 0, priceRange: [0, 1000] }
  * API route.
  */
 export function ProductListing({ category, initialSearch = "" }: ProductListingProps) {
+  const t = useTranslations("shop.listing");
+  const tSort = useTranslations("shop.sort");
   const [filters, setFilters] = useState<ActiveFilters>({});
   const [sort, setSort] = useState<SortOption>("featured");
   const [search, setSearch] = useState(initialSearch);
@@ -134,7 +137,7 @@ export function ProductListing({ category, initialSearch = "" }: ProductListingP
         <Input
           value={search}
           onChange={(e) => setSearch(e.target.value)}
-          placeholder="Search in category..."
+          placeholder={t("searchPlaceholder")}
           className="max-w-sm rounded-none border-border-strong"
         />
         <div className="flex items-center gap-4">
@@ -145,21 +148,21 @@ export function ProductListing({ category, initialSearch = "" }: ProductListingP
             onClick={() => setMobileFiltersOpen(true)}
           >
             <SlidersHorizontal className="h-4 w-4" />
-            Filters
+            {t("filtersButton")}
           </Button>
           <select
             value={sort}
             onChange={(e) => setSort(e.target.value as SortOption)}
             className="h-10 border border-border-strong bg-transparent px-3 text-xs uppercase tracking-wider"
-            aria-label="Sort products"
+            aria-label={t("sortLabel")}
           >
-            {sortOptions.map((opt) => (
+            {sortOptionKeys.map((opt) => (
               <option key={opt.value} value={opt.value}>
-                {opt.label}
+                {tSort(opt.labelKey)}
               </option>
             ))}
           </select>
-          <span className="text-xs text-muted">{total} items</span>
+          <span className="text-xs text-muted">{t("itemCount", { count: total })}</span>
         </div>
       </div>
 
@@ -177,14 +180,14 @@ export function ProductListing({ category, initialSearch = "" }: ProductListingP
           )}
 
           {isLoading ? (
-            <div className="py-24 text-center text-sm text-muted">Loading products…</div>
+            <div className="py-24 text-center text-sm text-muted">{t("loading")}</div>
           ) : items.length === 0 ? (
             <EmptyState
-              title="No products found"
-              description="Try adjusting your filters."
+              title={t("empty.title")}
+              description={t("empty.description")}
               action={
                 <Button variant="outline" onClick={clearFilters}>
-                  Clear filters
+                  {t("clearFilters")}
                 </Button>
               }
             />
@@ -201,7 +204,7 @@ export function ProductListing({ category, initialSearch = "" }: ProductListingP
       <Sheet open={mobileFiltersOpen} onOpenChange={setMobileFiltersOpen}>
         <SheetContent side="bottom" className="max-h-[85vh] overflow-y-auto rounded-none">
           <SheetHeader>
-            <SheetTitle>Filters</SheetTitle>
+            <SheetTitle>{t("filtersButton")}</SheetTitle>
           </SheetHeader>
           <div className="px-6 pb-6">
             <FilterPanel {...filterPanelProps} />

@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { Search } from "lucide-react";
+import { getTranslations } from "next-intl/server";
 import { ProductCard } from "@/components/product/product-card";
 import { Button } from "@/components/ui/button";
 import { EmptyState } from "@/components/ui/empty-state";
@@ -20,21 +21,22 @@ export default async function SearchPage({ searchParams }: SearchPageProps) {
   const { q } = await searchParams;
   const query = q?.trim() ?? "";
   const results = query ? await productService.search(query) : [];
+  const t = await getTranslations("shop.search");
 
   return (
     <div className="container-custom py-24 md:py-28">
       <h1 className="font-display mb-2 text-3xl font-bold md:text-4xl">
-        Search Results
+        {t("title")}
       </h1>
 
       {!query ? (
         <div className="min-h-[40vh]">
           <EmptyState
             icon={Search}
-            title="Enter a search term to find products."
+            title={t("emptyPrompt")}
             action={
               <Button asChild>
-                <Link href="/shop">Browse Catalogue</Link>
+                <Link href="/shop">{t("browseCatalogue")}</Link>
               </Button>
             }
           />
@@ -43,11 +45,11 @@ export default async function SearchPage({ searchParams }: SearchPageProps) {
         <div className="min-h-[40vh]">
           <EmptyState
             icon={Search}
-            title={`No results for "${query}"`}
-            description="Try different keywords or browse our categories."
+            title={t("noResults", { query })}
+            description={t("noResultsDescription")}
             action={
               <Button asChild variant="outline">
-                <Link href="/shop">Browse All Products</Link>
+                <Link href="/shop">{t("browseAll")}</Link>
               </Button>
             }
           />
@@ -55,8 +57,7 @@ export default async function SearchPage({ searchParams }: SearchPageProps) {
       ) : (
         <>
           <p className="mb-8 text-muted">
-            {results.length} result{results.length !== 1 ? "s" : ""} for
-            &ldquo;{query}&rdquo;
+            {t("resultCount", { count: results.length, query })}
           </p>
           <div className="grid grid-cols-2 gap-4 md:grid-cols-3 lg:grid-cols-4 lg:gap-6">
             {results.map((product) => (

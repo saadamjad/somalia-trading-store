@@ -1,10 +1,30 @@
 "use client";
 
 import { X } from "lucide-react";
+import { useTranslations } from "next-intl";
 import { Button } from "@/components/ui/button";
 import type { ActiveFilters } from "@/lib/types/filter";
 import type { FilterDefinition } from "@/lib/types/filter";
 import { cn } from "@/lib/utils";
+
+/**
+ * filters.ts defines label/value strings used to match against stored Product
+ * data — those must stay literal English. These helpers only translate the
+ * *displayed* text, falling back to the raw string when no translation exists
+ * (e.g. for filter keys not covered by shop.json, or once the "so" locale is
+ * populated but a given key is missing).
+ */
+function useFilterLabel() {
+  const t = useTranslations("shop.filters.labels");
+  return (key: string, fallback: string) =>
+    t.has(key) ? t(key) : fallback;
+}
+
+function useFilterOptionLabel() {
+  const t = useTranslations("shop.filters.options");
+  return (value: string, fallback: string) =>
+    t.has(value) ? t(value) : fallback;
+}
 
 interface FilterPanelProps {
   filterDefs: FilterDefinition[];
@@ -27,23 +47,29 @@ export function FilterPanel({
   onClearFilters,
   className,
 }: FilterPanelProps) {
+  const t = useTranslations("shop.filters");
+  const filterLabel = useFilterLabel();
+  const optionLabel = useFilterOptionLabel();
+
   return (
     <div className={cn("space-y-6", className)}>
       <div className="flex items-center justify-between">
-        <h3 className="font-display font-semibold">Filters</h3>
+        <h3 className="font-display font-semibold">{t("title")}</h3>
         {activeFilterCount > 0 && (
           <button
             onClick={onClearFilters}
             className="text-sm text-accent-text hover:underline"
           >
-            Clear all
+            {t("clearAll")}
           </button>
         )}
       </div>
 
       {filterDefs.map((filter) => (
         <div key={filter.key}>
-          <h4 className="mb-3 text-sm font-semibold">{filter.label}</h4>
+          <h4 className="mb-3 text-sm font-semibold">
+            {filterLabel(filter.labelKey, filter.label)}
+          </h4>
           {filter.type === "checkbox" && filter.options && (
             <div className="space-y-2">
               {filter.options.map((opt) => {
@@ -61,7 +87,7 @@ export function FilterPanel({
                       onChange={() => onToggleFilter(filter.key, opt.value)}
                       className="h-4 w-4 rounded border-border accent-accent"
                     />
-                    {opt.label}
+                    {optionLabel(opt.value, opt.label)}
                   </label>
                 );
               })}
@@ -77,7 +103,7 @@ export function FilterPanel({
                 size="sm"
                 onClick={() => onSetPriceFilter(priceRange[0], priceRange[1])}
               >
-                Apply full range
+                {t("applyFullRange")}
               </Button>
             </div>
           )}
