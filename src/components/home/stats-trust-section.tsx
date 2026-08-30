@@ -1,17 +1,20 @@
+import { getTranslations } from "next-intl/server";
 import { FadeIn } from "@/components/ui/motion";
 import { SectionHeader } from "@/components/ui/section-header";
 import { brand } from "@/config/brand";
 import { trustStats } from "@/config/home";
 
-export function StatsTrustSection() {
+export async function StatsTrustSection() {
+  const t = await getTranslations("home.statsTrust");
+
   return (
     <section className="section-band border-y border-border bg-surface">
       <div className="container-custom">
         <FadeIn className="section-heading mx-auto max-w-lg text-center">
           <SectionHeader
-            eyebrow="Trusted Across Somalia"
-            title="Built on Reliability"
-            description={`${brand.shortName} supports contractors, developers, and businesses with dependable supply across construction, infrastructure, and marine sectors.`}
+            eyebrow={t("eyebrow")}
+            title={t("title")}
+            description={t("description", { shortName: brand.shortName })}
             align="center"
           />
         </FadeIn>

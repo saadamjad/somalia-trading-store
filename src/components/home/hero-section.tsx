@@ -4,9 +4,9 @@ import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { ArrowUpRight, ChevronLeft, ChevronRight } from "lucide-react";
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
+import { useTranslations } from "next-intl";
 import { Button } from "@/components/ui/button";
 import { brand } from "@/config/brand";
-import { heroFallback } from "@/config/home";
 import { SafeImage } from "@/components/ui/safe-image";
 import type { Category } from "@/lib/types/product";
 
@@ -37,6 +37,7 @@ const AUTOPLAY_MS = 2000;
  * empty so a fresh/unseeded deploy never renders broken slider chrome.
  */
 function CategorySlider({ categories }: { categories: Category[] }) {
+  const t = useTranslations("home.hero");
   const [activeIndex, setActiveIndex] = useState(0);
   const [isPaused, setIsPaused] = useState(false);
   const prefersReducedMotion = useReducedMotion();
@@ -71,7 +72,7 @@ function CategorySlider({ categories }: { categories: Category[] }) {
     <div
       role="region"
       aria-roledescription="carousel"
-      aria-label="Featured categories"
+      aria-label={t("kicker")}
       className="group relative aspect-4/5 w-full overflow-hidden border border-border bg-muted/10 sm:aspect-16/11 lg:aspect-4/5"
       onMouseEnter={() => setIsPaused(true)}
       onMouseLeave={() => setIsPaused(false)}
@@ -98,7 +99,7 @@ function CategorySlider({ categories }: { categories: Category[] }) {
           <Link
             href={`/shop/${active.slug}`}
             className="absolute inset-0 block"
-            aria-label={`Shop ${active.name}`}
+            aria-label={t("shopAriaLabel", { category: active.name })}
           >
             <SafeImage
               src={active.image}
@@ -117,7 +118,7 @@ function CategorySlider({ categories }: { categories: Category[] }) {
                 {active.name}
               </p>
               <span className="mt-2 inline-flex items-center gap-1.5 text-xs font-semibold uppercase tracking-widest text-white/90">
-                Shop Now
+                {t("shopNow")}
                 <ArrowUpRight className="h-3.5 w-3.5" />
               </span>
             </div>
@@ -126,7 +127,7 @@ function CategorySlider({ categories }: { categories: Category[] }) {
       </AnimatePresence>
 
       <p className="sr-only" aria-live="polite">
-        Showing {active.name}, slide {activeIndex + 1} of {slideCount}
+        {t("slideStatus", { category: active.name, current: activeIndex + 1, total: slideCount })}
       </p>
 
       {slideCount > 1 && (
@@ -135,7 +136,7 @@ function CategorySlider({ categories }: { categories: Category[] }) {
             <button
               type="button"
               onClick={goPrev}
-              aria-label="Previous slide"
+              aria-label={t("previousSlide")}
               className="flex h-9 w-9 items-center justify-center rounded-full bg-white/90 text-foreground transition-colors hover:bg-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
             >
               <ChevronLeft className="h-4 w-4" strokeWidth={1.5} />
@@ -143,7 +144,7 @@ function CategorySlider({ categories }: { categories: Category[] }) {
             <button
               type="button"
               onClick={goNext}
-              aria-label="Next slide"
+              aria-label={t("nextSlide")}
               className="flex h-9 w-9 items-center justify-center rounded-full bg-white/90 text-foreground transition-colors hover:bg-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
             >
               <ChevronRight className="h-4 w-4" strokeWidth={1.5} />
@@ -156,7 +157,7 @@ function CategorySlider({ categories }: { categories: Category[] }) {
                 key={cat.slug}
                 type="button"
                 onClick={() => goTo(i)}
-                aria-label={`Go to slide ${i + 1}: ${cat.name}`}
+                aria-label={t("goToSlide", { number: i + 1, category: cat.name })}
                 aria-current={i === activeIndex}
                 className={`h-1.5 rounded-full transition-all duration-(--duration-base) focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 ${
                   i === activeIndex ? "w-6 bg-white" : "w-1.5 bg-white/50 hover:bg-white/80"
@@ -171,6 +172,8 @@ function CategorySlider({ categories }: { categories: Category[] }) {
 }
 
 export function HeroSection({ categories, banner }: HeroSectionProps) {
+  const t = useTranslations("home.hero");
+
   return (
     <section className="mesh-light relative min-h-screen overflow-hidden pt-(--header-height)">
       <div
@@ -201,11 +204,11 @@ export function HeroSection({ categories, banner }: HeroSectionProps) {
               </h1>
             ) : (
               <h1 className="font-display text-balance mb-8 text-[clamp(2.75rem,7vw,5.5rem)] font-bold leading-[0.95] tracking-tight text-foreground">
-                {heroFallback.headlineLine1}
+                {t("headlineLine1")}
                 <br />
-                <span className="text-accent">{heroFallback.headlineAccent}</span>
+                <span className="text-accent">{t("headlineAccent")}</span>
                 <br />
-                {heroFallback.headlineLine3}
+                {t("headlineLine3")}
               </h1>
             )}
 
@@ -215,7 +218,7 @@ export function HeroSection({ categories, banner }: HeroSectionProps) {
 
             <Button asChild size="lg" variant="accent">
               <Link href={banner?.linkUrl || "/shop"}>
-                {banner?.ctaText || "Explore Catalogue"}
+                {banner?.ctaText || t("cta")}
                 <ArrowUpRight className="h-4 w-4" />
               </Link>
             </Button>

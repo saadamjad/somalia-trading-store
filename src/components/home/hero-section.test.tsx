@@ -1,8 +1,18 @@
 import { describe, expect, it } from "vitest";
 import { renderToStaticMarkup } from "react-dom/server";
+import { NextIntlClientProvider } from "next-intl";
 import { HeroSection } from "@/components/home/hero-section";
 import { brand } from "@/config/brand";
 import type { Category } from "@/lib/types/product";
+import homeMessages from "../../../messages/en/home.json";
+
+function renderWithIntl(ui: React.ReactElement) {
+  return renderToStaticMarkup(
+    <NextIntlClientProvider locale="en" messages={{ home: homeMessages }}>
+      {ui}
+    </NextIntlClientProvider>
+  );
+}
 
 const SAMPLE_CATEGORY: Category = {
   id: "cat-1",
@@ -23,7 +33,7 @@ const SAMPLE_CATEGORY: Category = {
  */
 describe("HeroSection — CMS banner fallback", () => {
   it("falls back to the original static approved copy when no banner is active", () => {
-    const html = renderToStaticMarkup(
+    const html = renderWithIntl(
       <HeroSection categories={[SAMPLE_CATEGORY]} banner={null} />
     );
 
@@ -35,12 +45,12 @@ describe("HeroSection — CMS banner fallback", () => {
   });
 
   it("falls back to static copy when banner is simply omitted (undefined)", () => {
-    const html = renderToStaticMarkup(<HeroSection categories={[SAMPLE_CATEGORY]} />);
+    const html = renderWithIntl(<HeroSection categories={[SAMPLE_CATEGORY]} />);
     expect(html).toContain("Built for");
   });
 
   it("uses the CMS-managed banner content when an active banner is provided", () => {
-    const html = renderToStaticMarkup(
+    const html = renderWithIntl(
       <HeroSection
         categories={[SAMPLE_CATEGORY]}
         banner={{
