@@ -6,6 +6,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import { useSession, signOut } from "next-auth/react";
+import { useTranslations } from "next-intl";
 import { Heart, LogOut, Menu, Search, ShoppingCart, User, X } from "lucide-react";
 import { mainNav } from "@/config/navigation";
 import { brand } from "@/config/brand";
@@ -18,6 +19,7 @@ import { SearchOverlay } from "@/components/layout/search-overlay";
 import { NotificationBell } from "@/components/layout/notification-bell";
 
 export function Header() {
+  const t = useTranslations("common");
   const pathname = usePathname();
   const cartCount = useCartStore((s) => s.getItemCount());
   const wishlistCount = useWishlistStore((s) => s.getCount());
@@ -104,7 +106,7 @@ export function Header() {
             <button
               onClick={openSearch}
               className="flex h-10 w-10 items-center justify-center text-muted transition-colors hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-surface"
-              aria-label="Search products"
+              aria-label={t("aria.searchProducts")}
             >
               <Search className="h-[18px] w-[18px]" strokeWidth={1.5} />
             </button>
@@ -112,7 +114,7 @@ export function Header() {
             <Link
               href="/wishlist"
               className="relative flex h-10 w-10 items-center justify-center text-muted transition-colors hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-surface"
-              aria-label={`Wishlist, ${wishlistCount} items`}
+              aria-label={t("aria.wishlistCount", { count: wishlistCount })}
             >
               <Heart className="h-[18px] w-[18px]" strokeWidth={1.5} />
               {wishlistCount > 0 && (
@@ -123,7 +125,7 @@ export function Header() {
             <button
               onClick={openCart}
               className="relative flex h-10 w-10 items-center justify-center text-muted transition-colors hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-surface"
-              aria-label={`Cart, ${cartCount} items`}
+              aria-label={t("aria.cartCount", { count: cartCount })}
             >
               <ShoppingCart className="h-[18px] w-[18px]" strokeWidth={1.5} />
               {cartCount > 0 && (
@@ -140,7 +142,7 @@ export function Header() {
                 <button
                   onClick={() => setIsUserMenuOpen((open) => !open)}
                   className="flex h-10 w-10 items-center justify-center text-muted transition-colors hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-surface"
-                  aria-label="Account menu"
+                  aria-label={t("aria.accountMenu")}
                   aria-expanded={isUserMenuOpen}
                 >
                   <User className="h-[18px] w-[18px]" strokeWidth={1.5} />
@@ -156,7 +158,7 @@ export function Header() {
                       className="flex w-full items-center gap-2 px-4 py-2.5 text-left text-xs font-medium uppercase tracking-widest text-muted transition-colors hover:text-foreground focus-visible:bg-accent-muted focus-visible:text-foreground focus-visible:outline-none"
                     >
                       <User className="h-3.5 w-3.5" strokeWidth={1.5} />
-                      My Account
+                      {t("account.myAccount")}
                     </Link>
                     <button
                       onClick={() => {
@@ -166,7 +168,7 @@ export function Header() {
                       className="flex w-full items-center gap-2 px-4 py-2.5 text-left text-xs font-medium uppercase tracking-widest text-muted transition-colors hover:text-foreground focus-visible:bg-accent-muted focus-visible:text-foreground focus-visible:outline-none"
                     >
                       <LogOut className="h-3.5 w-3.5" strokeWidth={1.5} />
-                      Log Out
+                      {t("account.logOut")}
                     </button>
                   </div>
                 )}
@@ -177,7 +179,7 @@ export function Header() {
                   href="/login"
                   className="hidden h-10 items-center px-4 text-xs font-medium uppercase tracking-widest text-muted transition-colors hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-surface lg:flex"
                 >
-                  Log In
+                  {t("account.logIn")}
                 </Link>
               )
             )}
@@ -185,7 +187,7 @@ export function Header() {
             <button
               onClick={toggleMobileMenu}
               className="flex h-10 w-10 items-center justify-center text-foreground lg:hidden focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-surface"
-              aria-label={isMobileMenuOpen ? "Close menu" : "Open menu"}
+              aria-label={isMobileMenuOpen ? t("aria.closeMenu") : t("aria.openMenu")}
               aria-expanded={isMobileMenuOpen}
               aria-controls="mobile-nav"
             >
@@ -239,14 +241,14 @@ export function Header() {
                     className="flex items-center gap-2 py-2 text-sm font-medium tracking-wide text-muted transition-colors hover:text-foreground focus-visible:outline-none focus-visible:text-accent"
                   >
                     <User className="h-4 w-4" strokeWidth={1.5} />
-                    My Account
+                    {t("account.myAccount")}
                   </Link>
                   <button
                     onClick={() => void signOut({ callbackUrl: "/" })}
                     className="flex items-center gap-2 py-2 text-sm font-medium tracking-wide text-muted transition-colors hover:text-foreground focus-visible:outline-none focus-visible:text-accent"
                   >
                     <LogOut className="h-4 w-4" strokeWidth={1.5} />
-                    Log Out
+                    {t("account.logOut")}
                   </button>
                 </>
               ) : (
@@ -255,7 +257,7 @@ export function Header() {
                     href="/login"
                     className="block py-2 text-sm font-medium tracking-wide text-muted transition-colors hover:text-foreground focus-visible:outline-none focus-visible:text-accent"
                   >
-                    Log In
+                    {t("account.logIn")}
                   </Link>
                 )
               )}

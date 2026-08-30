@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState, useSyncExternalStore } from "react";
+import { useTranslations } from "next-intl";
 import { X } from "lucide-react";
 import { brand } from "@/config/brand";
 
@@ -64,6 +65,7 @@ function markDismissed() {
  * button always opens/closes the topic menu, independent of the pulse state.
  */
 export function WhatsAppButton() {
+  const t = useTranslations("common");
   // useSyncExternalStore, not useState+useEffect: this is a genuine read of a
   // browser-only external store (localStorage) with no server-side equivalent —
   // exactly the case the hook exists for, and it avoids a hydration mismatch
@@ -118,15 +120,15 @@ export function WhatsAppButton() {
       {isOpen && (
         <div
           role="menu"
-          aria-label="Chat with us on WhatsApp — choose a topic"
+          aria-label={t("whatsapp.menuLabel")}
           className="w-72 max-w-[calc(100vw-2rem)] overflow-hidden rounded-xl border border-border bg-surface shadow-(--shadow-elevated)"
         >
           <div className="flex items-center justify-between gap-3 bg-whatsapp px-4 py-3 text-white">
-            <p className="font-display text-sm font-semibold">Chat with us</p>
+            <p className="font-display text-sm font-semibold">{t("whatsapp.chatWithUs")}</p>
             <button
               type="button"
               onClick={dismiss}
-              aria-label="Close menu"
+              aria-label={t("aria.closeMenu")}
               className="rounded-md p-1 opacity-90 transition-opacity hover:opacity-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white"
             >
               <X className="h-4 w-4" />
@@ -160,10 +162,10 @@ export function WhatsAppButton() {
           setIsOpen((open) => !open);
           markDismissed();
         }}
-        aria-label={isOpen ? "Close WhatsApp menu" : "Chat with us on WhatsApp"}
+        aria-label={isOpen ? t("whatsapp.closeMenuLabel") : t("whatsapp.openLabel")}
         aria-expanded={isOpen}
         aria-haspopup="menu"
-        title="Chat with us on WhatsApp"
+        title={t("whatsapp.openLabel")}
         className="relative flex h-14 w-14 items-center justify-center rounded-full bg-whatsapp text-white shadow-(--shadow-elevated) transition-colors duration-(--duration-base) hover:bg-whatsapp-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
       >
         {showPulse && !isOpen && (

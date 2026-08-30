@@ -1,9 +1,11 @@
 import Image from "next/image";
 import Link from "next/link";
+import { getTranslations } from "next-intl/server";
 import { brand } from "@/config/brand";
 import { footerNav } from "@/config/navigation";
 
-export function Footer() {
+export async function Footer() {
+  const t = await getTranslations("common");
   return (
     <footer className="relative border-t border-border bg-surface">
       <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-accent/50 to-transparent" />
@@ -32,7 +34,7 @@ export function Footer() {
 
           <div className="grid grid-cols-3 gap-8 md:col-span-5">
             <div>
-              <p className="label mb-4">Shop</p>
+              <p className="label mb-4">{t("footer.shop")}</p>
               <ul className="space-y-2.5">
                 {footerNav.shop.map((link) => (
                   <li key={link.href}>
@@ -47,7 +49,7 @@ export function Footer() {
               </ul>
             </div>
             <div>
-              <p className="label mb-4">Company</p>
+              <p className="label mb-4">{t("footer.company")}</p>
               <ul className="space-y-2.5">
                 {footerNav.company.map((link) => (
                   <li key={link.label}>
@@ -62,7 +64,7 @@ export function Footer() {
               </ul>
             </div>
             <div>
-              <p className="label mb-4">Legal</p>
+              <p className="label mb-4">{t("footer.legal")}</p>
               <ul className="space-y-2.5">
                 {footerNav.legal.map((link) => (
                   <li key={link.href}>
@@ -79,7 +81,7 @@ export function Footer() {
           </div>
 
           <div className="md:col-span-3">
-            <p className="label mb-4">Contact</p>
+            <p className="label mb-4">{t("footer.contact")}</p>
             <ul className="space-y-2 text-sm text-muted">
               {brand.contact.email && <li>{brand.contact.email}</li>}
               {brand.contact.phones.map((phone) => (

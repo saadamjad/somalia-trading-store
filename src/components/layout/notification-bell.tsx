@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useSession } from "next-auth/react";
+import { useTranslations } from "next-intl";
 import { Bell } from "lucide-react";
 
 const POLL_INTERVAL_MS = 30_000;
@@ -17,6 +18,7 @@ const POLL_INTERVAL_MS = 30_000;
  * list + mark-read actions live.
  */
 export function NotificationBell() {
+  const t = useTranslations("common");
   const { status } = useSession();
   const [unreadCount, setUnreadCount] = useState(0);
 
@@ -50,7 +52,7 @@ export function NotificationBell() {
     <Link
       href="/account/notifications"
       className="relative flex h-10 w-10 items-center justify-center text-muted transition-colors hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-surface"
-      aria-label={`Notifications, ${unreadCount} unread`}
+      aria-label={t("aria.notificationsUnread", { count: unreadCount })}
     >
       <Bell className="h-[18px] w-[18px]" strokeWidth={1.5} />
       {unreadCount > 0 && (
