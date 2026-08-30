@@ -63,7 +63,7 @@ Vercel → Project → Settings → Domains → add your domain, follow their DN
 ## 3. Continuous Integration (already set up)
 
 `.github/workflows/ci.yml` runs automatically on every push and pull request against `main`:
-- Typecheck, lint, unit/integration tests (286 tests), production build
+- Typecheck, lint, unit/integration tests (355 tests), production build
 - Full Playwright E2E suite (customer and admin critical paths) against a real ephemeral Postgres instance
 
 This is a **status check only** — it does not deploy anything. It exists to catch a broken PR before merge; Vercel's deploy is a separate, independent step triggered by the push itself. No further setup needed on your end; it uses GitHub's own runners and requires no secrets (CI uses a disposable local Postgres container, not your real database).
