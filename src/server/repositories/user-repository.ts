@@ -55,6 +55,12 @@ export const userRepository = {
   ) {
     return prisma.user.update({ where: { id: userId }, data });
   },
+
+  /** Explicit account-level language preference (requirement §54) — set only when a
+   * signed-in user actively switches language, never inferred from geo/browser. */
+  updatePreferredLocale(userId: string, preferredLocale: string) {
+    return prisma.user.update({ where: { id: userId }, data: { preferredLocale } });
+  },
 };
 
 export const roleRepository = {

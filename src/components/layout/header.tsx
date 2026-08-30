@@ -2,8 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Image from "next/image";
-import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { Link, usePathname } from "@/i18n/navigation";
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import { useSession, signOut } from "next-auth/react";
 import { useTranslations } from "next-intl";
@@ -17,6 +16,7 @@ import { cn } from "@/lib/utils";
 import { MiniCartDrawer } from "@/components/cart/mini-cart-drawer";
 import { SearchOverlay } from "@/components/layout/search-overlay";
 import { NotificationBell } from "@/components/layout/notification-bell";
+import { LanguageSwitcher } from "@/components/layout/language-switcher";
 
 export function Header() {
   const t = useTranslations("common");
@@ -137,6 +137,8 @@ export function Header() {
 
             <NotificationBell />
 
+            <LanguageSwitcher className="hidden lg:flex" />
+
             {status === "authenticated" && session?.user ? (
               <div className="relative hidden lg:block">
                 <button
@@ -231,6 +233,7 @@ export function Header() {
             </ul>
 
             <div className="mt-4 border-t border-border pt-4">
+              <LanguageSwitcher className="pb-4" />
               {status === "authenticated" && session?.user ? (
                 <>
                   <p className="truncate pb-2 text-xs text-muted-foreground">

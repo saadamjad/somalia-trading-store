@@ -8,6 +8,26 @@ import {
 } from "@/lib/validations/order";
 import { toErrorResponse } from "@/server/lib/api-errors";
 import { checkRateLimit, getClientIp, RATE_LIMITS } from "@/server/lib/rate-limit";
+import { defaultLocale, isLocale } from "@/config/i18n";
+
+/**
+ * Order-creation locale (requirement §31), read straight off the request rather than
+ * trusted from the client body — /api/orders is a plain, unprefixed route (never
+ * `/{locale}/api/...`), so the checkout page's own locale isn't otherwise visible
+ * here. next-intl's own NEXT_LOCALE cookie (set the moment a visitor ever interacts
+ * with locale routing/switching) is the most reliable signal available server-side;
+ * Accept-Language is the fallback for a request that somehow has neither.
+ */
+function resolveOrderLocale(request: NextRequest): string {
+  const cookieLocale = request.cookies.get("NEXT_LOCALE")?.value ?? "";
+  if (isLocale(cookieLocale)) return cookieLocale;
+
+  const acceptLanguage = request.headers.get("accept-language") ?? "";
+  const primaryTag = acceptLanguage.split(",")[0]?.split(";")[0]?.trim().split("-")[0] ?? "";
+  if (isLocale(primaryTag)) return primaryTag;
+
+  return defaultLocale;
+}
 
 /**
  * GET /api/orders — the caller's own orders only, scoped by session userId. Accepts an
@@ -51,15 +71,16 @@ export async function POST(request: NextRequest) {
 
     const session = await getCurrentSession();
     const body = await request.json();
+    const locale = resolveOrderLocale(request);
 
     if (!session) {
       const input = guestOrderCreateSchema.parse(body);
-      const order = await orderService.createGuestOrder(input);
+      const order = await orderService.createGuestOrder(input, locale);
       return NextResponse.json({ item: order }, { status: 201 });
     }
 
     const input = orderCreateSchema.parse(body);
-    const order = await orderService.createOrder(session.userId, input);
+    const order = await orderService.createOrder(session.userId, input, locale);
 
     return NextResponse.json({ item: order }, { status: 201 });
   } catch (error) {

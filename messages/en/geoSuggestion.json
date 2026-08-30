@@ -1,0 +1,6 @@
+{
+  "prompt": "Would you like to view this website in {language}?",
+  "switch": "Switch to {language}",
+  "keep": "Keep {language}",
+  "close": "Close"
+}

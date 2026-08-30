@@ -12,6 +12,7 @@ const namespaces = [
   "admin",
   "auth",
   "errors",
+  "geoSuggestion",
 ] as const;
 
 type Messages = Record<string, unknown>;

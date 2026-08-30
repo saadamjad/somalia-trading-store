@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
+import { getTranslations } from "next-intl/server";
 import { Button } from "@/components/ui/button";
 import { DeleteButton } from "@/components/admin/delete-button";
 import { productService } from "@/server/services/product-service";
@@ -19,12 +20,14 @@ export default async function AdminProductsPage() {
     redirect("/admin/change-password");
   }
 
+  const t = await getTranslations("admin.products.list");
+
   const permissions = await getRolePermissions(session.role);
   if (!permissions.has("products.view")) {
     return (
       <div className="container-custom flex min-h-[40vh] flex-col items-center justify-center py-24 text-center">
-        <h1 className="font-display mb-2 text-2xl font-bold">Access Denied</h1>
-        <p className="text-muted">Your account does not have permission to view products.</p>
+        <h1 className="font-display mb-2 text-2xl font-bold">{t("accessDeniedTitle")}</h1>
+        <p className="text-muted">{t("accessDeniedMessage")}</p>
       </div>
     );
   }
@@ -35,11 +38,11 @@ export default async function AdminProductsPage() {
     <div>
       <div className="mb-8 flex items-center justify-between">
         <div>
-          <h1 className="font-display text-2xl font-bold">Products</h1>
-          <p className="text-sm text-muted">{products.length} total</p>
+          <h1 className="font-display text-2xl font-bold">{t("title")}</h1>
+          <p className="text-sm text-muted">{t("totalCount", { count: products.length })}</p>
         </div>
         <Button asChild size="sm">
-          <Link href="/admin/products/new">New Product</Link>
+          <Link href="/admin/products/new">{t("addNew")}</Link>
         </Button>
       </div>
 
@@ -47,12 +50,12 @@ export default async function AdminProductsPage() {
         <table className="w-full text-sm">
           <thead className="bg-surface text-left text-xs uppercase tracking-wider text-muted">
             <tr>
-              <th className="px-4 py-3">Name</th>
-              <th className="px-4 py-3">Category</th>
-              <th className="px-4 py-3">Price</th>
-              <th className="px-4 py-3">Availability</th>
-              <th className="px-4 py-3">Featured</th>
-              <th className="px-4 py-3 text-right">Actions</th>
+              <th className="px-4 py-3">{t("columns.name")}</th>
+              <th className="px-4 py-3">{t("columns.category")}</th>
+              <th className="px-4 py-3">{t("columns.price")}</th>
+              <th className="px-4 py-3">{t("columns.availability")}</th>
+              <th className="px-4 py-3">{t("columns.featured")}</th>
+              <th className="px-4 py-3 text-right">{t("columns.actions")}</th>
             </tr>
           </thead>
           <tbody>
@@ -64,15 +67,15 @@ export default async function AdminProductsPage() {
                   {formatProductPrice(product.price, product.currency, product.priceUnit)}
                 </td>
                 <td className="px-4 py-3 text-muted">{product.availability}</td>
-                <td className="px-4 py-3 text-muted">{product.featured ? "Yes" : "No"}</td>
+                <td className="px-4 py-3 text-muted">{product.featured ? t("yes") : t("no")}</td>
                 <td className="px-4 py-3">
                   <div className="flex justify-end gap-2">
                     <Button asChild variant="outline" size="sm">
-                      <Link href={`/admin/products/${product.id}/edit`}>Edit</Link>
+                      <Link href={`/admin/products/${product.id}/edit`}>{t("edit")}</Link>
                     </Button>
                     <DeleteButton
                       url={`/api/products/${product.id}`}
-                      confirmMessage={`Delete "${product.name}"?`}
+                      confirmMessage={t("deleteConfirm", { name: product.name })}
                     />
                   </div>
                 </td>
@@ -81,7 +84,7 @@ export default async function AdminProductsPage() {
             {products.length === 0 && (
               <tr>
                 <td colSpan={6} className="px-4 py-8 text-center text-muted">
-                  No products yet.
+                  {t("empty")}
                 </td>
               </tr>
             )}

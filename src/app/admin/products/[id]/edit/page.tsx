@@ -1,4 +1,5 @@
 import { notFound, redirect } from "next/navigation";
+import { getTranslations } from "next-intl/server";
 import { ProductForm } from "@/components/admin/product-form";
 import { VariantManager } from "@/components/admin/variant-manager";
 import { productService } from "@/server/services/product-service";
@@ -17,12 +18,14 @@ export default async function EditProductPage({ params }: EditProductPageProps) 
     redirect("/login?callbackUrl=/admin/products");
   }
 
+  const t = await getTranslations("admin.products");
+
   const permissions = await getRolePermissions(session.role);
   if (!permissions.has("products.update")) {
     return (
       <div className="container-custom flex min-h-[40vh] flex-col items-center justify-center py-24 text-center">
-        <h1 className="font-display mb-2 text-2xl font-bold">Access Denied</h1>
-        <p className="text-muted">Your account does not have permission to update products.</p>
+        <h1 className="font-display mb-2 text-2xl font-bold">{t("list.accessDeniedTitle")}</h1>
+        <p className="text-muted">{t("list.accessDeniedUpdateMessage")}</p>
       </div>
     );
   }
@@ -37,7 +40,7 @@ export default async function EditProductPage({ params }: EditProductPageProps) 
 
   return (
     <div className="space-y-8">
-      <h1 className="font-display text-2xl font-bold">Edit Product</h1>
+      <h1 className="font-display text-2xl font-bold">{t("edit.title")}</h1>
       <ProductForm categories={categories} product={{ ...product, id }} />
       <VariantManager productId={id} />
     </div>

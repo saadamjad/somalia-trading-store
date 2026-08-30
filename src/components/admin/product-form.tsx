@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { useTranslations } from "next-intl";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -18,6 +19,7 @@ interface ProductFormProps {
 /** Admin create/edit form. POSTs to /api/products or PATCHes /api/products/[id]. */
 export function ProductForm({ categories, product }: ProductFormProps) {
   const router = useRouter();
+  const t = useTranslations("admin.products.form");
   const isEdit = Boolean(product);
   const [isSaving, setIsSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -80,14 +82,14 @@ export function ProductForm({ categories, product }: ProductFormProps) {
 
       if (!res.ok) {
         const data = await res.json().catch(() => ({}));
-        throw new Error(data.error || "Save failed.");
+        throw new Error(data.error || t("saveFailed"));
       }
 
-      toast.success(isEdit ? "Product updated." : "Product created.");
+      toast.success(isEdit ? t("updateSuccess") : t("createSuccess"));
       router.push("/admin/products");
       router.refresh();
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Save failed.");
+      setError(err instanceof Error ? err.message : t("saveFailed"));
     } finally {
       setIsSaving(false);
     }
@@ -108,7 +110,7 @@ export function ProductForm({ categories, product }: ProductFormProps) {
 
       <div className="grid gap-4 sm:grid-cols-2">
         <div>
-          <Label htmlFor="name">Name *</Label>
+          <Label htmlFor="name">{t("nameLabel")}</Label>
           <Input
             id="name"
             required
@@ -120,7 +122,7 @@ export function ProductForm({ categories, product }: ProductFormProps) {
           />
         </div>
         <div>
-          <Label htmlFor="slug">Slug *</Label>
+          <Label htmlFor="slug">{t("slugLabel")}</Label>
           <Input
             id="slug"
             required
@@ -135,7 +137,7 @@ export function ProductForm({ categories, product }: ProductFormProps) {
 
       <div className="grid gap-4 sm:grid-cols-2">
         <div>
-          <Label htmlFor="categorySlug">Category *</Label>
+          <Label htmlFor="categorySlug">{t("categoryLabel")}</Label>
           <select
             id="categorySlug"
             required
@@ -153,7 +155,7 @@ export function ProductForm({ categories, product }: ProductFormProps) {
           </select>
         </div>
         <div>
-          <Label htmlFor="subcategory">Subcategory</Label>
+          <Label htmlFor="subcategory">{t("subcategoryLabel")}</Label>
           <Input
             id="subcategory"
             className="mt-1.5"
@@ -164,7 +166,7 @@ export function ProductForm({ categories, product }: ProductFormProps) {
       </div>
 
       <div>
-        <Label htmlFor="sku">SKU</Label>
+        <Label htmlFor="sku">{t("skuLabel")}</Label>
         <Input
           id="sku"
           className="mt-1.5"
@@ -174,7 +176,7 @@ export function ProductForm({ categories, product }: ProductFormProps) {
       </div>
 
       <div>
-        <Label htmlFor="shortDescription">Short Description *</Label>
+        <Label htmlFor="shortDescription">{t("shortDescriptionLabel")}</Label>
         <Textarea
           id="shortDescription"
           required
@@ -187,7 +189,7 @@ export function ProductForm({ categories, product }: ProductFormProps) {
       </div>
 
       <div>
-        <Label htmlFor="description">Description *</Label>
+        <Label htmlFor="description">{t("descriptionLabel")}</Label>
         <Textarea
           id="description"
           required
@@ -202,7 +204,7 @@ export function ProductForm({ categories, product }: ProductFormProps) {
 
       <div className="grid gap-4 sm:grid-cols-3">
         <div>
-          <Label htmlFor="price">Price *</Label>
+          <Label htmlFor="price">{t("priceLabel")}</Label>
           <Input
             id="price"
             type="number"
@@ -217,7 +219,7 @@ export function ProductForm({ categories, product }: ProductFormProps) {
           />
         </div>
         <div>
-          <Label htmlFor="compareAtPrice">Compare-at Price</Label>
+          <Label htmlFor="compareAtPrice">{t("compareAtPriceLabel")}</Label>
           <Input
             id="compareAtPrice"
             type="number"

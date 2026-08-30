@@ -6,6 +6,8 @@ import {
 } from "@/server/repositories/user-repository";
 import { hashPassword, verifyPassword } from "@/server/auth/password";
 import { emailNotifier } from "@/server/services/email-notifier";
+import { resolveEmailTemplate } from "@/server/services/i18n/email-messages";
+import { defaultLocale, isLocale } from "@/config/i18n";
 
 export class EmailAlreadyRegisteredError extends Error {
   constructor() {
@@ -54,6 +56,7 @@ export const authService = {
       email: userWithRole.email,
       name: userWithRole.name,
       role: userWithRole.role.name,
+      preferredLocale: userWithRole.preferredLocale,
     };
   },
 
@@ -105,15 +108,14 @@ export const authService = {
     await passwordResetTokenRepository.create({ userId: user.id, token, expiresAt });
 
     const resetUrl = `${process.env.AUTH_URL ?? "http://localhost:3000"}/reset-password?token=${token}`;
+    const candidateLocale = user.preferredLocale ?? "";
+    const locale = isLocale(candidateLocale) ? candidateLocale : defaultLocale;
+    const { subject, body } = await resolveEmailTemplate(locale, "passwordReset", { resetUrl });
     // Interim delivery mechanism until an email provider is chosen (D-010/D-011) — routed
     // through the same stub "email channel" abstraction as every other notification
     // trigger (order-service.ts, refund-request-service.ts, quote-service.ts), so there
     // is exactly one place that logs "would send an email" instead of two.
-    await emailNotifier.send(
-      email,
-      "Reset your password",
-      `Use the link below to reset your password:\n${resetUrl}`
-    );
+    await emailNotifier.send(email, subject, body);
   },
 
   async resetPassword(token: string, newPassword: string) {

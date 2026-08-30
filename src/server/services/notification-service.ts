@@ -1,6 +1,8 @@
 import { notificationRepository } from "@/server/repositories/notification-repository";
 import { userRepository } from "@/server/repositories/user-repository";
 import { emailNotifier } from "@/server/services/email-notifier";
+import { resolveEmailTemplate } from "@/server/services/i18n/email-messages";
+import { defaultLocale, isLocale } from "@/config/i18n";
 import type { NotificationEntityType, NotificationType } from "@/generated/prisma/client";
 
 export class NotificationNotFoundError extends Error {
@@ -51,10 +53,23 @@ function toView(row: NotificationRow): NotificationView {
 export interface NotifyParams {
   userId: string;
   type: NotificationType;
+  /** In-app notification title/message — always English today (the in-app inbox UI
+   * isn't localized yet). Independent of the EMAIL subject/body, which use
+   * `emailTemplate` below and are localized to the recipient's locale. */
   title: string;
   message: string;
   relatedEntityType?: NotificationEntityType;
   relatedEntityId?: string;
+  /** Email content, resolved via src/server/services/i18n/email-messages.ts. When
+   * omitted, the email falls back to the (English) in-app title/message — keeps
+   * every existing caller working unchanged while new/updated callers opt into a
+   * localized subject/body per requirement §32. */
+  emailTemplate?: { key: string; params?: Record<string, string> };
+  /** Overrides the recipient's stored User.preferredLocale for this email only —
+   * order-related notifications should use the order's own captured
+   * `customerLocale` snapshot (requirement §31), not whatever the account's
+   * current preference happens to be by the time an admin changes order status. */
+  locale?: string;
 }
 
 /**
@@ -87,7 +102,14 @@ export const notificationService = {
 
     const recipient = await userRepository.findById(params.userId);
     if (recipient) {
-      await emailNotifier.send(recipient.email, params.title, params.message);
+      const candidateLocale = params.locale ?? recipient.preferredLocale ?? "";
+      const locale = isLocale(candidateLocale) ? candidateLocale : defaultLocale;
+
+      const { subject, body } = params.emailTemplate
+        ? await resolveEmailTemplate(locale, params.emailTemplate.key, params.emailTemplate.params)
+        : { subject: params.title, body: params.message };
+
+      await emailNotifier.send(recipient.email, subject, body);
     }
 
     return toView(created);

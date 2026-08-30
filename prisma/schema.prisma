@@ -383,6 +383,13 @@ model User {
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
 
+  // i18n: explicit account-level language preference (requirement §54). String, not
+  // an enum — validated against src/config/i18n.ts's `locales` at the app layer, same
+  // pattern as ProductTranslation/CategoryTranslation.locale, so adding a new
+  // supported language never needs a migration here. Nullable: no preference set yet
+  // means "fall back to cookie/browser/geo resolution" (see src/i18n/resolve-locale.ts).
+  preferredLocale String?
+
   // Admin User Management & RBAC. `active` gates `getCurrentSession` (session.ts) on
   // every request — a deactivated account loses admin access immediately, not just at
   // next login, since the JWT's role claim is otherwise frozen at sign-in. See
@@ -608,6 +615,14 @@ model Order {
   currency String  @default("USD")
 
   customerNote String?
+
+  // i18n: the customer's effective locale AT THE MOMENT of order creation (requirement
+  // §31) — a snapshot, deliberately NOT a live read of User.preferredLocale, so a
+  // customer changing their language preference later never rewrites which language
+  // past transactional emails/invoices were (or should be) sent in. Nullable only
+  // because orders created before this field existed have no historical value;
+  // every new order always sets it (see order-service.ts persistOrder).
+  customerLocale String?
 
   // Phase 9: Order Management. Admin-only working note — visible only in /admin/orders,
   // never surfaced to the customer. A single overwritable field, not a log: simpler than

@@ -311,6 +311,10 @@ export const refundRequestService = {
         message: `Your refund request for order ${view.order.orderNumber} was ${toStatus.toLowerCase()}.`,
         relatedEntityType: "REFUND_REQUEST",
         relatedEntityId: view.id,
+        emailTemplate: {
+          key: toStatus === "APPROVED" ? "refundApproved" : "refundRejected",
+          params: { orderNumber: view.order.orderNumber },
+        },
       });
     }
 
