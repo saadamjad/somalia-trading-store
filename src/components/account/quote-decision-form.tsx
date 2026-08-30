@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
+import { useTranslations } from "next-intl";
 import { Button } from "@/components/ui/button";
 
 interface QuoteDecisionFormProps {
@@ -16,6 +17,7 @@ interface QuoteDecisionFormProps {
  * `convertToOrder`'s comment for why conversion is deliberately admin-triggered).
  */
 export function QuoteDecisionForm({ quoteId }: QuoteDecisionFormProps) {
+  const t = useTranslations("account");
   const router = useRouter();
   const [isSaving, setIsSaving] = useState<"ACCEPTED" | "DECLINED" | null>(null);
 
@@ -29,12 +31,12 @@ export function QuoteDecisionForm({ quoteId }: QuoteDecisionFormProps) {
       });
       if (!res.ok) {
         const data = await res.json().catch(() => ({}));
-        throw new Error(data.error || "Updating your quote failed.");
+        throw new Error(data.error || t("quotes.decisionError"));
       }
-      toast.success(status === "ACCEPTED" ? "Quote accepted." : "Quote declined.");
+      toast.success(status === "ACCEPTED" ? t("quotes.acceptSuccess") : t("quotes.declineSuccess"));
       router.refresh();
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Updating your quote failed.");
+      toast.error(err instanceof Error ? err.message : t("quotes.decisionError"));
     } finally {
       setIsSaving(null);
     }
@@ -43,7 +45,7 @@ export function QuoteDecisionForm({ quoteId }: QuoteDecisionFormProps) {
   return (
     <div className="flex gap-2">
       <Button size="sm" disabled={isSaving !== null} onClick={() => decide("ACCEPTED")}>
-        {isSaving === "ACCEPTED" ? "Accepting…" : "Accept Quote"}
+        {isSaving === "ACCEPTED" ? t("quotes.accepting") : t("quotes.acceptQuote")}
       </Button>
       <Button
         size="sm"
@@ -51,7 +53,7 @@ export function QuoteDecisionForm({ quoteId }: QuoteDecisionFormProps) {
         disabled={isSaving !== null}
         onClick={() => decide("DECLINED")}
       >
-        {isSaving === "DECLINED" ? "Declining…" : "Decline"}
+        {isSaving === "DECLINED" ? t("quotes.declining") : t("quotes.decline")}
       </Button>
     </div>
   );

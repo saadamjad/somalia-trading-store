@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
+import { getTranslations } from "next-intl/server";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -32,18 +33,19 @@ export default async function AccountOrdersPage({ searchParams }: PageProps) {
   const status = parsed.success ? parsed.data.status : undefined;
 
   const orders = await orderService.listForUser(session.userId, status);
+  const t = await getTranslations("account");
 
   return (
     <div className="space-y-8">
       <div className="flex flex-wrap items-end justify-between gap-4">
         <div>
-          <h1 className="font-display text-2xl font-bold">Orders</h1>
-          <p className="text-sm text-muted">Your placed orders.</p>
+          <h1 className="font-display text-2xl font-bold">{t("orders.title")}</h1>
+          <p className="text-sm text-muted">{t("orders.subtitle")}</p>
         </div>
         <form method="get" className="flex items-end gap-2">
           <div>
             <label htmlFor="status" className="mb-1 block text-xs font-medium text-muted">
-              Filter by status
+              {t("orders.filterByStatus")}
             </label>
             <select
               id="status"
@@ -51,20 +53,20 @@ export default async function AccountOrdersPage({ searchParams }: PageProps) {
               defaultValue={status ?? ""}
               className="h-9 border border-border-strong bg-background px-3 text-sm"
             >
-              <option value="">All statuses</option>
+              <option value="">{t("orders.allStatuses")}</option>
               {ORDER_STATUSES.map((s) => (
                 <option key={s} value={s}>
-                  {s}
+                  {t(`orders.status.${s}`)}
                 </option>
               ))}
             </select>
           </div>
           <Button type="submit" size="sm" variant="outline">
-            Apply
+            {t("orders.apply")}
           </Button>
           {status && (
             <Button asChild type="button" size="sm" variant="ghost">
-              <Link href="/account/orders">Clear</Link>
+              <Link href="/account/orders">{t("orders.clear")}</Link>
             </Button>
           )}
         </form>
@@ -73,12 +75,12 @@ export default async function AccountOrdersPage({ searchParams }: PageProps) {
       {orders.length === 0 ? (
         <p className="text-sm text-muted">
           {status ? (
-            `No orders with status ${status}.`
+            t("orders.emptyWithStatus", { status: t(`orders.status.${status}`) })
           ) : (
             <>
-              You haven&apos;t placed any orders yet.{" "}
+              {t("orders.empty")}{" "}
               <Link href="/shop" className="font-medium text-accent underline">
-                Start shopping
+                {t("orders.startShopping")}
               </Link>
               .
             </>
@@ -94,12 +96,12 @@ export default async function AccountOrdersPage({ searchParams }: PageProps) {
                     <p className="font-semibold">{order.orderNumber}</p>
                     <p className="text-sm text-muted">
                       {new Date(order.createdAt).toLocaleDateString()} &middot;{" "}
-                      {order.items.length} item{order.items.length === 1 ? "" : "s"}
+                      {t("orders.itemCount", { count: order.items.length })}
                     </p>
                   </div>
                   <div className="flex items-center gap-3">
-                    <Badge variant="outline">{order.status}</Badge>
-                    <Badge variant="outline">{order.paymentStatus}</Badge>
+                    <Badge variant="outline">{t(`orders.status.${order.status}`)}</Badge>
+                    <Badge variant="outline">{t(`orders.paymentStatus.${order.paymentStatus}`)}</Badge>
                     <span className="font-semibold">
                       {formatPrice(order.total, order.currency)}
                     </span>

@@ -4,6 +4,7 @@ import { useState, useTransition } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
+import { useTranslations } from "next-intl";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
@@ -26,6 +27,7 @@ interface NotificationListProps {
  * quote-decision-form.tsx's fetch + `router.refresh()` pattern.
  */
 export function NotificationList({ initialItems }: NotificationListProps) {
+  const t = useTranslations("account");
   const router = useRouter();
   const [items, setItems] = useState(initialItems);
   const [isPending, startTransition] = useTransition();
@@ -39,7 +41,7 @@ export function NotificationList({ initialItems }: NotificationListProps) {
       const res = await fetch(`/api/notifications/${id}`, { method: "PATCH" });
       if (!res.ok) {
         const data = await res.json().catch(() => ({}));
-        throw new Error(data.error || "Marking notification read failed.");
+        throw new Error(data.error || t("notifications.markReadError"));
       }
       setItems((prev) =>
         prev.map((item) =>
@@ -48,7 +50,7 @@ export function NotificationList({ initialItems }: NotificationListProps) {
       );
       startTransition(() => router.refresh());
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Marking notification read failed.");
+      toast.error(err instanceof Error ? err.message : t("notifications.markReadError"));
     } finally {
       setMarkingId(null);
     }
@@ -59,33 +61,33 @@ export function NotificationList({ initialItems }: NotificationListProps) {
       const res = await fetch("/api/notifications/mark-all-read", { method: "POST" });
       if (!res.ok) {
         const data = await res.json().catch(() => ({}));
-        throw new Error(data.error || "Marking all notifications read failed.");
+        throw new Error(data.error || t("notifications.markAllReadError"));
       }
       setItems((prev) =>
         prev.map((item) => ({ ...item, read: true, readAt: item.readAt ?? new Date().toISOString() }))
       );
-      toast.success("All notifications marked read.");
+      toast.success(t("notifications.markAllReadSuccess"));
       startTransition(() => router.refresh());
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Marking all notifications read failed.");
+      toast.error(err instanceof Error ? err.message : t("notifications.markAllReadError"));
     }
   }
 
   if (items.length === 0) {
-    return <p className="text-sm text-muted">You don&apos;t have any notifications yet.</p>;
+    return <p className="text-sm text-muted">{t("notifications.empty")}</p>;
   }
 
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between gap-3">
-        <p className="text-sm text-muted">{unreadCount} unread</p>
+        <p className="text-sm text-muted">{t("notifications.unreadCount", { count: unreadCount })}</p>
         <Button
           size="sm"
           variant="outline"
           disabled={unreadCount === 0 || isPending}
           onClick={markAllRead}
         >
-          Mark all as read
+          {t("notifications.markAllAsRead")}
         </Button>
       </div>
 
@@ -102,7 +104,7 @@ export function NotificationList({ initialItems }: NotificationListProps) {
                   <div>
                     <div className="flex items-center gap-2">
                       <p className="text-sm font-medium">{item.title}</p>
-                      {!item.read && <Badge variant="default">New</Badge>}
+                      {!item.read && <Badge variant="default">{t("notifications.new")}</Badge>}
                     </div>
                     <p className="mt-1 text-sm text-muted">{item.message}</p>
                     <p className="mt-1 text-xs text-muted">
@@ -112,7 +114,7 @@ export function NotificationList({ initialItems }: NotificationListProps) {
                   <div className="flex shrink-0 items-center gap-2">
                     {href && (
                       <Link href={href} className="text-xs font-medium text-accent hover:underline">
-                        View
+                        {t("notifications.view")}
                       </Link>
                     )}
                     {!item.read && (
@@ -122,7 +124,7 @@ export function NotificationList({ initialItems }: NotificationListProps) {
                         disabled={markingId === item.id}
                         onClick={() => markRead(item.id)}
                       >
-                        {markingId === item.id ? "Marking…" : "Mark as read"}
+                        {markingId === item.id ? t("notifications.marking") : t("notifications.markAsRead")}
                       </Button>
                     )}
                   </div>

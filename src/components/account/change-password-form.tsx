@@ -2,12 +2,14 @@
 
 import { useState } from "react";
 import { toast } from "sonner";
+import { useTranslations } from "next-intl";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 
 /** PATCHes /api/account/password. Wrong current password is rejected without updating anything. */
 export function ChangePasswordForm() {
+  const t = useTranslations("account");
   const [currentPassword, setCurrentPassword] = useState("");
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
@@ -19,7 +21,7 @@ export function ChangePasswordForm() {
     setError(null);
 
     if (newPassword !== confirmPassword) {
-      setError("New passwords do not match.");
+      setError(t("profile.passwordMismatch"));
       return;
     }
 
@@ -33,15 +35,15 @@ export function ChangePasswordForm() {
 
       if (!res.ok) {
         const data = await res.json().catch(() => ({}));
-        throw new Error(data.error || "Could not change your password.");
+        throw new Error(data.error || t("profile.passwordChangeError"));
       }
 
-      toast.success("Password changed.");
+      toast.success(t("profile.passwordChangeSuccess"));
       setCurrentPassword("");
       setNewPassword("");
       setConfirmPassword("");
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Could not change your password.");
+      setError(err instanceof Error ? err.message : t("profile.passwordChangeError"));
     } finally {
       setIsSaving(false);
     }
@@ -59,7 +61,7 @@ export function ChangePasswordForm() {
       )}
 
       <div>
-        <Label htmlFor="currentPassword">Current Password</Label>
+        <Label htmlFor="currentPassword">{t("profile.currentPassword")}</Label>
         <Input
           id="currentPassword"
           type="password"
@@ -72,7 +74,7 @@ export function ChangePasswordForm() {
       </div>
 
       <div>
-        <Label htmlFor="newPassword">New Password</Label>
+        <Label htmlFor="newPassword">{t("profile.newPassword")}</Label>
         <Input
           id="newPassword"
           type="password"
@@ -85,7 +87,7 @@ export function ChangePasswordForm() {
       </div>
 
       <div>
-        <Label htmlFor="confirmPassword">Confirm New Password</Label>
+        <Label htmlFor="confirmPassword">{t("profile.confirmPassword")}</Label>
         <Input
           id="confirmPassword"
           type="password"
@@ -98,7 +100,7 @@ export function ChangePasswordForm() {
       </div>
 
       <Button type="submit" disabled={isSaving}>
-        {isSaving ? "Saving…" : "Change Password"}
+        {isSaving ? t("profile.saving") : t("profile.changePasswordButton")}
       </Button>
     </form>
   );

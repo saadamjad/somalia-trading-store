@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { Heart } from "lucide-react";
+import { useTranslations } from "next-intl";
 import { Button } from "@/components/ui/button";
 import { EmptyState } from "@/components/ui/empty-state";
 import { ProductCard } from "@/components/product/product-card";
@@ -10,6 +11,7 @@ import { useWishlistStore } from "@/stores/wishlist-store";
 import type { Product } from "@/lib/types/product";
 
 export default function WishlistPage() {
+  const t = useTranslations("account");
   const items = useWishlistStore((s) => s.items);
   const [productsById, setProductsById] = useState<Record<string, Product>>({});
   const ids = items.join(",");
@@ -44,11 +46,11 @@ export default function WishlistPage() {
       <div className="container-custom min-h-[60vh] py-24">
         <EmptyState
           icon={Heart}
-          title="Your Wishlist is Empty"
-          description="Save products you love by clicking the heart icon on any product card."
+          title={t("wishlist.emptyTitle")}
+          description={t("wishlist.emptyDescription")}
           action={
             <Button asChild size="lg">
-              <Link href="/shop">Browse Products</Link>
+              <Link href="/shop">{t("wishlist.browseProducts")}</Link>
             </Button>
           }
         />
@@ -59,9 +61,9 @@ export default function WishlistPage() {
   return (
     <div className="container-custom py-24 md:py-28">
       <h1 className="font-display mb-2 text-3xl font-bold md:text-4xl">
-        Wishlist
+        {t("wishlist.title")}
       </h1>
-      <p className="mb-8 text-muted">{products.length} saved products</p>
+      <p className="mb-8 text-muted">{t("wishlist.savedCount", { count: products.length })}</p>
 
       <div className="grid grid-cols-2 gap-4 md:grid-cols-3 lg:grid-cols-4 lg:gap-6">
         {products.map((product) => (

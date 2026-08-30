@@ -1,6 +1,7 @@
 import { redirect, notFound } from "next/navigation";
 import Link from "next/link";
 import { CheckCircle2 } from "lucide-react";
+import { getTranslations } from "next-intl/server";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { StatusTimeline } from "@/components/orders/status-timeline";
@@ -14,6 +15,14 @@ import {
 import { formatPrice } from "@/lib/utils";
 
 export const metadata = { title: "My Account | Order Detail" };
+
+const REFUND_REASON_KEYS = new Set([
+  "DAMAGED",
+  "WRONG_ITEM",
+  "NOT_AS_DESCRIBED",
+  "NO_LONGER_NEEDED",
+  "OTHER",
+]);
 
 interface PageProps {
   params: Promise<{ id: string }>;
@@ -61,17 +70,17 @@ export default async function AccountOrderDetailPage({ params, searchParams }: P
     ELIGIBLE_ORDER_STATUSES.includes(order.status as (typeof ELIGIBLE_ORDER_STATUSES)[number]) &&
     !hasOpenRefundRequest;
 
+  const t = await getTranslations("account");
+
   return (
     <div className="space-y-8">
       {placed === "1" && (
         <div className="flex items-start gap-3 rounded-xl border border-success/30 bg-success/10 p-4">
           <CheckCircle2 className="mt-0.5 h-5 w-5 shrink-0 text-success" />
           <div>
-            <p className="font-semibold text-success">Order placed</p>
+            <p className="font-semibold text-success">{t("orders.detail.orderPlacedTitle")}</p>
             <p className="text-sm text-muted">
-              Thank you — your order has been received. No online payment is collected
-              at this time; you&apos;ll be contacted about payment and delivery
-              separately.
+              {t("orders.detail.orderPlacedMessage")}
             </p>
           </div>
         </div>
@@ -79,26 +88,31 @@ export default async function AccountOrderDetailPage({ params, searchParams }: P
 
       <div className="flex flex-wrap items-start justify-between gap-4">
         <div>
-          <h1 className="font-display text-2xl font-bold">Order {order.orderNumber}</h1>
+          <h1 className="font-display text-2xl font-bold">
+            {t("orders.detail.title", { orderNumber: order.orderNumber })}
+          </h1>
           <p className="text-sm text-muted">
-            Placed {new Date(order.createdAt).toLocaleString()}
+            {t("orders.detail.placedOn", { date: new Date(order.createdAt).toLocaleString() })}
           </p>
         </div>
         <div className="flex gap-2">
-          <Badge variant="outline">{order.status}</Badge>
-          <Badge variant="outline">{order.paymentStatus}</Badge>
+          <Badge variant="outline">{t(`orders.status.${order.status}`)}</Badge>
+          <Badge variant="outline">{t(`orders.paymentStatus.${order.paymentStatus}`)}</Badge>
         </div>
       </div>
 
       <Card>
         <CardContent className="space-y-4 p-6">
-          <h2 className="font-display text-lg font-semibold">Items</h2>
+          <h2 className="font-display text-lg font-semibold">{t("orders.detail.items")}</h2>
           <ul className="divide-y divide-border">
             {order.items.map((item) => (
               <li key={item.id} className="flex items-center justify-between gap-4 py-3 text-sm">
                 <div>
+                  {/* item.productName is the immutable order-time snapshot (docs/DECISIONS.md D-007
+                      area, see request-refund-form.tsx) — always shown verbatim, never swapped for a
+                      live translated product lookup. */}
                   <p className="font-medium">{item.productName}</p>
-                  {item.sku && <p className="text-muted">SKU: {item.sku}</p>}
+                  {item.sku && <p className="text-muted">{t("orders.detail.sku", { sku: item.sku })}</p>}
                   <p className="text-muted">
                     {formatPrice(item.unitPrice, order.currency)} × {item.quantity}
                   </p>
@@ -111,16 +125,16 @@ export default async function AccountOrderDetailPage({ params, searchParams }: P
           </ul>
           <div className="space-y-1 border-t border-border pt-4 text-sm">
             <div className="flex justify-between">
-              <span className="text-muted">Subtotal</span>
+              <span className="text-muted">{t("orders.detail.subtotal")}</span>
               <span>{formatPrice(order.subtotal, order.currency)}</span>
             </div>
             <div className="flex justify-between">
-              <span className="text-muted">Shipping</span>
-              <span>{order.shippingAmount > 0 ? formatPrice(order.shippingAmount, order.currency) : "Free"}</span>
+              <span className="text-muted">{t("orders.detail.shipping")}</span>
+              <span>{order.shippingAmount > 0 ? formatPrice(order.shippingAmount, order.currency) : t("orders.detail.free")}</span>
             </div>
           </div>
           <div className="flex justify-between border-t border-border pt-4 text-lg font-bold">
-            <span>Total</span>
+            <span>{t("orders.detail.total")}</span>
             <span>{formatPrice(order.total, order.currency)}</span>
           </div>
         </CardContent>
@@ -128,7 +142,7 @@ export default async function AccountOrderDetailPage({ params, searchParams }: P
 
       <Card>
         <CardContent className="space-y-2 p-6 text-sm">
-          <h2 className="font-display text-lg font-semibold">Shipping To</h2>
+          <h2 className="font-display text-lg font-semibold">{t("orders.detail.shippingTo")}</h2>
           <p className="font-medium">{order.shipping.recipientName}</p>
           <p className="text-muted">{order.shipping.phone}</p>
           <p className="text-muted">
@@ -147,7 +161,7 @@ export default async function AccountOrderDetailPage({ params, searchParams }: P
       {order.customerNote && (
         <Card>
           <CardContent className="space-y-2 p-6 text-sm">
-            <h2 className="font-display text-lg font-semibold">Order Note</h2>
+            <h2 className="font-display text-lg font-semibold">{t("orders.detail.orderNote")}</h2>
             <p className="text-muted">{order.customerNote}</p>
           </CardContent>
         </Card>
@@ -155,32 +169,34 @@ export default async function AccountOrderDetailPage({ params, searchParams }: P
 
       <Card>
         <CardContent className="space-y-4 p-6">
-          <h2 className="font-display text-lg font-semibold">Order Status</h2>
+          <h2 className="font-display text-lg font-semibold">{t("orders.detail.orderStatus")}</h2>
           <StatusTimeline entries={order.statusHistory} />
         </CardContent>
       </Card>
 
       <Card>
         <CardContent className="space-y-4 p-6">
-          <h2 className="font-display text-lg font-semibold">Refund Requests</h2>
+          <h2 className="font-display text-lg font-semibold">{t("orders.detail.refundRequests")}</h2>
 
           {refundRequestsForOrder.length === 0 && (
-            <p className="text-sm text-muted">No refund request has been made for this order.</p>
+            <p className="text-sm text-muted">{t("orders.detail.noRefundRequest")}</p>
           )}
 
           {refundRequestsForOrder.map((r) => (
             <div key={r.id} className="space-y-2 border-t border-border pt-4 first:border-t-0 first:pt-0">
               <div className="flex flex-wrap items-center gap-2">
-                <Badge variant="outline">{r.status}</Badge>
+                <Badge variant="outline">{t(`refunds.status.${r.status}`)}</Badge>
                 <span className="text-sm text-muted">
-                  {r.reasonCategory.replaceAll("_", " ")} &middot;{" "}
-                  {new Date(r.createdAt).toLocaleString()}
+                  {REFUND_REASON_KEYS.has(r.reasonCategory)
+                    ? t(`refunds.reasons.${r.reasonCategory}` as "refunds.reasons.OTHER")
+                    : r.reasonCategory.replaceAll("_", " ")}{" "}
+                  &middot; {new Date(r.createdAt).toLocaleString()}
                 </span>
               </div>
               {r.reasonDetail && <p className="text-sm text-muted">&ldquo;{r.reasonDetail}&rdquo;</p>}
               {r.adminNote && (
                 <p className="text-sm">
-                  <span className="font-medium">Note from our team: </span>
+                  <span className="font-medium">{t("orders.detail.noteFromTeam")}</span>
                   {r.adminNote}
                 </p>
               )}
@@ -195,15 +211,14 @@ export default async function AccountOrderDetailPage({ params, searchParams }: P
 
           {!canRequestRefund && refundRequestsForOrder.length === 0 && (
             <p className="text-xs text-muted">
-              Refund requests can be made once an order has been confirmed. Still-pending
-              orders can be cancelled instead.
+              {t("orders.detail.refundEligibilityHint")}
             </p>
           )}
         </CardContent>
       </Card>
 
       <Link href="/account/orders" className="text-sm font-medium text-accent underline">
-        Back to Orders
+        {t("orders.detail.backToOrders")}
       </Link>
     </div>
   );

@@ -1,3 +1,5 @@
+import { getTranslations } from "next-intl/server";
+
 interface TimelineEntry {
   id: string;
   fromStatus: string | null;
@@ -19,9 +21,11 @@ interface StatusTimelineProps {
  * (actor + note shown) via `showAdminDetail` — same component, different level of
  * detail, so the two views can't drift apart structurally.
  */
-export function StatusTimeline({ entries, showAdminDetail = false }: StatusTimelineProps) {
+export async function StatusTimeline({ entries, showAdminDetail = false }: StatusTimelineProps) {
+  const t = await getTranslations("account");
+
   if (entries.length === 0) {
-    return <p className="text-sm text-muted">No status history yet.</p>;
+    return <p className="text-sm text-muted">{t("statusTimeline.noHistory")}</p>;
   }
 
   return (
@@ -31,11 +35,13 @@ export function StatusTimeline({ entries, showAdminDetail = false }: StatusTimel
           <div className="mt-1 h-2 w-2 shrink-0 rounded-full bg-accent" />
           <div>
             <p className="font-medium">
-              {entry.fromStatus ? `${entry.fromStatus} → ${entry.toStatus}` : `Order created (${entry.toStatus})`}
+              {entry.fromStatus
+                ? t("statusTimeline.transition", { from: entry.fromStatus, to: entry.toStatus })
+                : t("statusTimeline.orderCreated", { status: entry.toStatus })}
             </p>
             <p className="text-xs text-muted">{new Date(entry.createdAt).toLocaleString()}</p>
             {showAdminDetail && entry.actor && (
-              <p className="text-xs text-muted">by {entry.actor.name}</p>
+              <p className="text-xs text-muted">{t("statusTimeline.byActor", { name: entry.actor.name })}</p>
             )}
             {showAdminDetail && entry.note && (
               <p className="mt-1 text-xs text-muted">&ldquo;{entry.note}&rdquo;</p>

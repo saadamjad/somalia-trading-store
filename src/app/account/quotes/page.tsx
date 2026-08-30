@@ -1,4 +1,5 @@
 import { redirect } from "next/navigation";
+import { getTranslations } from "next-intl/server";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { QuoteDecisionForm } from "@/components/account/quote-decision-form";
@@ -23,17 +24,18 @@ export default async function AccountQuotesPage() {
   }
 
   const quotes = await quoteService.listForUser(session.userId);
+  const t = await getTranslations("account");
 
   return (
     <div className="space-y-8">
       <div>
-        <h1 className="font-display text-2xl font-bold">Quote Requests</h1>
-        <p className="text-sm text-muted">Requests you&apos;ve submitted for custom pricing.</p>
+        <h1 className="font-display text-2xl font-bold">{t("quotes.title")}</h1>
+        <p className="text-sm text-muted">{t("quotes.subtitle")}</p>
       </div>
 
       {quotes.length === 0 ? (
         <p className="text-sm text-muted">
-          You haven&apos;t submitted any quote requests yet.
+          {t("quotes.empty")}
         </p>
       ) : (
         <div className="space-y-4">
@@ -43,13 +45,15 @@ export default async function AccountQuotesPage() {
                 <div className="flex flex-wrap items-start justify-between gap-3">
                   <div>
                     <p className="text-xs text-muted">
-                      Submitted {new Date(quote.createdAt).toLocaleDateString()}
+                      {t("quotes.submittedOn", { date: new Date(quote.createdAt).toLocaleDateString() })}
                     </p>
                     {quote.customerNote && (
                       <p className="mt-1 text-sm text-muted">&ldquo;{quote.customerNote}&rdquo;</p>
                     )}
                   </div>
-                  <Badge variant={getQuoteStatusVariant(quote.status)}>{quote.status}</Badge>
+                  <Badge variant={getQuoteStatusVariant(quote.status)}>
+                    {t(`quotes.status.${quote.status}`)}
+                  </Badge>
                 </div>
 
                 <ul className="space-y-1 text-sm">
@@ -60,8 +64,10 @@ export default async function AccountQuotesPage() {
                       </span>
                       <span className="font-medium">
                         {item.quotedUnitPrice !== null
-                          ? `${formatPrice(item.quotedLineTotal ?? 0, quote.currency)} quoted`
-                          : "Pending pricing"}
+                          ? t("quotes.quotedPrice", {
+                              price: formatPrice(item.quotedLineTotal ?? 0, quote.currency),
+                            })
+                          : t("quotes.pendingPricing")}
                       </span>
                     </li>
                   ))}
@@ -69,14 +75,14 @@ export default async function AccountQuotesPage() {
 
                 {quote.adminNote && (
                   <p className="rounded-md bg-accent-light/30 p-3 text-sm text-muted">
-                    <span className="font-medium text-foreground">Note from our team: </span>
+                    <span className="font-medium text-foreground">{t("quotes.noteFromTeam")}</span>
                     {quote.adminNote}
                   </p>
                 )}
 
                 {quote.convertedOrder && (
                   <p className="text-sm text-accent-text">
-                    Converted to order {quote.convertedOrder.orderNumber}.
+                    {t("quotes.convertedToOrder", { orderNumber: quote.convertedOrder.orderNumber })}
                   </p>
                 )}
 

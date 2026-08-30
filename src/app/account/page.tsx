@@ -1,4 +1,5 @@
 import { redirect } from "next/navigation";
+import { getTranslations } from "next-intl/server";
 import { Card, CardContent } from "@/components/ui/card";
 import { ProfileForm } from "@/components/account/profile-form";
 import { ChangePasswordForm } from "@/components/account/change-password-form";
@@ -14,24 +15,25 @@ export default async function AccountProfilePage() {
   }
 
   const profile = await accountService.getProfile(session.userId);
+  const t = await getTranslations("account");
 
   return (
     <div className="space-y-8">
       <div>
-        <h1 className="font-display text-2xl font-bold">Profile</h1>
-        <p className="text-sm text-muted">View and update your account details.</p>
+        <h1 className="font-display text-2xl font-bold">{t("profile.title")}</h1>
+        <p className="text-sm text-muted">{t("profile.subtitle")}</p>
       </div>
 
       <Card>
         <CardContent className="space-y-6 p-6 md:p-8">
-          <h2 className="font-display text-lg font-semibold">Account Details</h2>
+          <h2 className="font-display text-lg font-semibold">{t("profile.accountDetails")}</h2>
           <ProfileForm profile={profile} />
         </CardContent>
       </Card>
 
       <Card>
         <CardContent className="space-y-6 p-6 md:p-8">
-          <h2 className="font-display text-lg font-semibold">Change Password</h2>
+          <h2 className="font-display text-lg font-semibold">{t("profile.changePassword")}</h2>
           <ChangePasswordForm />
         </CardContent>
       </Card>

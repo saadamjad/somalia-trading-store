@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
+import { useTranslations } from "next-intl";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -22,6 +23,7 @@ interface ProfileFormProps {
  * security boundary; this is only a UX nudge.
  */
 export function ProfileForm({ profile }: ProfileFormProps) {
+  const t = useTranslations("account");
   const router = useRouter();
   const [name, setName] = useState(profile.name);
   const [phone, setPhone] = useState(profile.phone ?? "");
@@ -51,14 +53,14 @@ export function ProfileForm({ profile }: ProfileFormProps) {
 
       if (!res.ok) {
         const data = await res.json().catch(() => ({}));
-        throw new Error(data.error || "Could not update your profile.");
+        throw new Error(data.error || t("profile.updateError"));
       }
 
-      toast.success("Profile updated.");
+      toast.success(t("profile.updateSuccess"));
       setCurrentPassword("");
       router.refresh();
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Could not update your profile.");
+      setError(err instanceof Error ? err.message : t("profile.updateError"));
     } finally {
       setIsSaving(false);
     }
@@ -76,7 +78,7 @@ export function ProfileForm({ profile }: ProfileFormProps) {
       )}
 
       <div>
-        <Label htmlFor="name">Name</Label>
+        <Label htmlFor="name">{t("profile.name")}</Label>
         <Input
           id="name"
           value={name}
@@ -87,7 +89,7 @@ export function ProfileForm({ profile }: ProfileFormProps) {
       </div>
 
       <div>
-        <Label htmlFor="email">Email</Label>
+        <Label htmlFor="email">{t("profile.email")}</Label>
         <Input
           id="email"
           type="email"
@@ -100,9 +102,9 @@ export function ProfileForm({ profile }: ProfileFormProps) {
 
       {isChangingEmail && (
         <div>
-          <Label htmlFor="currentPasswordForEmail">Current Password</Label>
+          <Label htmlFor="currentPasswordForEmail">{t("profile.currentPasswordForEmail")}</Label>
           <p className="mt-1 text-xs text-muted">
-            Confirm your current password to change your email address.
+            {t("profile.currentPasswordForEmailHint")}
           </p>
           <Input
             id="currentPasswordForEmail"
@@ -117,7 +119,7 @@ export function ProfileForm({ profile }: ProfileFormProps) {
       )}
 
       <div>
-        <Label htmlFor="phone">Phone</Label>
+        <Label htmlFor="phone">{t("profile.phone")}</Label>
         <Input
           id="phone"
           type="tel"
@@ -128,7 +130,7 @@ export function ProfileForm({ profile }: ProfileFormProps) {
       </div>
 
       <Button type="submit" disabled={isSaving}>
-        {isSaving ? "Saving…" : "Save Changes"}
+        {isSaving ? t("profile.saving") : t("profile.saveChanges")}
       </Button>
     </form>
   );

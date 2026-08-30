@@ -1,4 +1,5 @@
 import { redirect } from "next/navigation";
+import { getTranslations } from "next-intl/server";
 import { AddressManager } from "@/components/account/address-manager";
 import { getCurrentSession } from "@/server/auth/session";
 import { addressService } from "@/server/services/address-service";
@@ -12,13 +13,14 @@ export default async function AccountAddressesPage() {
   }
 
   const addresses = await addressService.listForUser(session.userId);
+  const t = await getTranslations("account");
 
   return (
     <div className="space-y-8">
       <div>
-        <h1 className="font-display text-2xl font-bold">Addresses</h1>
+        <h1 className="font-display text-2xl font-bold">{t("addresses.title")}</h1>
         <p className="text-sm text-muted">
-          Manage your shipping addresses and choose a default for checkout.
+          {t("addresses.subtitle")}
         </p>
       </div>
 

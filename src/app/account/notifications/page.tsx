@@ -1,4 +1,5 @@
 import { redirect } from "next/navigation";
+import { getTranslations } from "next-intl/server";
 import { NotificationList } from "@/components/account/notification-list";
 import { getCurrentSession } from "@/server/auth/session";
 import { notificationService } from "@/server/services/notification-service";
@@ -17,13 +18,14 @@ export default async function AccountNotificationsPage() {
   }
 
   const notifications = await notificationService.listForUser(session.userId);
+  const t = await getTranslations("account");
 
   return (
     <div className="space-y-8">
       <div>
-        <h1 className="font-display text-2xl font-bold">Notifications</h1>
+        <h1 className="font-display text-2xl font-bold">{t("notifications.title")}</h1>
         <p className="text-sm text-muted">
-          Updates about your orders, refund requests, and quotes.
+          {t("notifications.subtitle")}
         </p>
       </div>
 
