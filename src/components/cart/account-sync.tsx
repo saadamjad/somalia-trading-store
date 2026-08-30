@@ -52,8 +52,16 @@ async function mergeCart() {
       body: JSON.stringify({ items: localItems }),
     });
     if (!res.ok) return;
-    const data = (await res.json()) as { items: { productId: string; quantity: number }[] };
-    useCartStore.getState().hydrateFromServer(data.items);
+    const data = (await res.json()) as {
+      items: { productId: string; quantity: number; variantId: string | null }[];
+    };
+    useCartStore.getState().hydrateFromServer(
+      data.items.map((i) => ({
+        productId: i.productId,
+        quantity: i.quantity,
+        variantId: i.variantId ?? undefined,
+      }))
+    );
   } catch {
     // Best-effort — if the merge request fails, the local (guest) cart is left as-is
     // and the store keeps working exactly as it does for a guest.

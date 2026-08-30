@@ -7,7 +7,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { EmptyState } from "@/components/ui/empty-state";
 import { useCartStore } from "@/stores/cart-store";
 import { useCartProducts } from "@/hooks/use-cart-products";
-import { useCartStockValidation } from "@/hooks/use-cart-stock-validation";
+import { useCartStockValidation, stockIssueKey } from "@/hooks/use-cart-stock-validation";
 import { formatPrice, formatProductPrice } from "@/lib/utils";
 import { SafeImage } from "@/components/ui/safe-image";
 
@@ -55,73 +55,73 @@ export default function CartPage() {
 
       <div className="grid gap-8 lg:grid-cols-3">
         <div className="space-y-4 lg:col-span-2">
-          {items.map(({ product, quantity }) => (
-            <Card key={product.id}>
-              <CardContent className="flex gap-4 p-4">
-                <div className="relative h-24 w-24 shrink-0 overflow-hidden rounded-lg">
-                  <SafeImage
-                    src={product.images[0]}
-                    alt={product.name}
-                    fill
-                    sizes="96px"
-                    className="object-cover"
-                  />
-                </div>
-                <div className="flex flex-1 flex-col sm:flex-row sm:items-center sm:justify-between">
-                  <div>
-                    <Link
-                      href={`/shop/${product.category}/${product.slug}`}
-                      className="font-display font-semibold hover:text-primary"
-                    >
-                      {product.name}
-                    </Link>
-                    <p className="text-sm text-muted">{product.subcategory}</p>
-                    <p className="mt-1 font-bold">
-                      {formatProductPrice(product.price, product.currency, product.priceUnit)}
-                    </p>
-                    {stockIssues[product.id] && (
-                      <p role="alert" className="mt-1 text-xs font-medium text-destructive">
-                        Only {stockIssues[product.id].available} left in stock — reduce
-                        quantity before checkout.
-                      </p>
-                    )}
+          {items.map(({ product, quantity, variant, unitPrice }) => {
+            const issue = stockIssues[stockIssueKey(product.id, variant?.id)];
+            return (
+              <Card key={`${product.id}::${variant?.id ?? ""}`}>
+                <CardContent className="flex gap-4 p-4">
+                  <div className="relative h-24 w-24 shrink-0 overflow-hidden rounded-lg">
+                    <SafeImage
+                      src={variant?.image ?? product.images[0]}
+                      alt={product.name}
+                      fill
+                      sizes="96px"
+                      className="object-cover"
+                    />
                   </div>
-                  <div className="mt-4 flex items-center gap-4 sm:mt-0">
-                    <div className="flex items-center gap-2">
-                      <button
-                        onClick={() =>
-                          updateQuantity(product.id, quantity - 1)
-                        }
-                        className="flex h-8 w-8 items-center justify-center rounded-lg border border-border hover:bg-accent-light"
-                        aria-label="Decrease quantity"
+                  <div className="flex flex-1 flex-col sm:flex-row sm:items-center sm:justify-between">
+                    <div>
+                      <Link
+                        href={`/shop/${product.category}/${product.slug}`}
+                        className="font-display font-semibold hover:text-primary"
                       >
-                        <Minus className="h-4 w-4" />
-                      </button>
-                      <span className="w-8 text-center font-medium">
-                        {quantity}
-                      </span>
+                        {product.name}
+                      </Link>
+                      {variant && <p className="text-sm text-muted">{variant.label}</p>}
+                      {!variant && <p className="text-sm text-muted">{product.subcategory}</p>}
+                      <p className="mt-1 font-bold">
+                        {formatProductPrice(unitPrice, product.currency, product.priceUnit)}
+                      </p>
+                      {issue && (
+                        <p role="alert" className="mt-1 text-xs font-medium text-destructive">
+                          Only {issue.available} left in stock — reduce quantity before
+                          checkout.
+                        </p>
+                      )}
+                    </div>
+                    <div className="mt-4 flex items-center gap-4 sm:mt-0">
+                      <div className="flex items-center gap-2">
+                        <button
+                          onClick={() => updateQuantity(product.id, quantity - 1, variant?.id)}
+                          className="flex h-8 w-8 items-center justify-center rounded-lg border border-border hover:bg-accent-light"
+                          aria-label="Decrease quantity"
+                        >
+                          <Minus className="h-4 w-4" />
+                        </button>
+                        <span className="w-8 text-center font-medium">
+                          {quantity}
+                        </span>
+                        <button
+                          onClick={() => updateQuantity(product.id, quantity + 1, variant?.id)}
+                          className="flex h-8 w-8 items-center justify-center rounded-lg border border-border hover:bg-accent-light"
+                          aria-label="Increase quantity"
+                        >
+                          <Plus className="h-4 w-4" />
+                        </button>
+                      </div>
                       <button
-                        onClick={() =>
-                          updateQuantity(product.id, quantity + 1)
-                        }
-                        className="flex h-8 w-8 items-center justify-center rounded-lg border border-border hover:bg-accent-light"
-                        aria-label="Increase quantity"
+                        onClick={() => removeItem(product.id, variant?.id)}
+                        className="text-muted hover:text-destructive"
+                        aria-label="Remove item"
                       >
-                        <Plus className="h-4 w-4" />
+                        <Trash2 className="h-5 w-5" />
                       </button>
                     </div>
-                    <button
-                      onClick={() => removeItem(product.id)}
-                      className="text-muted hover:text-destructive"
-                      aria-label="Remove item"
-                    >
-                      <Trash2 className="h-5 w-5" />
-                    </button>
                   </div>
-                </div>
-              </CardContent>
-            </Card>
-          ))}
+                </CardContent>
+              </Card>
+            );
+          })}
         </div>
 
         <div>

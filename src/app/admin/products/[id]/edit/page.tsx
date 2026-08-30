@@ -1,5 +1,6 @@
 import { notFound, redirect } from "next/navigation";
 import { ProductForm } from "@/components/admin/product-form";
+import { VariantManager } from "@/components/admin/variant-manager";
 import { productService } from "@/server/services/product-service";
 import { getCurrentSession } from "@/server/auth/session";
 import { getRolePermissions } from "@/server/auth/permissions";
@@ -35,9 +36,10 @@ export default async function EditProductPage({ params }: EditProductPageProps) 
   if (!product) notFound();
 
   return (
-    <div>
-      <h1 className="font-display mb-8 text-2xl font-bold">Edit Product</h1>
+    <div className="space-y-8">
+      <h1 className="font-display text-2xl font-bold">Edit Product</h1>
       <ProductForm categories={categories} product={{ ...product, id }} />
+      <VariantManager productId={id} />
     </div>
   );
 }

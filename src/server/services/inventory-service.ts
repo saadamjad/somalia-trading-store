@@ -1,6 +1,7 @@
 import type { InventoryChangeReason, Prisma } from "@/generated/prisma/client";
 import { prisma } from "@/server/lib/prisma";
 import { inventoryRepository } from "@/server/repositories/inventory-repository";
+import { variantInventoryRepository } from "@/server/repositories/variant-inventory-repository";
 import { toDomainProduct } from "@/server/services/product-mappers";
 
 export class InventoryNotFoundError extends Error {
@@ -107,6 +108,21 @@ export const inventoryService = {
 
   async getTransactionsForProduct(productId: string, limit?: number) {
     return inventoryRepository.listTransactionsForProduct(productId, limit);
+  },
+
+  /** DB-level low-stock/out-of-stock counts — see inventoryRepository.countByStockStatus
+   * for why this exists instead of deriving counts from `getAll()`'s full row set. */
+  async getStockStatusCounts() {
+    return inventoryRepository.countByStockStatus();
+  },
+
+  /** Variant counterpart of `getAvailableQuantities` — see that method's own comment.
+   * Kept separate rather than folding into one method with an optional variantId, so
+   * the existing (heavily-tested) product path is untouched by this addition. */
+  async getAvailableVariantQuantities(variantIds: string[]): Promise<Map<string, number>> {
+    if (variantIds.length === 0) return new Map();
+    const rows = await variantInventoryRepository.findManyByVariantIds(variantIds);
+    return new Map(rows.map((row) => [row.variantId, row.quantity]));
   },
 
   /**

@@ -47,6 +47,12 @@ const INVENTORY_STATUS_VARIANT: Record<string, BadgeVariant> = {
   out_of_stock: "destructive",
 };
 
+const REVIEW_STATUS_VARIANT: Record<string, BadgeVariant> = {
+  PENDING: "outline",
+  APPROVED: "success",
+  REJECTED: "destructive",
+};
+
 export function getOrderStatusVariant(status: string): BadgeVariant {
   return ORDER_STATUS_VARIANT[status] ?? "outline";
 }
@@ -65,4 +71,8 @@ export function getRefundStatusVariant(status: string): BadgeVariant {
 
 export function getInventoryStatusVariant(status: string): BadgeVariant {
   return INVENTORY_STATUS_VARIANT[status] ?? "outline";
+}
+
+export function getReviewStatusVariant(status: string): BadgeVariant {
+  return REVIEW_STATUS_VARIANT[status] ?? "outline";
 }

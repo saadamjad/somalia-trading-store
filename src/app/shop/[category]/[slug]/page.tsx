@@ -2,6 +2,8 @@ import { notFound } from "next/navigation";
 import { ProductDetailClient } from "@/components/product/product-detail-client";
 import { createPageMetadata, siteConfig } from "@/config/seo";
 import { productService } from "@/server/services/product-service";
+import { reviewService } from "@/server/services/review-service";
+import { productVariantService } from "@/server/services/product-variant-service";
 
 interface ProductPageProps {
   params: Promise<{ category: string; slug: string }>;
@@ -32,9 +34,11 @@ export default async function ProductPage({ params }: ProductPageProps) {
 
   if (!product) notFound();
 
-  const [relatedProducts, categoryData] = await Promise.all([
+  const [relatedProducts, categoryData, reviewSummary, variants] = await Promise.all([
     productService.getRelated(product),
     productService.getCategory(product.category),
+    reviewService.listApprovedForProduct(product.id),
+    productVariantService.listActiveForProduct(product.id),
   ]);
 
   const jsonLd = {
@@ -54,6 +58,17 @@ export default async function ProductPage({ params }: ProductPageProps) {
           : "https://schema.org/PreOrder",
       url: `${siteConfig.url}/shop/${category}/${slug}`,
     },
+    // Only included when real, approved reviews exist — structured data must match
+    // what's actually visible on the page (never a fabricated/default rating).
+    ...(reviewSummary.count > 0
+      ? {
+          aggregateRating: {
+            "@type": "AggregateRating",
+            ratingValue: reviewSummary.averageRating,
+            reviewCount: reviewSummary.count,
+          },
+        }
+      : {}),
   };
 
   return (
@@ -66,6 +81,7 @@ export default async function ProductPage({ params }: ProductPageProps) {
         product={product}
         related={relatedProducts}
         categoryName={categoryData?.name ?? product.category}
+        variants={variants}
       />
     </>
   );

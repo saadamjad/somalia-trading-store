@@ -26,7 +26,12 @@ export async function POST(request: NextRequest) {
 
     const body = await request.json();
     const input = cartItemInputSchema.parse(body);
-    const items = await cartService.setItem(session.userId, input.productId, input.quantity);
+    const items = await cartService.setItem(
+      session.userId,
+      input.productId,
+      input.quantity,
+      input.variantId ?? null
+    );
 
     return NextResponse.json({ items });
   } catch (error) {

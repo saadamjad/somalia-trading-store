@@ -19,12 +19,17 @@ export interface OrderItemCreateInput {
   unitPrice: Prisma.Decimal | number | string;
   quantity: number;
   lineTotal: Prisma.Decimal | number | string;
+  variantId?: string | null;
+  variantLabel?: string | null;
 }
 
 export interface OrderCreateInput extends ShippingSnapshot {
   orderNumber: string;
   userId: string;
   subtotal: Prisma.Decimal | number | string;
+  shippingAmount: Prisma.Decimal | number | string;
+  couponCode?: string | null;
+  discountAmount: Prisma.Decimal | number | string;
   total: Prisma.Decimal | number | string;
   currency: string;
   customerNote?: string | null;
@@ -154,6 +159,19 @@ export const orderRepository = {
 
   findByOrderNumber(orderNumber: string) {
     return prisma.order.findUnique({ where: { orderNumber }, include: withItems });
+  },
+
+  /**
+   * Used by review-service.ts to compute `Review.verifiedPurchase` server-side — true
+   * only if this user has a DELIVERED order containing this product. Minimal `select`
+   * (no full item/customer includes) since only existence matters here.
+   */
+  async hasDeliveredOrderWithProduct(userId: string, productId: string): Promise<boolean> {
+    const match = await prisma.order.findFirst({
+      where: { userId, status: "DELIVERED", items: { some: { productId } } },
+      select: { id: true },
+    });
+    return match !== null;
   },
 
   /** Admin list: no ownership scoping — the route/service layer enforces `orders.view`. */

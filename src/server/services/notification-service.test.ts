@@ -106,7 +106,10 @@ describe("notificationService", () => {
     const admin = await createAdmin("order-status-admin");
     const order = await placeOrder(customer.id);
 
-    const logSpy = vi.spyOn(console, "log").mockImplementation(() => {});
+    // No RESEND_API_KEY is configured in the test env, so email-notifier falls back
+    // to its logging path (via console.error, so a missing-provider misconfiguration
+    // is never mistaken for routine output) instead of a real Resend call.
+    const errorSpy = vi.spyOn(console, "error").mockImplementation(() => {});
 
     await confirmOrder(order.id, admin.id);
 
@@ -119,11 +122,11 @@ describe("notificationService", () => {
     expect(match?.message).toContain("CONFIRMED");
     expect(match?.read).toBe(false);
 
-    // The stubbed email "channel" is exercised at the same trigger point.
-    expect(logSpy).toHaveBeenCalled();
+    // The email "channel" is exercised at the same trigger point.
+    expect(errorSpy).toHaveBeenCalled();
     expect(
-      logSpy.mock.calls.some((call) =>
-        String(call[0]).includes("[email-notifier] would send email to")
+      errorSpy.mock.calls.some((call) =>
+        String(call[0]).includes("[email-notifier]") && String(call[0]).includes("would send email to")
       )
     ).toBe(true);
   });

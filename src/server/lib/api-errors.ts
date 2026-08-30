@@ -18,6 +18,7 @@ import {
 } from "@/server/services/account-service";
 import { EmailAlreadyRegisteredError } from "@/server/services/auth-service";
 import {
+  DuplicateCheckoutError,
   EmailBelongsToExistingAccountError,
   EmptyCartError,
   InvalidStatusTransitionError,
@@ -49,6 +50,26 @@ import {
   InvalidRoleForAdminAssignmentError,
   LastSuperAdminError,
 } from "@/server/services/admin-user-service";
+import {
+  ProductNotFoundForReviewError,
+  ReviewAlreadyExistsError,
+  ReviewNotFoundError,
+} from "@/server/services/review-service";
+import {
+  CouponNotApplicableError,
+  CouponNotFoundError,
+  CouponUsageLimitExceededError,
+} from "@/server/services/coupon-service";
+import {
+  ProductNotFoundForVariantError,
+  VariantHasOrdersError,
+  VariantInsufficientStockError,
+  VariantNotFoundError,
+} from "@/server/services/product-variant-service";
+import {
+  VariantNotFoundForCartError,
+  VariantProductMismatchError,
+} from "@/server/services/cart-service";
 
 /**
  * Translates a thrown error from a route handler into an appropriate HTTP response,
@@ -81,9 +102,33 @@ export function toErrorResponse(error: unknown): NextResponse {
     error instanceof CMSPageNotFoundError ||
     error instanceof BannerNotFoundError ||
     error instanceof NotificationNotFoundError ||
-    error instanceof AdminUserNotFoundError
+    error instanceof AdminUserNotFoundError ||
+    error instanceof ProductNotFoundForReviewError ||
+    error instanceof ReviewNotFoundError ||
+    error instanceof CouponNotFoundError ||
+    error instanceof ProductNotFoundForVariantError ||
+    error instanceof VariantNotFoundError ||
+    error instanceof VariantNotFoundForCartError
   ) {
     return NextResponse.json({ error: error.message }, { status: 404 });
+  }
+  if (error instanceof VariantProductMismatchError) {
+    return NextResponse.json({ error: error.message }, { status: 400 });
+  }
+  if (error instanceof VariantHasOrdersError) {
+    return NextResponse.json({ error: error.message }, { status: 409 });
+  }
+  if (error instanceof VariantInsufficientStockError) {
+    return NextResponse.json({ error: error.message }, { status: 409 });
+  }
+  if (error instanceof ReviewAlreadyExistsError) {
+    return NextResponse.json({ error: error.message }, { status: 409 });
+  }
+  if (error instanceof CouponNotApplicableError) {
+    return NextResponse.json({ error: error.message }, { status: 400 });
+  }
+  if (error instanceof CouponUsageLimitExceededError) {
+    return NextResponse.json({ error: error.message }, { status: 409 });
   }
   if (error instanceof CategoryCycleError) {
     return NextResponse.json({ error: error.message }, { status: 400 });
@@ -99,6 +144,9 @@ export function toErrorResponse(error: unknown): NextResponse {
   }
   if (error instanceof EmptyCartError) {
     return NextResponse.json({ error: error.message }, { status: 400 });
+  }
+  if (error instanceof DuplicateCheckoutError) {
+    return NextResponse.json({ error: error.message }, { status: 409 });
   }
   if (error instanceof InvalidStatusTransitionError) {
     return NextResponse.json({ error: error.message }, { status: 400 });

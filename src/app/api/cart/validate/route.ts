@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getCurrentSession } from "@/server/auth/session";
 import { cartService } from "@/server/services/cart-service";
-import { cartValidateSchema } from "@/lib/validations/cart";
+import { cartValidateSchema, type CartItemInput } from "@/lib/validations/cart";
+import type { CartItemView } from "@/server/services/cart-service";
 import { toErrorResponse } from "@/server/lib/api-errors";
 
 /**
@@ -24,7 +25,7 @@ export async function POST(request: NextRequest) {
     const body = await request.json().catch(() => ({}));
     const input = cartValidateSchema.parse(body);
 
-    let items = input.items;
+    let items: CartItemInput[] | CartItemView[] | undefined = input.items;
     if (!items) {
       const session = await getCurrentSession();
       if (!session) {

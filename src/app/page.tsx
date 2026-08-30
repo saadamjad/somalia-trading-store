@@ -12,11 +12,20 @@ import { brand } from "@/config/brand";
 import { productService } from "@/server/services/product-service";
 import { bannerService } from "@/server/services/banner-service";
 
-export const metadata = createPageMetadata({
-  title: brand.name,
-  description: brand.description,
-  path: "/",
-});
+export const metadata = {
+  ...createPageMetadata({
+    title: brand.name,
+    description: brand.description,
+    path: "/",
+  }),
+  // The homepage's title IS the brand name — it should render as just "Foley
+  // General Trading (LLC)", not "Foley General Trading (LLC) | Foley General
+  // Trading (LLC)". `absolute` opts out of the root layout's title template
+  // (`%s | ${brand.name}`) for this one page; every other page still gets the
+  // template applied normally via the plain string `title` createPageMetadata
+  // returns.
+  title: { absolute: brand.name },
+};
 
 export default async function HomePage() {
   const [categories, heroBanner, promoBanner, featuredProducts] = await Promise.all([

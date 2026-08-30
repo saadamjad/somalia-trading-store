@@ -4,6 +4,10 @@ import { z } from "zod";
 export const cartItemInputSchema = z.object({
   productId: z.string().trim().min(1),
   quantity: z.number().int().positive({ message: "Quantity must be at least 1." }),
+  // Optional — a plain, non-variant product line omits this. Never trusted for
+  // pricing/availability beyond "which row to look up"; order-service.ts always
+  // re-reads the live variant (or product) row server-side.
+  variantId: z.string().trim().min(1).optional(),
 });
 
 /** Body for PUT /api/cart — a batch of items to merge into the caller's server cart. */
