@@ -1,22 +1,44 @@
+import { Resend } from "resend";
+
 /**
- * Stubbed email notifier — NOT a real email integration. Per docs/DECISIONS.md D-011
- * (which defers to D-010's original email-provider blocker), no SMTP/email-provider
- * has been chosen yet, so this logs what WOULD be sent instead of actually sending
- * anything. This mirrors the exact interim pattern `authService.requestPasswordReset`
- * already established for password-reset links (src/server/services/auth-service.ts).
+ * Real email delivery via Resend (D-010/D-011 resolved). This is the single
+ * integration point every caller (order-service.ts, refund-request-service.ts,
+ * quote-service.ts via notificationService.notify(), and auth-service.ts's
+ * requestPasswordReset directly) already routes through — no call-site changes
+ * were needed to wire in a real provider.
  *
- * Called from `notificationService.notify()` (the in-app-notification email echo, used
- * by order-service.ts, refund-request-service.ts, and quote-service.ts) and directly
- * from `authService.requestPasswordReset` (a pre-auth flow with no signed-in session to
- * attach an in-app Notification to, so it calls this stub directly rather than through
- * `notificationService.notify()`). Swap this function's body for a real provider call
- * (Resend/SES/Postmark/SendGrid) once one is chosen, and every caller keeps working
- * unchanged.
+ * Failures here must never fail the caller's underlying operation (an order must
+ * still be created even if its confirmation email fails to send) — every call site
+ * already treats this as fire-and-forget / wraps it, but `send` itself also never
+ * throws: it logs and swallows, since a delivery failure has nothing useful for a
+ * caller to react to synchronously.
  */
+const resendApiKey = process.env.RESEND_API_KEY;
+const fromEmail = process.env.FROM_EMAIL ?? "Somalia Trading Store <onboarding@resend.dev>";
+
+const resendClient = resendApiKey ? new Resend(resendApiKey) : null;
+
 export const emailNotifier = {
   async send(to: string, subject: string, body: string): Promise<void> {
-    // Server-side console log only — never exposed to any client. Intentionally the
-    // entire implementation until an email provider is chosen (D-010/D-011).
-    console.log(`[email-notifier] would send email to ${to}: ${subject}\n${body}`);
+    if (!resendClient) {
+      // No API key configured (e.g. local dev without .env.local set up) — fall back
+      // to the original interim behavior instead of throwing, so the app still runs.
+      console.error(`[email-notifier] RESEND_API_KEY not set — would send email to ${to}: ${subject}\n${body}`);
+      return;
+    }
+
+    try {
+      const { error } = await resendClient.emails.send({
+        from: fromEmail,
+        to,
+        subject,
+        text: body,
+      });
+      if (error) {
+        console.error(`[email-notifier] Resend rejected email to ${to}: ${error.message}`);
+      }
+    } catch (err) {
+      console.error(`[email-notifier] failed to send email to ${to}:`, err);
+    }
   },
 };

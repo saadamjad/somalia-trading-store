@@ -135,7 +135,7 @@
   --color-whatsapp: var(--whatsapp);
   --color-whatsapp-hover: var(--whatsapp-hover);
   --font-sans: var(--font-inter);
-  --font-display: "Plus Jakarta Sans", var(--font-inter), system-ui, sans-serif;
+  --font-display: var(--font-jakarta), var(--font-inter), system-ui, sans-serif;
 }
 
 * {
@@ -167,7 +167,7 @@ body {
 }
 
 .font-display {
-  font-family: "Plus Jakarta Sans", var(--font-inter), system-ui, sans-serif;
+  font-family: var(--font-jakarta), var(--font-inter), system-ui, sans-serif;
   letter-spacing: -0.03em;
 }
 

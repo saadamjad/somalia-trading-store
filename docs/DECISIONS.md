@@ -75,17 +75,15 @@ Each entry records a decision, its classification (Business / Technical / Implem
 
 ---
 
-## D-006: Currency — OPEN BUSINESS DECISION
+## D-006: Currency — RESOLVED (USD confirmed)
 
 **Classification:** Business Decision
-**Status:** ⚠️ UNRESOLVED — pending client confirmation
-**Date:** 2026-08-19
+**Status:** Resolved — USD confirmed as the operating currency
+**Date:** 2026-08-19 (opened), 2026-08-30 (resolved)
 
 **Context:** The current demo hardcodes `currency: "USD"` as a TypeScript literal type across the product/pricing types. Per spec §34: "Do NOT hard-code currency throughout the application. Do not invent the client's currency."
 
-**Decision so far:** The currency will be made a **configurable value** (e.g. a settings/config entry, not a closed TS literal union), defaulting to USD for continued development purposes only. The actual currency the business will transact in (USD, Somali Shilling, or another) has **not been confirmed** and must not be assumed.
-
-**Action required:** Client must confirm the operating currency before Phase 8 (Checkout & Order Placement) can be considered functionally complete for real use. Until confirmed, all pricing/checkout work proceeds with USD as a placeholder default, with the underlying schema built to support changing it without a rewrite.
+**Resolution:** Client confirmed USD as the real operating currency (not a placeholder) on 2026-08-30. No code change was required — `currency` was already a configurable `String` field (`Product.currency`, `Order.currency`, `Quote.currency`), not a closed TS literal, specifically so this confirmation wouldn't require a migration. If the business later needs to transact in a different currency, that remains a config/data change, not a schema change.
 
 ---
 
@@ -101,13 +99,17 @@ Each entry records a decision, its classification (Business / Technical / Implem
 
 ---
 
-## D-008: Tax and Shipping — OUT OF SCOPE (Confirmed Deferral)
+## D-008: Tax and Shipping — Shipping RESOLVED (flat $0), Tax still OUT OF SCOPE
 
 **Classification:** Business Decision
-**Status:** Deferred per explicit client instruction (spec §35-36)
-**Date:** 2026-08-19
+**Status:** Shipping resolved (flat-rate, free); tax/VAT remains deferred per explicit client instruction (spec §35-36)
+**Date:** 2026-08-19 (opened), 2026-08-30 (shipping resolved)
 
-**Decision:** No tax calculation, VAT, shipping providers, courier integration, delivery zones, or shipping-charge calculation is implemented. Schema and checkout flow are designed to allow both to be introduced later without breaking existing order/checkout logic (e.g. order totals structured to allow adding `taxAmount`/`shippingAmount` fields later rather than baking an assumption of $0 into business logic permanently).
+**Original decision:** No tax calculation, VAT, shipping providers, courier integration, delivery zones, or shipping-charge calculation was implemented. Schema and checkout flow were designed to allow both to be introduced later without breaking existing order/checkout logic.
+
+**Shipping resolution:** Client confirmed a flat shipping fee, set to **$0 (free shipping)**, rather than a carrier/zone-based model. `Order.shippingAmount` (`Decimal(12,2)`, default `0`) is now a real field, computed in `order-service.ts`'s `persistOrder` (`FLAT_SHIPPING_AMOUNT` constant) and included in `total = subtotal + shippingAmount`. Every order-creation path (cart checkout, guest checkout, quote-to-order conversion) shares this one function, so shipping is applied uniformly. If the business later adopts zone/carrier-based rates, replace `FLAT_SHIPPING_AMOUNT`'s single constant with the real calculation — the field and total-composition logic don't need to change.
+
+**Tax/VAT: still deferred.** No tax calculation exists anywhere. Do not invent a tax rate or jurisdiction model without a client decision.
 
 ---
 
@@ -145,38 +147,31 @@ Each entry records a decision, its classification (Business / Technical / Implem
 
 **Revisit if:** traffic or compliance requirements outgrow Vercel's/Supabase's managed tiers, or per-branch preview databases become worth the added complexity.
 
-## D-010: Email Verification / Email Sending — DEFERRED (Blocked on Provider Decision)
+## D-010: Email Verification / Email Sending — RESOLVED (Resend)
 
 **Classification:** Technical Decision
-**Status:** Deferred — blocked pending an email provider decision
-**Date:** 2026-08-19
+**Status:** Resolved — Resend chosen and wired in
+**Date:** 2026-08-19 (opened), 2026-08-30 (resolved)
 
-**Decision:** Phase 3 adds the `emailVerified` field to the `User` model and a full password-reset token flow (`PasswordResetToken`), but does not send real email. There is no SMTP/email-provider integration in this phase. In the interim, the password-reset link is written to the server console (`src/server/services/auth-service.ts`, `requestPasswordReset`) purely so the flow is exercisable in local development — this is explicitly not sufficient for production use, and no email-verification-required gate is enforced on login (accounts work immediately after registration, with `emailVerified` left `null`).
+**Original decision:** Phase 3 added the `emailVerified` field to the `User` model and a full password-reset token flow (`PasswordResetToken`), but did not send real email — the reset link was written to the server console only.
 
-**Rationale:**
-- Sending real email requires choosing a provider (e.g. Resend, SES, Postmark, SendGrid) and provisioning credentials/domain verification (SPF/DKIM) — a business/infrastructure decision, not something to assume.
-- Building the schema and token flow now (rather than deferring the whole feature) means no future migration or rework is needed once a provider is chosen — only the delivery mechanism inside `requestPasswordReset` (and a new "send verification email" call after registration) needs to be swapped in.
+**Resolution:** `src/server/services/email-notifier.ts`'s `send()` now sends via the [Resend](https://resend.com) SDK when `RESEND_API_KEY` is configured (see `.env.example`), falling back to the original console-log behavior (via `console.error`, so a missing-provider misconfiguration is never mistaken for routine output) only when the key is absent — i.e. local dev without a Resend account. `authService.requestPasswordReset` required no changes — it already routed through `emailNotifier.send`. Email-verification-required login gating (item 3 of the original action list) remains a separate, still-open product decision — not resolved by this change.
 
-**Action required:** Client/team to choose an email provider. Once chosen: (1) wire real delivery into `authService.requestPasswordReset`, (2) add an email-verification-send step to `authService.register` and a `/api/auth/verify-email` (or equivalent) confirmation route that sets `User.emailVerified`, (3) decide whether unverified accounts should be restricted (e.g. blocked from checkout) — not decided yet.
+**Action still open:** decide whether unverified accounts should be restricted (e.g. blocked from checkout).
 
 ---
 
-## D-011: Notification Delivery Channel — In-App Real, Email Stubbed (Blocked on Provider Decision)
+## D-011: Notification Delivery Channel — RESOLVED (Resend)
 
 **Classification:** Technical Decision
-**Status:** Deferred (email channel only) — blocked pending the same email provider decision as D-010
-**Date:** 2026-08-20
+**Status:** Resolved — same Resend integration as D-010
+**Date:** 2026-08-20 (opened), 2026-08-30 (resolved)
 
-**Context:** Phase 15 (Notifications) requires notifying customers of order status changes, refund request approvals/rejections, and quote responses. Per docs/IMPLEMENTATION_PLAN.md Phase 15: "Depends on an email provider decision if email is required — flag as a technical decision to resolve at phase start if not already settled." No email provider has been chosen — this is the same open business decision as D-010, not a new one, and this entry exists only because Phase 15's scope (notification delivery generally) is broader than D-010's (password-reset/verification email specifically), not because the underlying blocker differs.
+**Context:** Phase 15 (Notifications) requires notifying customers of order status changes, refund request approvals/rejections, and quote responses. In-app notifications shipped as the real, fully working feature; email was stubbed to a console log pending the same provider decision as D-010.
 
-**Decision:** In-app notifications (the `Notification` model, `/api/notifications`, the header unread-count indicator) are built as the real, fully working feature this phase delivers — no stubbing, no deferral. Email is implemented only as an interface: `src/server/services/email-notifier.ts` exports `emailNotifier.send(to, subject, body)`, which logs `[email-notifier] would send email to X: subject Y` to the server console and does not contact any real email provider or SMTP server. It is called from the same three trigger points as the in-app notification (`order-service.ts` `updateStatus`, `refund-request-service.ts` `updateStatus`, `quote-service.ts` `respond`) so both "channels" exist in the code path, exactly mirroring the console-log pattern D-010 established for password-reset links in `authService.requestPasswordReset`.
+**Resolution:** `emailNotifier.send` (the single call site used by `order-service.ts`, `refund-request-service.ts`, and `quote-service.ts` via `notificationService.notify()`) now delivers through Resend — no changes were needed to any of those three call sites, confirming the D-011 architecture bet (a single swappable integration point) held up.
 
-**Rationale:**
-- Consistency: reusing D-010's exact interim pattern (log instead of send) rather than inventing a second convention for the same underlying blocker.
-- The architecture is ready to plug in a real provider later — `notificationService.notify()` is the single call site that invokes `emailNotifier.send`, so swapping the stub's body for a real Resend/SES/Postmark/SendGrid call requires no changes to order-service.ts, refund-request-service.ts, or quote-service.ts.
-- In-app notifications don't have this blocker at all (no third-party dependency), so there's no reason to defer that half of the feature — only the email half is genuinely blocked.
-
-**Action required:** Same as D-010 — client/team to choose an email provider. Once chosen, only `emailNotifier.send`'s implementation needs to change; every call site stays the same.
+**Action still open:** none for delivery. Email failures are caught and logged (never thrown) so a delivery failure can never fail the order/refund/quote operation that triggered it — consistent with the original non-blocking requirement.
 
 ---
 

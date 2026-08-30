@@ -1,11 +1,17 @@
 import { afterAll, describe, expect, it } from "vitest";
 import { prisma } from "@/server/lib/prisma";
 import { authService } from "@/server/services/auth-service";
-import { cartService } from "@/server/services/cart-service";
+import {
+  cartService,
+  VariantProductMismatchError,
+  VariantNotFoundForCartError,
+} from "@/server/services/cart-service";
+import { productVariantService } from "@/server/services/product-variant-service";
 
 const runId = `${Date.now()}-${Math.floor(Math.random() * 100000)}`;
 const testEmails: string[] = [];
 const productIds: string[] = [];
+const variantIds: string[] = [];
 
 function uniqueEmail(label: string) {
   const email = `phase7-cart-${label}-${runId}@example.test`;
@@ -43,6 +49,9 @@ describe("cartService", () => {
   afterAll(async () => {
     await prisma.cartItem.deleteMany({ where: { productId: { in: productIds } } });
     await prisma.cart.deleteMany({ where: { user: { email: { in: testEmails } } } });
+    await prisma.variantInventoryTransaction.deleteMany({ where: { variantId: { in: variantIds } } });
+    await prisma.variantInventory.deleteMany({ where: { variantId: { in: variantIds } } });
+    await prisma.productVariant.deleteMany({ where: { id: { in: variantIds } } });
     await prisma.inventory.deleteMany({ where: { productId: { in: productIds } } });
     await prisma.product.deleteMany({ where: { id: { in: productIds } } });
     await prisma.user.deleteMany({ where: { email: { in: testEmails } } });
@@ -198,6 +207,130 @@ describe("cartService", () => {
       expect(itemsA).toHaveLength(0);
       expect(itemsB).toHaveLength(1);
       expect(itemsB[0].quantity).toBe(9);
+    });
+  });
+
+  describe("variant-aware lines", () => {
+    it("two different variants of the same product coexist as two distinct cart lines", async () => {
+      const user = await createCustomer("variant-coexist");
+      const productId = await createProduct("variant-coexist", 50);
+      const variantA = await productVariantService.create({
+        productId,
+        sku: `SKU-CART-A-${runId}`,
+        attributes: { size: "S" },
+        initialStock: 10,
+      });
+      const variantB = await productVariantService.create({
+        productId,
+        sku: `SKU-CART-B-${runId}`,
+        attributes: { size: "L" },
+        initialStock: 10,
+      });
+      variantIds.push(variantA.id, variantB.id);
+
+      await cartService.setItem(user.id, productId, 2, variantA.id);
+      await cartService.setItem(user.id, productId, 3, variantB.id);
+      // Also add the plain (non-variant) line for the same product — three distinct
+      // lines total, none of which should collapse into each other.
+      await cartService.setItem(user.id, productId, 1);
+
+      const items = await cartService.getCartForUser(user.id);
+      expect(items).toHaveLength(3);
+      expect(items.find((i) => i.variantId === variantA.id)?.quantity).toBe(2);
+      expect(items.find((i) => i.variantId === variantB.id)?.quantity).toBe(3);
+      expect(items.find((i) => i.variantId === null)?.quantity).toBe(1);
+    });
+
+    it("setItem for an existing variant line updates its quantity rather than duplicating", async () => {
+      const user = await createCustomer("variant-upsert");
+      const productId = await createProduct("variant-upsert", 50);
+      const variant = await productVariantService.create({
+        productId,
+        sku: `SKU-CART-UPSERT-${runId}`,
+        attributes: { size: "M" },
+        initialStock: 10,
+      });
+      variantIds.push(variant.id);
+
+      await cartService.setItem(user.id, productId, 2, variant.id);
+      await cartService.setItem(user.id, productId, 7, variant.id);
+
+      const items = await cartService.getCartForUser(user.id);
+      expect(items).toHaveLength(1);
+      expect(items[0].quantity).toBe(7);
+    });
+
+    it("removeItem with a variantId removes only that variant's line, not the plain line for the same product", async () => {
+      const user = await createCustomer("variant-remove");
+      const productId = await createProduct("variant-remove", 50);
+      const variant = await productVariantService.create({
+        productId,
+        sku: `SKU-CART-REMOVE-${runId}`,
+        attributes: { size: "M" },
+        initialStock: 10,
+      });
+      variantIds.push(variant.id);
+
+      await cartService.setItem(user.id, productId, 1);
+      await cartService.setItem(user.id, productId, 1, variant.id);
+      await cartService.removeItem(user.id, productId, variant.id);
+
+      const items = await cartService.getCartForUser(user.id);
+      expect(items).toHaveLength(1);
+      expect(items[0].variantId).toBeNull();
+    });
+
+    it("validateStock checks a variant's own stock independently of the parent product's stock", async () => {
+      const productId = await createProduct("variant-stock-check", 100);
+      const variant = await productVariantService.create({
+        productId,
+        sku: `SKU-CART-STOCKCHECK-${runId}`,
+        attributes: { size: "M" },
+        initialStock: 2,
+      });
+      variantIds.push(variant.id);
+
+      const issues = await cartService.validateStock([
+        { productId, quantity: 5, variantId: variant.id },
+      ]);
+      expect(issues).toHaveLength(1);
+      expect(issues[0]!.available).toBe(2);
+
+      const okIssues = await cartService.validateStock([
+        { productId, quantity: 2, variantId: variant.id },
+      ]);
+      expect(okIssues).toHaveLength(0);
+    });
+
+    it("SECURITY: rejects a variantId that belongs to a DIFFERENT product than the one it's paired with", async () => {
+      const user = await createCustomer("variant-mismatch");
+      const productA = await createProduct("variant-mismatch-a", 10);
+      const productB = await createProduct("variant-mismatch-b", 10);
+      const variantOfB = await productVariantService.create({
+        productId: productB,
+        sku: `SKU-CART-MISMATCH-${runId}`,
+        attributes: { size: "M" },
+        initialStock: 10,
+      });
+      variantIds.push(variantOfB.id);
+
+      await expect(cartService.setItem(user.id, productA, 1, variantOfB.id)).rejects.toThrow(
+        VariantProductMismatchError
+      );
+
+      // No line should have been written at all — reject, don't silently write a
+      // mismatched line.
+      const items = await cartService.getCartForUser(user.id);
+      expect(items).toHaveLength(0);
+    });
+
+    it("SECURITY: rejects a variantId that doesn't exist at all", async () => {
+      const user = await createCustomer("variant-missing");
+      const productId = await createProduct("variant-missing", 10);
+
+      await expect(cartService.setItem(user.id, productId, 1, "does-not-exist")).rejects.toThrow(
+        VariantNotFoundForCartError
+      );
     });
   });
 });

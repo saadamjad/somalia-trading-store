@@ -75,13 +75,55 @@ export function CheckoutForm({
   const [newAddress, setNewAddress] = useState<NewAddressForm>(EMPTY_NEW_ADDRESS);
   const [guestName, setGuestName] = useState("");
   const [guestEmail, setGuestEmail] = useState("");
+  // Generated once per checkout page load (not per click) and sent with every guest
+  // order submission — lets the server tell "the same click, retried" apart from "a
+  // genuinely repeated purchase" (see order-service.ts's duplicate-checkout guard).
+  // Only used on the guest path; the authenticated path is guarded server-side by the
+  // cart's own state instead, which needs no client-supplied key.
+  const [checkoutIdempotencyKey] = useState(() => crypto.randomUUID());
   const [customerNote, setCustomerNote] = useState("");
+  const [couponInput, setCouponInput] = useState("");
+  const [appliedCoupon, setAppliedCoupon] = useState<{ code: string; discountAmount: number } | null>(
+    null
+  );
+  const [couponError, setCouponError] = useState<string | null>(null);
+  const [applyingCoupon, setApplyingCoupon] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [stockIssues, setStockIssues] = useState<StockIssue[]>([]);
 
   const setNewAddressField = (key: keyof NewAddressForm, value: string) =>
     setNewAddress((prev) => ({ ...prev, [key]: value }));
+
+  async function handleApplyCoupon() {
+    if (!couponInput.trim()) return;
+    setApplyingCoupon(true);
+    setCouponError(null);
+    try {
+      const res = await fetch("/api/cart/coupon", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ code: couponInput.trim(), subtotal }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        throw new Error(data.error || "That coupon couldn't be applied.");
+      }
+      setAppliedCoupon({ code: data.item.code, discountAmount: data.item.discountAmount });
+      toast.success(`Coupon "${data.item.code}" applied.`);
+    } catch (err) {
+      setAppliedCoupon(null);
+      setCouponError(err instanceof Error ? err.message : "That coupon couldn't be applied.");
+    } finally {
+      setApplyingCoupon(false);
+    }
+  }
+
+  function handleRemoveCoupon() {
+    setAppliedCoupon(null);
+    setCouponInput("");
+    setCouponError(null);
+  }
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -106,13 +148,16 @@ export function CheckoutForm({
               ? { shippingAddress: newAddress }
               : { addressId: selectedAddressId }),
             ...(customerNote.trim() ? { customerNote: customerNote.trim() } : {}),
+            ...(appliedCoupon ? { couponCode: appliedCoupon.code } : {}),
           }
         : {
             name: guestName.trim(),
             email: guestEmail.trim(),
             shippingAddress: newAddress,
             items: rawItems,
+            idempotencyKey: checkoutIdempotencyKey,
             ...(customerNote.trim() ? { customerNote: customerNote.trim() } : {}),
+            ...(appliedCoupon ? { couponCode: appliedCoupon.code } : {}),
           };
 
       const res = await fetch("/api/orders", {
@@ -368,18 +413,70 @@ export function CheckoutForm({
           <CardContent className="space-y-4 p-6">
             <h2 className="font-display text-lg font-semibold">Order Summary</h2>
             <ul className="space-y-3 border-b border-border pb-4">
-              {items.map(({ product, quantity }) => (
-                <li key={product.id} className="flex justify-between text-sm">
+              {items.map(({ product, quantity, variant, unitPrice }) => (
+                <li key={`${product.id}::${variant?.id ?? ""}`} className="flex justify-between text-sm">
                   <span>
-                    {product.name} × {quantity}
+                    {product.name}
+                    {variant && <span className="text-muted"> ({variant.label})</span>} × {quantity}
                   </span>
-                  <span className="font-medium">{formatPrice(product.price * quantity)}</span>
+                  <span className="font-medium">{formatPrice(unitPrice * quantity)}</span>
                 </li>
               ))}
             </ul>
+            <div className="border-b border-border pb-4">
+              <Label htmlFor="coupon-code" className="text-sm">
+                Coupon Code
+              </Label>
+              <div className="mt-1.5 flex gap-2">
+                <Input
+                  id="coupon-code"
+                  value={couponInput}
+                  onChange={(e) => setCouponInput(e.target.value)}
+                  placeholder="Enter code"
+                  disabled={Boolean(appliedCoupon)}
+                />
+                {appliedCoupon ? (
+                  <Button type="button" variant="outline" onClick={handleRemoveCoupon}>
+                    Remove
+                  </Button>
+                ) : (
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={handleApplyCoupon}
+                    disabled={applyingCoupon || !couponInput.trim()}
+                  >
+                    {applyingCoupon ? "Applying…" : "Apply"}
+                  </Button>
+                )}
+              </div>
+              {couponError && <p className="mt-1.5 text-sm text-destructive">{couponError}</p>}
+              {appliedCoupon && (
+                <p className="mt-1.5 text-sm text-success">
+                  &quot;{appliedCoupon.code}&quot; applied — you save{" "}
+                  {formatPrice(appliedCoupon.discountAmount)}.
+                </p>
+              )}
+            </div>
+            <div className="space-y-1 border-b border-border pb-4 text-sm">
+              <div className="flex justify-between">
+                <span className="text-muted">Subtotal</span>
+                <span>{formatPrice(subtotal)}</span>
+              </div>
+              {appliedCoupon && (
+                <div className="flex justify-between text-success">
+                  <span>Discount</span>
+                  <span>-{formatPrice(appliedCoupon.discountAmount)}</span>
+                </div>
+              )}
+              <div className="flex justify-between">
+                <span className="text-muted">Shipping</span>
+                <span>Free</span>
+              </div>
+            </div>
             <div className="flex justify-between text-lg font-bold">
               <span>Total</span>
-              <span>{formatPrice(subtotal)}</span>
+              <span>{formatPrice(Math.max(0, subtotal - (appliedCoupon?.discountAmount ?? 0)))}</span>
             </div>
 
             {error && (

@@ -11,6 +11,8 @@ const NAV_ITEMS: { href: string; label: string; permission: string }[] = [
   { href: "/admin/orders", label: "Orders", permission: "orders.view" },
   { href: "/admin/refunds", label: "Refunds", permission: "refunds.view" },
   { href: "/admin/quotes", label: "Quotes", permission: "quotes.view" },
+  { href: "/admin/reviews", label: "Reviews", permission: "reviews.view" },
+  { href: "/admin/coupons", label: "Coupons", permission: "coupons.view" },
   { href: "/admin/cms", label: "CMS", permission: "cms.view" },
   { href: "/admin/reports", label: "Reports", permission: "reports.view" },
   { href: "/admin/users", label: "Admin Users", permission: "admin_users.view" },

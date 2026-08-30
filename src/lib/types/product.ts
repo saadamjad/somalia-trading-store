@@ -52,6 +52,9 @@ export interface Category {
 export interface CartItem {
   productId: string;
   quantity: number;
+  /** Omitted (not null) for a plain, non-variant line — kept optional rather than
+   * `| null` so existing persisted localStorage carts (pre-variants) still parse. */
+  variantId?: string;
 }
 
 export type SortOption =

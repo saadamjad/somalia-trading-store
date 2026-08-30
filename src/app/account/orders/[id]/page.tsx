@@ -109,6 +109,16 @@ export default async function AccountOrderDetailPage({ params, searchParams }: P
               </li>
             ))}
           </ul>
+          <div className="space-y-1 border-t border-border pt-4 text-sm">
+            <div className="flex justify-between">
+              <span className="text-muted">Subtotal</span>
+              <span>{formatPrice(order.subtotal, order.currency)}</span>
+            </div>
+            <div className="flex justify-between">
+              <span className="text-muted">Shipping</span>
+              <span>{order.shippingAmount > 0 ? formatPrice(order.shippingAmount, order.currency) : "Free"}</span>
+            </div>
+          </div>
           <div className="flex justify-between border-t border-border pt-4 text-lg font-bold">
             <span>Total</span>
             <span>{formatPrice(order.total, order.currency)}</span>

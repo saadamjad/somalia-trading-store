@@ -33,6 +33,11 @@ export const orderCreateSchema = z
     addressId: z.string().trim().min(1).optional(),
     shippingAddress: inlineShippingAddressSchema.optional(),
     customerNote: z.string().trim().max(1000).optional().or(z.literal("")),
+    // Only a code is ever accepted — never a discount amount. The server always
+    // re-validates and re-computes the discount from the live Coupon row at order
+    // creation time (order-service.ts persistOrder), same "price is always
+    // server-recalculated" principle as every OrderItem line.
+    couponCode: z.string().trim().max(50).optional().or(z.literal("")),
   })
   .refine((data) => Boolean(data.addressId) !== Boolean(data.shippingAddress), {
     message: "Provide exactly one of addressId or shippingAddress.",
@@ -55,11 +60,20 @@ export const guestOrderCreateSchema = z.object({
   name: z.string().trim().min(1, { message: "Name is required." }),
   shippingAddress: inlineShippingAddressSchema,
   customerNote: z.string().trim().max(1000).optional().or(z.literal("")),
+  couponCode: z.string().trim().max(50).optional().or(z.literal("")),
+  // A random key the client generates once per checkout page load and resends on
+  // every "Place Order" click on that page (see checkout-form.tsx) — lets the server
+  // tell "the same click, retried" apart from "a genuinely repeated purchase," which
+  // is not otherwise possible from request content or timing alone. Optional so
+  // direct API callers that don't supply one still get a (less precise) fallback —
+  // see order-service.ts `deriveFallbackIdempotencyKey`.
+  idempotencyKey: z.string().trim().min(1).max(100).optional(),
   items: z
     .array(
       z.object({
         productId: z.string().trim().min(1),
         quantity: z.number().int().min(1),
+        variantId: z.string().trim().min(1).optional(),
       })
     )
     .min(1, { message: "Your cart is empty." }),

@@ -106,10 +106,145 @@ model Product {
   // Phase 11: Quote Requests. Reference-only — see QuoteItem's own comment.
   quoteItems QuoteItem[]
 
+  reviews Review[]
+
+  // Product variants (size/color etc.) — optional. A product with zero variants
+  // behaves exactly as before this feature was added (single SKU, Inventory keyed by
+  // productId) — see ProductVariant's own comment for why variant stock/cart/order
+  // lines are a deliberately PARALLEL set of models rather than retrofitting
+  // Inventory/CartItem/OrderItem to be nullable-variant-aware.
+  variants ProductVariant[]
+
   @@index([categoryId])
   @@index([featured])
   @@index([availability])
   @@index([subcategory])
+}
+
+// Product variants (size/color/etc.) — e.g. a shirt in Black/Small, Black/Medium,
+// Brown/Large. Deliberately a PARALLEL system alongside the existing non-variant
+// Product/Inventory/CartItem/OrderItem models, rather than retrofitting those to carry
+// a nullable variantId everywhere: the existing single-SKU catalog (Inventory.productId
+// @unique, CartItem's @@unique([cartId, productId]), the atomic no-oversell UPDATE in
+// inventoryRepository.applyAdjustment) is proven, tested, and must not regress for the
+// majority of products that will never have variants. See VariantInventory/
+// VariantInventoryTransaction/CartItem.variantId/OrderItem.variant* for the rest of
+// this parallel path. `attributes` is structured JSON (e.g. {"size":"M","color":
+// "Black"}) — same convention as Product.specifications — rather than normalized
+// attribute rows, since there's no cross-product attribute filtering requirement today.
+// `price` is a nullable override; null falls back to the parent Product.price at
+// checkout time (never a client-supplied price — same pricing-integrity rule as
+// OrderItem). Duplicate attribute combinations for the same product are prevented at
+// the service layer (admin-facing catalog operation, not a customer-facing race like
+// coupon usage, so a DB-level constraint on a JSON column isn't warranted here).
+model ProductVariant {
+  id         String  @id @default(cuid())
+  sku        String  @unique
+  attributes Json
+  price      Decimal? @db.Decimal(12, 2)
+  image      String?
+  active     Boolean  @default(true)
+
+  productId String
+  product   Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  inventory             VariantInventory?
+  inventoryTransactions VariantInventoryTransaction[]
+  cartItems             CartItem[]
+  orderItems            OrderItem[]
+
+  @@index([productId])
+}
+
+// Mirrors Inventory's exact shape and the same atomic no-oversell guarantee
+// (variantInventoryRepository.applyAdjustment uses the identical conditional-UPDATE
+// pattern as inventoryRepository.applyAdjustment) — kept as a parallel model rather
+// than a nullable variantId on Inventory so the existing Inventory.productId @unique
+// constraint (one row per non-variant product) never has to change.
+model VariantInventory {
+  id                String   @id @default(cuid())
+  quantity          Int      @default(0)
+  lowStockThreshold Int      @default(10)
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  variantId String         @unique
+  variant   ProductVariant @relation(fields: [variantId], references: [id], onDelete: Cascade)
+
+  transactions VariantInventoryTransaction[]
+}
+
+// Mirrors InventoryTransaction's exact shape (full audit ledger: actor, previous/
+// adjustment/new quantity, reason, timestamp) for the variant stock path.
+model VariantInventoryTransaction {
+  id               String                @id @default(cuid())
+  previousQuantity Int
+  adjustment       Int
+  newQuantity      Int
+  reason           InventoryChangeReason
+  note             String?
+  createdAt        DateTime              @default(now())
+
+  inventoryId String
+  inventory   VariantInventory @relation(fields: [inventoryId], references: [id], onDelete: Cascade)
+
+  variantId String
+  variant   ProductVariant @relation(fields: [variantId], references: [id], onDelete: Cascade)
+
+  actorId String
+  actor   User   @relation(fields: [actorId], references: [id], onDelete: Restrict)
+
+  @@index([inventoryId])
+  @@index([variantId])
+  @@index([actorId])
+}
+
+// Duplicate-checkout guard for order-creation paths that have no server Cart row to
+// gate on (guest checkout, quote-to-order conversion — both call persistOrder with
+// clearCart: false). Found via adversarial red-team testing: a RETURNING guest
+// (existing isGuest User row) double-clicking checkout could create two separate
+// orders, since nothing detected the second concurrent request as a duplicate
+// (unlike the authenticated cart-checkout path, which the SAME testing pass found and
+// fixed using the cart's own row count as an atomic gate — see order-service.ts
+// persistOrder's cart-clear-first ordering).
+//
+// `key` is a per-checkout-attempt idempotency key (see order-service.ts
+// resolveIdempotencyKey): the CLIENT generates one random key when a checkout page
+// loads and reuses it across every "Place Order" click on that page — a genuine
+// double-click sends the SAME key twice; navigating to a fresh checkout (a real,
+// separate purchase) generates a NEW key. This is the only way to correctly
+// distinguish "the same click, retried" from "the customer genuinely wants to buy the
+// same items again" — a time-window-only guard (an earlier version of this fix)
+// cannot: they are literally identical requests, indistinguishable by content or
+// timing alone (a legitimate test — order-service.test.ts's "reuses the same guest
+// User on a second order" — makes two back-to-back, byte-identical purchase
+// requests). A request with no client-supplied key (an old/naive API caller) falls
+// back to a deterministic hash of the request content, which still catches exact
+// resubmissions but — correctly, since there's no other signal available — cannot
+// tell two genuinely-repeated legitimate purchases apart from a duplicate.
+//
+// `@@unique([userId, key])`, NOT deleted after use. The atomic gate is a conditional
+// `INSERT ... ON CONFLICT (userId, key) DO NOTHING RETURNING id` (see
+// checkoutLockRepository.claim): the first request for a given (userId, key) pair
+// wins and proceeds; any later request with the same pair claims nothing and is
+// rejected as a duplicate — permanently, not just within a time window, since the
+// same key should never legitimately repeat. This avoids the classic "INSERT ...
+// WHERE NOT EXISTS" race (two concurrent transactions can both see NOT EXISTS as true
+// under READ COMMITTED) by using the unique constraint's row-level lock as the actual
+// serialization point, same principle as every other atomic-conditional-update in
+// this codebase (Inventory.quantity, Coupon.timesUsed).
+model CheckoutLock {
+  id        String   @id @default(cuid())
+  key       String
+  createdAt DateTime @default(now())
+
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, key])
 }
 
 // Phase 3: Authentication & Authorization.
@@ -201,8 +336,10 @@ model User {
 
   passwordResetTokens   PasswordResetToken[]
   inventoryTransactions InventoryTransaction[]
+  variantInventoryTransactions VariantInventoryTransaction[]
   addresses             Address[]
   auditLogs             AuditLog[] @relation("AuditLogActor")
+  checkoutLocks         CheckoutLock[]
 
   // Phase 7: Cart & Wishlist. 1:1 per user — simplest model that satisfies "a user has
   // one cart" / "a user has one wishlist"; both are created lazily on first use
@@ -236,6 +373,14 @@ model User {
   // Phase 15: Notifications. In-app notifications addressed to this user — see the
   // Notification model's own comment.
   notifications Notification[]
+
+  // Product reviews — one review per user per product (@@unique on Review), enforced
+  // at the DB layer same as WishlistItem's duplicate-prevention pattern.
+  reviews Review[]
+
+  // Coupons/discounts. Used to enforce Coupon.perCustomerLimit — see
+  // coupon-service.ts.
+  couponRedemptions CouponRedemption[]
 
   @@index([roleId])
 }
@@ -380,6 +525,17 @@ model Order {
   shippingCountry       String
 
   subtotal Decimal @db.Decimal(12, 2)
+  // D-008 resolved: flat-rate shipping (currently $0 / free shipping, configurable via
+  // FLAT_SHIPPING_AMOUNT below) rather than a carrier/zone model — see docs/DECISIONS.md.
+  // Kept as its own field (not folded into subtotal) so a future zone/carrier-based
+  // calculation can replace the flat constant without a schema change.
+  shippingAmount Decimal @default(0) @db.Decimal(12, 2)
+  // Coupons/discounts. `couponCode` is a snapshot (the code as typed/normalized at
+  // order-creation time), not a live FK to Coupon — same "never let a later change to
+  // the referenced entity alter a historical order" principle as OrderItem's product
+  // snapshot. Usage-limit accounting lives on CouponRedemption, not here.
+  couponCode     String?
+  discountAmount Decimal @default(0) @db.Decimal(12, 2)
   total    Decimal @db.Decimal(12, 2)
   currency String  @default("USD")
 
@@ -409,6 +565,11 @@ model Order {
   // checkout. No FK columns live on Order itself for this; Quote holds the FK (see
   // Quote's own comment).
   convertedFromQuote Quote?
+
+  // Coupons/discounts. At most one redemption per order (the checkout flow accepts
+  // one coupon code per order, not stacked codes) — enforced by @@unique([orderId])
+  // on CouponRedemption.
+  couponRedemption CouponRedemption?
 
   // Phase 17: Performance. Added after auditing the actual query patterns that hit
   // this table — `status` and `paymentStatus` are both used as standalone filters in
@@ -503,10 +664,21 @@ model OrderItem {
   quantity    Int
   lineTotal   Decimal @db.Decimal(12, 2)
 
+  // Variant snapshot — same "never re-read a live row for a historical order"
+  // principle as productName/sku/unitPrice above. `variantId` is a reference-only FK
+  // (like `productId`'s own comment describes) for admin convenience; `variantLabel`
+  // is the actual historical record (e.g. "Black / Medium", rendered from the
+  // variant's `attributes` at order-creation time) — it survives even if the variant
+  // is later edited or deleted.
+  variantId    String?
+  variant      ProductVariant? @relation(fields: [variantId], references: [id], onDelete: SetNull)
+  variantLabel String?
+
   createdAt DateTime @default(now())
 
   @@index([orderId])
   @@index([productId])
+  @@index([variantId])
 }
 
 // Phase 10: Refund/Return Workflow (spec §7; docs/DECISIONS.md D-007). This is a
@@ -640,10 +812,23 @@ model CartItem {
   productId String
   product   Product @relation(fields: [productId], references: [id], onDelete: Cascade)
 
-  // DB-level authoritative dedup: a product can only appear once per cart. Server-side
-  // "add" is always an upsert against this constraint, never a blind insert.
-  @@unique([cartId, productId])
+  // Nullable — set only when the customer selected a variant (size/color); null for a
+  // plain, non-variant product line (the majority case). DB-level dedup here is a pair
+  // of hand-added PARTIAL unique indexes (Prisma's schema DSL has no WHERE-clause
+  // syntax, same gap as the CHECK-constraint cases elsewhere in this schema) rather
+  // than a plain `@@unique([cartId, productId])` — because a plain composite unique
+  // would either (a) block two DIFFERENT variants of the same product coexisting in
+  // one cart (if variantId were included) or (b) not exist at all for the variantId
+  // column's NULL case (Postgres treats NULL as never-equal in a plain unique index,
+  // so two non-variant rows for the same product could otherwise both be created). See
+  // the migration SQL: one partial index for `variantId IS NULL` (one row per product,
+  // exactly the original invariant, preserved unchanged), one for `variantId IS NOT
+  // NULL` (one row per product+variant combination).
+  variantId String?
+  variant   ProductVariant? @relation(fields: [variantId], references: [id], onDelete: Cascade)
+
   @@index([productId])
+  @@index([variantId])
 }
 
 // Same shape/rationale as Cart/CartItem. WishlistItem has no quantity — a product is
@@ -674,6 +859,110 @@ model WishlistItem {
   // catch P2002) so two concurrent POSTs of the same product can never create two rows.
   @@unique([wishlistId, productId])
   @@index([productId])
+}
+
+enum ReviewStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+// Product reviews. Moderation-gated (PENDING by default) — only APPROVED reviews are
+// ever shown on the storefront or counted in a product's aggregate rating; PENDING/
+// REJECTED are visible only to the reviewing admin (reviews.manage permission) and to
+// the review's own author. `verifiedPurchase` is computed server-side at creation time
+// (does the author have a DELIVERED order containing this product?) and never trusted
+// from the client — same "server is authoritative" principle as OrderItem pricing. No
+// separate status-history table (unlike RefundRequest/Order): review moderation isn't a
+// financial or security-critical operation, so a single overwritable `status` field is
+// proportionate — see docs/ai/BUSINESS_RULES.md.
+model Review {
+  id      String @id @default(cuid())
+  rating  Int // 1-5, enforced by a DB CHECK constraint (see migration) and zod at the API layer.
+  title   String?
+  body    String
+
+  verifiedPurchase Boolean @default(false)
+  status           ReviewStatus @default(PENDING)
+
+  productId String
+  product   Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // One review per user per product — DB-level authoritative, same pattern as
+  // WishlistItem's @@unique([wishlistId, productId]).
+  @@unique([productId, userId])
+  @@index([productId, status])
+  @@index([userId])
+}
+
+enum CouponType {
+  PERCENTAGE
+  FIXED
+}
+
+// Coupons/discounts. Deliberately scoped to order-level, code-based discounts only —
+// no product/category eligibility restrictions in this phase (would add real
+// complexity — a join table + storefront eligibility-checking UI — with no concrete
+// business requirement driving it yet; revisit if/when the business needs
+// category-restricted promotions). One coupon code per order (see Order.couponCode /
+// CouponRedemption). `timesUsed` is the authoritative global-usage counter,
+// incremented via the same atomic-conditional-UPDATE pattern as Inventory.quantity
+// (see coupon-repository.ts `redeemAtomically`) — never a naive read-then-write, so
+// concurrent checkouts can't both redeem the last unit of a limited coupon.
+model Coupon {
+  id    String     @id @default(cuid())
+  code  String     @unique
+  type  CouponType
+  value Decimal    @db.Decimal(12, 2) // percentage (0-100) or a fixed currency amount, per `type`
+
+  minOrderAmount    Decimal? @db.Decimal(12, 2)
+  maxDiscountAmount Decimal? @db.Decimal(12, 2) // caps a PERCENTAGE discount; ignored for FIXED
+
+  startsAt DateTime?
+  endsAt   DateTime?
+
+  usageLimit     Int? // null = unlimited
+  timesUsed      Int  @default(0)
+  perCustomerLimit Int? // null = unlimited; enforced by counting CouponRedemption rows per user
+
+  active Boolean @default(true)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  redemptions CouponRedemption[]
+
+  @@index([active])
+}
+
+// One row per successful redemption — the audit trail for coupon usage, and the
+// source of truth `coupon-service.ts` counts against for `perCustomerLimit`. Never
+// deleted; a coupon can be deactivated (Coupon.active = false) but not hard-deleted
+// once it has redemptions, so this table's history stays intact (same "historical
+// record must survive" principle as OrderItem/InventoryTransaction).
+model CouponRedemption {
+  id String @id @default(cuid())
+
+  couponId String
+  coupon   Coupon @relation(fields: [couponId], references: [id], onDelete: Restrict)
+
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Restrict)
+
+  orderId String @unique
+  order   Order  @relation(fields: [orderId], references: [id], onDelete: Restrict)
+
+  amount Decimal @db.Decimal(12, 2) // the actual discount applied, snapshotted
+
+  createdAt DateTime @default(now())
+
+  @@index([couponId, userId])
 }
 
 // Phase 11: Quote Requests (spec §19). Formalizes the previously-cosmetic `/quote`

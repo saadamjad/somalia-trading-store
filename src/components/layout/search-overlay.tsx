@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Search, X } from "lucide-react";
@@ -27,10 +27,10 @@ export function SearchOverlay() {
     };
   }, [isSearchOpen]);
 
-  const handleClose = () => {
+  const handleClose = useCallback(() => {
     setQuery("");
     closeSearch();
-  };
+  }, [closeSearch]);
 
   useEffect(() => {
     const handleEscape = (e: KeyboardEvent) => {
@@ -38,7 +38,7 @@ export function SearchOverlay() {
     };
     window.addEventListener("keydown", handleEscape);
     return () => window.removeEventListener("keydown", handleEscape);
-  }, [closeSearch]);
+  }, [handleClose]);
 
   useEffect(() => {
     if (query.length < 2) return;

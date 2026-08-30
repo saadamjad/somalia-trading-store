@@ -521,6 +521,9 @@ export const quoteService = {
       shipping,
       currency: quote.currency,
       customerNote: `Converted from quote request ${quote.id}.`,
+      // Re-converting the same quote (e.g. an admin double-clicking "Convert") is
+      // always a duplicate — see order-service.ts's duplicate-checkout guard.
+      idempotencyKey: `quote-conversion:${quote.id}`,
       withinTransaction: async (tx, createdOrder) => {
         convertedQuoteRow = (await quoteRepository.markConvertedTx(tx, id, {
           fromStatus: quote.status,

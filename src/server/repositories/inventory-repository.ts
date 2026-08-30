@@ -22,6 +22,31 @@ export interface InventoryTransactionCreateInput {
  * business errors) that calls this repository.
  */
 export const inventoryRepository = {
+  /**
+   * DB-level counts for the admin dashboard summary — deliberately NOT `findAll()`
+   * filtered in application code. Found via a production-readiness performance audit:
+   * `dashboardService.getSummary` was calling `inventoryService.getAll()` (every
+   * Inventory row, joined with its full Product+Category record) just to compute two
+   * counts, which fetches and hydrates the entire catalog on every dashboard load —
+   * fine at the current small scale, but a real cost once the catalog grows into the
+   * thousands. Raw SQL is required here (not Prisma's query builder) because Prisma
+   * has no way to compare two columns of the same row (`quantity <= lowStockThreshold`)
+   * in a `where` clause.
+   */
+  async countByStockStatus(): Promise<{ lowStock: number; outOfStock: number }> {
+    const rows = await prisma.$queryRaw<{ low_stock: bigint; out_of_stock: bigint }[]>`
+      SELECT
+        COUNT(*) FILTER (WHERE "quantity" > 0 AND "quantity" <= "lowStockThreshold") AS low_stock,
+        COUNT(*) FILTER (WHERE "quantity" <= 0) AS out_of_stock
+      FROM "Inventory"
+    `;
+    const row = rows[0];
+    return {
+      lowStock: row ? Number(row.low_stock) : 0,
+      outOfStock: row ? Number(row.out_of_stock) : 0,
+    };
+  },
+
   findAll() {
     return prisma.inventory.findMany({
       include: withProduct,

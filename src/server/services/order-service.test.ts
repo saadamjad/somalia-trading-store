@@ -3,6 +3,7 @@ import { prisma } from "@/server/lib/prisma";
 import { authService } from "@/server/services/auth-service";
 import { cartService } from "@/server/services/cart-service";
 import { addressService } from "@/server/services/address-service";
+import { productVariantService } from "@/server/services/product-variant-service";
 import {
   orderService,
   EmptyCartError,
@@ -10,6 +11,7 @@ import {
   OrderNotFoundError,
   InvalidStatusTransitionError,
   EmailBelongsToExistingAccountError,
+  DuplicateCheckoutError,
 } from "@/server/services/order-service";
 
 const runId = `${Date.now()}-${Math.floor(Math.random() * 100000)}`;
@@ -98,7 +100,10 @@ describe("orderService.createOrder", () => {
     expect(itemB.quantity).toBe(3);
     expect(itemB.lineTotal).toBeCloseTo(29.97, 2);
     expect(order.subtotal).toBeCloseTo(80.97, 2);
-    expect(order.total).toBe(order.subtotal);
+    // Flat-rate shipping (D-008 resolved): free ($0) today, so total === subtotal —
+    // but shippingAmount is a real, separately-tracked field, not folded into subtotal.
+    expect(order.shippingAmount).toBe(0);
+    expect(order.total).toBe(order.subtotal + order.shippingAmount);
 
     // Shipping snapshot copied from the address, not a live FK.
     expect(order.shipping.recipientName).toBe(SAMPLE_ADDRESS.recipientName);
@@ -196,6 +201,41 @@ describe("orderService.createOrder", () => {
         ? await cartService.getCartForUser(buyerA.id)
         : await cartService.getCartForUser(buyerB.id);
     expect(loserCart).toHaveLength(1);
+  });
+
+  it("DUPLICATE CHECKOUT (double-click): two simultaneous checkout requests for the SAME user's SAME cart, with plenty of stock for both, create only ONE order — found via adversarial red-team testing over the real HTTP API, where this previously created two separate orders and decremented inventory twice", async () => {
+    const buyer = await createCustomer("double-click");
+    const address = await addressService.create(buyer.id, SAMPLE_ADDRESS);
+    // Plenty of stock — if this test's protection were missing, both concurrent
+    // requests would have enough stock to succeed independently (unlike the stock-
+    // shortfall race test above, this isolates the duplicate-submission bug from the
+    // inventory-oversell bug — they are different failure modes with different fixes).
+    const productId = await createProduct("double-click", 100);
+    await cartService.setItem(buyer.id, productId, 1);
+
+    const results = await Promise.allSettled([
+      orderService.createOrder(buyer.id, { addressId: address.id }),
+      orderService.createOrder(buyer.id, { addressId: address.id }),
+    ]);
+
+    const fulfilled = results.filter((r) => r.status === "fulfilled");
+    const rejected = results.filter((r) => r.status === "rejected");
+    expect(fulfilled).toHaveLength(1);
+    expect(rejected).toHaveLength(1);
+    expect((rejected[0] as PromiseRejectedResult).reason).toBeInstanceOf(DuplicateCheckoutError);
+
+    // Exactly one order was created for this buyer — not two.
+    const orders = await orderService.listForUser(buyer.id);
+    expect(orders).toHaveLength(1);
+
+    // Inventory was decremented exactly once (99, not 98) — the losing transaction's
+    // duplicate-checkout guard fires BEFORE inventory is ever touched.
+    const inventory = await prisma.inventory.findUniqueOrThrow({ where: { productId } });
+    expect(inventory.quantity).toBe(99);
+
+    // The cart is empty (consumed by the winning order), not still holding the item.
+    const cart = await cartService.getCartForUser(buyer.id);
+    expect(cart).toHaveLength(0);
   });
 
   it("never accepts client-supplied price/quantity: order pricing always comes from the server-side cart re-priced against current Product rows, not from any request field", async () => {
@@ -427,26 +467,83 @@ describe("orderService.createOrder", () => {
       expect(user.passwordHash).toBeNull();
     });
 
-    it("reuses the same guest User (no duplicate account) on a second order from the same email", async () => {
+    it("reuses the same guest User (no duplicate account) on a second, genuinely separate order from the same email", async () => {
       const productId = await createProduct("guest-repeat", 5);
       const email = uniqueEmail("guest-repeat");
 
+      // Two DISTINCT idempotency keys — simulating two separate checkout page loads
+      // (e.g. the guest bought once, came back later and bought again), not a
+      // double-click of the same "Place Order" button. See the duplicate-checkout
+      // test below for the same-key case.
       const first = await orderService.createGuestOrder({
         name: "Guest Buyer",
         email,
         shippingAddress: SAMPLE_ADDRESS,
         items: [{ productId, quantity: 1 }],
+        idempotencyKey: "checkout-attempt-1",
       });
       const second = await orderService.createGuestOrder({
         name: "Guest Buyer",
         email,
         shippingAddress: SAMPLE_ADDRESS,
         items: [{ productId, quantity: 1 }],
+        idempotencyKey: "checkout-attempt-2",
       });
 
       const firstOrder = await prisma.order.findUniqueOrThrow({ where: { id: first.id } });
       const secondOrder = await prisma.order.findUniqueOrThrow({ where: { id: second.id } });
       expect(secondOrder.userId).toBe(firstOrder.userId);
+      expect(secondOrder.id).not.toBe(firstOrder.id);
+    });
+
+    it("DUPLICATE GUEST CHECKOUT (double-click): two simultaneous guest checkout requests with the SAME idempotency key create only ONE order — the returning-guest gap found via adversarial red-team testing (a brand-new guest email was only accidentally protected by an unrelated unique-constraint collision on user creation; a returning guest, reusing an existing isGuest User row, was not)", async () => {
+      const productId = await createProduct("guest-double-click", 100);
+      const email = uniqueEmail("guest-double-click");
+      const sameKey = "same-checkout-page-load";
+
+      // First, become a "returning guest" — the earlier bug specifically did NOT
+      // reproduce for a brand-new email (it accidentally got protected by the
+      // User.email unique constraint racing on account creation), only for an
+      // ALREADY-EXISTING guest account.
+      await orderService.createGuestOrder({
+        name: "Guest Buyer",
+        email,
+        shippingAddress: SAMPLE_ADDRESS,
+        items: [{ productId, quantity: 1 }],
+        idempotencyKey: "initial-purchase",
+      });
+
+      const results = await Promise.allSettled([
+        orderService.createGuestOrder({
+          name: "Guest Buyer",
+          email,
+          shippingAddress: SAMPLE_ADDRESS,
+          items: [{ productId, quantity: 1 }],
+          idempotencyKey: sameKey,
+        }),
+        orderService.createGuestOrder({
+          name: "Guest Buyer",
+          email,
+          shippingAddress: SAMPLE_ADDRESS,
+          items: [{ productId, quantity: 1 }],
+          idempotencyKey: sameKey,
+        }),
+      ]);
+
+      const fulfilled = results.filter((r) => r.status === "fulfilled");
+      const rejected = results.filter((r) => r.status === "rejected");
+      expect(fulfilled).toHaveLength(1);
+      expect(rejected).toHaveLength(1);
+      expect((rejected[0] as PromiseRejectedResult).reason).toBeInstanceOf(DuplicateCheckoutError);
+
+      const user = await prisma.user.findUniqueOrThrow({ where: { email: email.toLowerCase() } });
+      const orders = await orderService.listForUser(user.id);
+      // 1 from the initial purchase + exactly 1 from the double-click race = 2, not 3.
+      expect(orders).toHaveLength(2);
+
+      // Inventory decremented exactly twice (once per REAL order), not three times.
+      const inventory = await prisma.inventory.findUniqueOrThrow({ where: { productId } });
+      expect(inventory.quantity).toBe(98);
     });
 
     it("rejects guest checkout when the email belongs to an existing REAL (non-guest) account", async () => {
@@ -485,5 +582,315 @@ describe("orderService.createOrder", () => {
       expect(stored.items[0]!.quantity).toBe(5);
       expect(Number(stored.items[0]!.lineTotal)).toBe(25);
     });
+  });
+});
+
+describe("orderService coupon integration", () => {
+  const couponCodes: string[] = [];
+  const couponTestEmails: string[] = [];
+  const couponProductIds: string[] = [];
+
+  function uniqueCode(label: string) {
+    const code = `ORDER-TEST-${label.toUpperCase()}-${runId}`;
+    couponCodes.push(code);
+    return code;
+  }
+
+  function couponUniqueEmail(label: string) {
+    const email = `phase8-order-coupon-${label}-${runId}@example.test`;
+    couponTestEmails.push(email);
+    return email;
+  }
+
+  async function createCouponCustomer(label: string) {
+    return authService.register({
+      name: `Order Coupon Test ${label}`,
+      email: couponUniqueEmail(label),
+      password: "PlainTextPass1",
+    });
+  }
+
+  async function createCouponProduct(label: string, stock: number, price = "20.00") {
+    const category = await prisma.category.findFirstOrThrow();
+    const product = await prisma.product.create({
+      data: {
+        slug: `order-coupon-test-${label}-${runId}`,
+        name: `Order Coupon Test Product (${label})`,
+        description: "Test fixture product for order coupon tests.",
+        shortDescription: "Test fixture.",
+        categoryId: category.id,
+        price,
+        images: ["https://example.com/test.jpg"],
+      },
+    });
+    couponProductIds.push(product.id);
+    await prisma.inventory.create({ data: { productId: product.id, quantity: stock } });
+    return product.id;
+  }
+
+  afterAll(async () => {
+    await prisma.couponRedemption.deleteMany({ where: { coupon: { code: { in: couponCodes } } } });
+    await prisma.coupon.deleteMany({ where: { code: { in: couponCodes } } });
+    await prisma.orderItem.deleteMany({ where: { productId: { in: couponProductIds } } });
+    await prisma.orderStatusHistory.deleteMany({ where: { order: { user: { email: { in: couponTestEmails } } } } });
+    await prisma.paymentStatusHistory.deleteMany({ where: { order: { user: { email: { in: couponTestEmails } } } } });
+    await prisma.order.deleteMany({ where: { user: { email: { in: couponTestEmails } } } });
+    await prisma.cartItem.deleteMany({ where: { productId: { in: couponProductIds } } });
+    await prisma.cart.deleteMany({ where: { user: { email: { in: couponTestEmails } } } });
+    await prisma.inventoryTransaction.deleteMany({ where: { productId: { in: couponProductIds } } });
+    await prisma.inventory.deleteMany({ where: { productId: { in: couponProductIds } } });
+    await prisma.address.deleteMany({ where: { user: { email: { in: couponTestEmails } } } });
+    await prisma.product.deleteMany({ where: { id: { in: couponProductIds } } });
+    await prisma.user.deleteMany({ where: { email: { in: couponTestEmails } } });
+  });
+
+  async function placeOrderWithCoupon(userId: string, productId: string, couponCode: string) {
+    const address = await addressService.create(userId, SAMPLE_ADDRESS);
+    await cartService.setItem(userId, productId, 1);
+    return orderService.createOrder(userId, { addressId: address.id, couponCode });
+  }
+
+  it("applies a valid coupon's discount to the order total and records one CouponRedemption", async () => {
+    const code = uniqueCode("happy");
+    await prisma.coupon.create({ data: { code, type: "FIXED", value: "5.00" } });
+    const customer = await createCouponCustomer("happy");
+    const productId = await createCouponProduct("happy", 10, "20.00");
+
+    const order = await placeOrderWithCoupon(customer.id, productId, code);
+
+    expect(order.couponCode).toBe(code);
+    expect(order.discountAmount).toBe(5);
+    expect(order.total).toBe(order.subtotal - 5);
+
+    const redemptions = await prisma.couponRedemption.findMany({ where: { orderId: order.id } });
+    expect(redemptions).toHaveLength(1);
+    expect(Number(redemptions[0]!.amount)).toBe(5);
+  });
+
+  it("rejects order creation with an invalid coupon code — the whole order is rolled back, not just the discount dropped", async () => {
+    const customer = await createCouponCustomer("invalid");
+    const productId = await createCouponProduct("invalid", 10, "20.00");
+    const address = await addressService.create(customer.id, SAMPLE_ADDRESS);
+    await cartService.setItem(customer.id, productId, 1);
+
+    await expect(
+      orderService.createOrder(customer.id, { addressId: address.id, couponCode: "NOT-A-REAL-CODE" })
+    ).rejects.toThrow();
+
+    const orders = await prisma.order.findMany({ where: { userId: customer.id } });
+    expect(orders).toHaveLength(0);
+  });
+
+  it("CONCURRENCY: given a coupon with usageLimit=1, two simultaneous checkouts racing for it — only one succeeds with the discount applied", async () => {
+    const code = uniqueCode("race");
+    await prisma.coupon.create({ data: { code, type: "FIXED", value: "5.00", usageLimit: 1 } });
+
+    const customerA = await createCouponCustomer("race-a");
+    const customerB = await createCouponCustomer("race-b");
+    const productA = await createCouponProduct("race-a", 10, "20.00");
+    const productB = await createCouponProduct("race-b", 10, "20.00");
+
+    const results = await Promise.allSettled([
+      placeOrderWithCoupon(customerA.id, productA, code),
+      placeOrderWithCoupon(customerB.id, productB, code),
+    ]);
+
+    const fulfilled = results.filter((r) => r.status === "fulfilled");
+    const rejected = results.filter((r) => r.status === "rejected");
+    expect(fulfilled).toHaveLength(1);
+    expect(rejected).toHaveLength(1);
+
+    const coupon = await prisma.coupon.findUniqueOrThrow({ where: { code } });
+    expect(coupon.timesUsed).toBe(1);
+
+    const redemptions = await prisma.couponRedemption.findMany({ where: { couponId: coupon.id } });
+    expect(redemptions).toHaveLength(1);
+  });
+});
+
+describe("orderService variant integration", () => {
+  const variantTestEmails: string[] = [];
+  const variantProductIds: string[] = [];
+  const variantIds: string[] = [];
+
+  function variantUniqueEmail(label: string) {
+    const email = `phase8-order-variant-${label}-${runId}@example.test`;
+    variantTestEmails.push(email);
+    return email;
+  }
+
+  async function createVariantCustomer(label: string) {
+    return authService.register({
+      name: `Order Variant Test ${label}`,
+      email: variantUniqueEmail(label),
+      password: "PlainTextPass1",
+    });
+  }
+
+  async function createVariantProduct(label: string, price = "50.00") {
+    const category = await prisma.category.findFirstOrThrow();
+    const product = await prisma.product.create({
+      data: {
+        slug: `order-variant-test-${label}-${runId}`,
+        name: `Order Variant Test Product (${label})`,
+        description: "Test fixture product for order variant tests.",
+        shortDescription: "Test fixture.",
+        categoryId: category.id,
+        price,
+        images: ["https://example.com/test.jpg"],
+      },
+    });
+    variantProductIds.push(product.id);
+    return product.id;
+  }
+
+  afterAll(async () => {
+    await prisma.orderItem.deleteMany({ where: { productId: { in: variantProductIds } } });
+    await prisma.orderStatusHistory.deleteMany({ where: { order: { user: { email: { in: variantTestEmails } } } } });
+    await prisma.paymentStatusHistory.deleteMany({ where: { order: { user: { email: { in: variantTestEmails } } } } });
+    await prisma.order.deleteMany({ where: { user: { email: { in: variantTestEmails } } } });
+    await prisma.cartItem.deleteMany({ where: { productId: { in: variantProductIds } } });
+    await prisma.cart.deleteMany({ where: { user: { email: { in: variantTestEmails } } } });
+    await prisma.variantInventoryTransaction.deleteMany({ where: { variantId: { in: variantIds } } });
+    await prisma.variantInventory.deleteMany({ where: { variantId: { in: variantIds } } });
+    await prisma.productVariant.deleteMany({ where: { id: { in: variantIds } } });
+    await prisma.inventoryTransaction.deleteMany({ where: { productId: { in: variantProductIds } } });
+    await prisma.inventory.deleteMany({ where: { productId: { in: variantProductIds } } });
+    await prisma.product.deleteMany({ where: { id: { in: variantProductIds } } });
+    await prisma.address.deleteMany({ where: { user: { email: { in: variantTestEmails } } } });
+    await prisma.user.deleteMany({ where: { email: { in: variantTestEmails } } });
+  });
+
+  it("checks out a variant line using the variant's price override (not the parent product's price), decrements ONLY the variant's stock, and snapshots the variant label onto the historical OrderItem", async () => {
+    const customer = await createVariantCustomer("happy");
+    const productId = await createVariantProduct("happy", "50.00");
+    const variant = await productVariantService.create({
+      productId,
+      sku: `SKU-ORDER-HAPPY-${runId}`,
+      attributes: { size: "L", color: "Red" },
+      price: 65,
+      initialStock: 10,
+    });
+    variantIds.push(variant.id);
+
+    const address = await addressService.create(customer.id, SAMPLE_ADDRESS);
+    await cartService.setItem(customer.id, productId, 2, variant.id);
+    const order = await orderService.createOrder(customer.id, { addressId: address.id });
+
+    expect(order.items).toHaveLength(1);
+    const item = order.items[0]!;
+    expect(item.variantId).toBe(variant.id);
+    expect(item.variantLabel).toBe("Red / L");
+    expect(item.unitPrice).toBe(65); // variant override, not the product's 50.00
+    expect(item.lineTotal).toBe(130);
+
+    const variantInventory = await prisma.variantInventory.findUniqueOrThrow({
+      where: { variantId: variant.id },
+    });
+    expect(variantInventory.quantity).toBe(8); // 10 - 2
+
+    // The PARENT PRODUCT has no Inventory row at all in this test (variant-only
+    // product) — confirms the decrement went to VariantInventory, not a stray
+    // product-level row.
+    const productInventory = await prisma.inventory.findFirst({ where: { productId } });
+    expect(productInventory).toBeNull();
+  });
+
+  it("falls back to the parent product's price when the variant has no price override", async () => {
+    const customer = await createVariantCustomer("fallback-price");
+    const productId = await createVariantProduct("fallback-price", "30.00");
+    const variant = await productVariantService.create({
+      productId,
+      sku: `SKU-ORDER-FALLBACK-${runId}`,
+      attributes: { size: "S" },
+      initialStock: 10,
+    });
+    variantIds.push(variant.id);
+
+    const address = await addressService.create(customer.id, SAMPLE_ADDRESS);
+    await cartService.setItem(customer.id, productId, 1, variant.id);
+    const order = await orderService.createOrder(customer.id, { addressId: address.id });
+
+    expect(order.items[0]!.unitPrice).toBe(30);
+  });
+
+  it("a non-variant product line in the same cart still works exactly as before (no variantId)", async () => {
+    const customer = await createVariantCustomer("mixed-cart");
+    const variantProductId = await createVariantProduct("mixed-cart-variant", "20.00");
+    const variant = await productVariantService.create({
+      productId: variantProductId,
+      sku: `SKU-ORDER-MIXED-${runId}`,
+      attributes: { size: "M" },
+      initialStock: 10,
+    });
+    variantIds.push(variant.id);
+    const plainProductId = await createProduct("mixed-cart-plain", 10, "15.00");
+    variantProductIds.push(plainProductId);
+
+    const address = await addressService.create(customer.id, SAMPLE_ADDRESS);
+    await cartService.setItem(customer.id, variantProductId, 1, variant.id);
+    await cartService.setItem(customer.id, plainProductId, 2);
+    const order = await orderService.createOrder(customer.id, { addressId: address.id });
+
+    expect(order.items).toHaveLength(2);
+    const variantItem = order.items.find((i) => i.variantId === variant.id)!;
+    const plainItem = order.items.find((i) => i.variantId === null)!;
+    expect(variantItem.unitPrice).toBe(20);
+    expect(plainItem.unitPrice).toBe(15);
+    expect(plainItem.variantLabel).toBeNull();
+  });
+
+  it("CONCURRENCY: two simultaneous checkouts for the last units of a variant's stock — only one succeeds, no overselling", async () => {
+    const customerA = await createVariantCustomer("race-a");
+    const customerB = await createVariantCustomer("race-b");
+    const productId = await createVariantProduct("race", "25.00");
+    const variant = await productVariantService.create({
+      productId,
+      sku: `SKU-ORDER-RACE-${runId}`,
+      attributes: { size: "M" },
+      initialStock: 1,
+    });
+    variantIds.push(variant.id);
+
+    async function attempt(userId: string) {
+      const address = await addressService.create(userId, SAMPLE_ADDRESS);
+      await cartService.setItem(userId, productId, 1, variant.id);
+      return orderService.createOrder(userId, { addressId: address.id });
+    }
+
+    const results = await Promise.allSettled([attempt(customerA.id), attempt(customerB.id)]);
+    const fulfilled = results.filter((r) => r.status === "fulfilled");
+    expect(fulfilled).toHaveLength(1);
+
+    const variantInventory = await prisma.variantInventory.findUniqueOrThrow({
+      where: { variantId: variant.id },
+    });
+    expect(variantInventory.quantity).toBe(0);
+  });
+
+  it("SECURITY: guest checkout rejects a variantId that belongs to a DIFFERENT product than the one it's paired with, and creates no order at all", async () => {
+    const email = variantUniqueEmail("guest-mismatch");
+    const productA = await createVariantProduct("guest-mismatch-a", "10.00");
+    const productB = await createVariantProduct("guest-mismatch-b", "10.00");
+    const variantOfB = await productVariantService.create({
+      productId: productB,
+      sku: `SKU-ORDER-GUEST-MISMATCH-${runId}`,
+      attributes: { size: "M" },
+      initialStock: 10,
+    });
+    variantIds.push(variantOfB.id);
+
+    await expect(
+      orderService.createGuestOrder({
+        name: "Guest Buyer",
+        email,
+        shippingAddress: SAMPLE_ADDRESS,
+        // productA paired with a variant that actually belongs to productB.
+        items: [{ productId: productA, quantity: 1, variantId: variantOfB.id }],
+      })
+    ).rejects.toThrow(StockUnavailableError);
+
+    const orders = await prisma.order.findMany({ where: { user: { email } } });
+    expect(orders).toHaveLength(0);
   });
 });

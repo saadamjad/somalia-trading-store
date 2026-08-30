@@ -334,6 +334,10 @@ const permissionKeys = [
   "cms.view",
   "cms.manage",
   "reports.view",
+  "reviews.view",
+  "reviews.manage",
+  "coupons.view",
+  "coupons.manage",
   "dashboard.view",
   // Admin User Management & RBAC — only super_admin ever holds these (see the "admin"
   // and "staff" role definitions below), which structurally contains privilege
@@ -358,6 +362,8 @@ const staffExcludedKeys = new Set([
   "refunds.manage",
   "quotes.view",
   "quotes.manage",
+  "coupons.view",
+  "coupons.manage",
   "admin_users.view",
   "admin_users.create",
   "admin_users.update",

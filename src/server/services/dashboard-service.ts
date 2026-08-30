@@ -134,7 +134,7 @@ export const dashboardService = {
       customersNewInPeriod,
       productsTotal,
       productsFeatured,
-      inventoryRows,
+      stockStatusCounts,
       refundStatusRows,
       quoteStatusRows,
     ] = await Promise.all([
@@ -146,7 +146,7 @@ export const dashboardService = {
       dashboardRepository.customersCountInPeriod(since),
       dashboardRepository.productsCountTotal(),
       dashboardRepository.productsCountFeatured(),
-      inventoryService.getAll(),
+      inventoryService.getStockStatusCounts(),
       dashboardRepository.refundRequestStatusCounts(),
       dashboardRepository.quoteStatusCounts(),
     ]);
@@ -155,8 +155,8 @@ export const dashboardService = {
     const refundsByStatus = fillCounts(REFUND_STATUSES, refundStatusRows);
     const quotesByStatus = fillCounts(QUOTE_STATUSES, quoteStatusRows);
 
-    const lowStock = inventoryRows.filter((row) => row.status === "low_stock").length;
-    const outOfStock = inventoryRows.filter((row) => row.status === "out_of_stock").length;
+    const lowStock = stockStatusCounts.lowStock;
+    const outOfStock = stockStatusCounts.outOfStock;
 
     return {
       period,

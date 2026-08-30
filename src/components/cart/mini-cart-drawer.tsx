@@ -45,14 +45,14 @@ export function MiniCartDrawer() {
             />
           ) : (
             <ul className="space-y-4">
-              {items.map(({ product, quantity }) => (
+              {items.map(({ product, quantity, variant, unitPrice }) => (
                 <li
-                  key={product.id}
+                  key={`${product.id}::${variant?.id ?? ""}`}
                   className="flex gap-4 border-b border-border pb-4"
                 >
                   <div className="relative h-20 w-20 shrink-0 overflow-hidden rounded-lg">
                     <SafeImage
-                      src={product.images[0]}
+                      src={variant?.image ?? product.images[0]}
                       alt={product.name}
                       fill
                       sizes="80px"
@@ -67,14 +67,13 @@ export function MiniCartDrawer() {
                     >
                       {product.name}
                     </Link>
+                    {variant && <p className="text-xs text-muted">{variant.label}</p>}
                     <p className="mt-1 text-sm font-bold">
-                      {formatProductPrice(product.price, product.currency, product.priceUnit)}
+                      {formatProductPrice(unitPrice, product.currency, product.priceUnit)}
                     </p>
                     <div className="mt-auto flex items-center gap-2">
                       <button
-                        onClick={() =>
-                          updateQuantity(product.id, quantity - 1)
-                        }
+                        onClick={() => updateQuantity(product.id, quantity - 1, variant?.id)}
                         className="flex h-7 w-7 items-center justify-center rounded-md border border-border hover:bg-accent-light"
                         aria-label="Decrease quantity"
                       >
@@ -84,16 +83,14 @@ export function MiniCartDrawer() {
                         {quantity}
                       </span>
                       <button
-                        onClick={() =>
-                          updateQuantity(product.id, quantity + 1)
-                        }
+                        onClick={() => updateQuantity(product.id, quantity + 1, variant?.id)}
                         className="flex h-7 w-7 items-center justify-center rounded-md border border-border hover:bg-accent-light"
                         aria-label="Increase quantity"
                       >
                         <Plus className="h-3 w-3" />
                       </button>
                       <button
-                        onClick={() => removeItem(product.id)}
+                        onClick={() => removeItem(product.id, variant?.id)}
                         className="ml-auto text-muted hover:text-destructive"
                         aria-label="Remove item"
                       >

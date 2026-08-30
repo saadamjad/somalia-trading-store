@@ -1,3 +1,4 @@
+import { createHash } from "node:crypto";
 import { prisma } from "@/server/lib/prisma";
 import {
   orderRepository,
@@ -8,9 +9,13 @@ import {
 } from "@/server/repositories/order-repository";
 import { productRepository } from "@/server/repositories/product-repository";
 import { cartRepository } from "@/server/repositories/cart-repository";
+import { checkoutLockRepository } from "@/server/repositories/checkout-lock-repository";
 import { cartService, type StockIssue } from "@/server/services/cart-service";
 import { addressService } from "@/server/services/address-service";
 import { inventoryService } from "@/server/services/inventory-service";
+import { couponService } from "@/server/services/coupon-service";
+import { productVariantService, variantLabel } from "@/server/services/product-variant-service";
+import { productVariantRepository } from "@/server/repositories/product-variant-repository";
 import { notificationService } from "@/server/services/notification-service";
 import { userRepository, roleRepository } from "@/server/repositories/user-repository";
 import type {
@@ -22,10 +27,34 @@ import type { Order, OrderItem, OrderStatus, Prisma } from "@/generated/prisma/c
 
 export type { ShippingSnapshot };
 
+// Flat-rate shipping (D-008 resolved): free shipping on every order, business decision
+// confirmed 2026-08-30. Not sourced from an env var — this is a business-configured
+// constant, not environment-specific config; change it here if the business changes
+// its shipping policy.
+const FLAT_SHIPPING_AMOUNT = 0;
+
 export class EmptyCartError extends Error {
   constructor() {
     super("Your cart is empty — add items before checking out.");
     this.name = "EmptyCartError";
+  }
+}
+
+/**
+ * Thrown when a checkout request's server cart is unexpectedly already empty at the
+ * moment the order-creation transaction actually runs — the signal that a CONCURRENT
+ * duplicate submission (double-click, browser back+resubmit, retried request) for the
+ * same cart already won the race and created an order. Found via adversarial
+ * red-team testing: firing two simultaneous POST /api/orders for the same
+ * authenticated cart previously created TWO separate orders (both succeeded, both
+ * decremented inventory) — the cart was read once outside any transaction and reused
+ * by both concurrent requests, and nothing detected that the cart had already been
+ * consumed. See `persistOrder`'s cart-clear-first ordering for the fix.
+ */
+export class DuplicateCheckoutError extends Error {
+  constructor() {
+    super("This order may have already been placed. Please check your order history before retrying.");
+    this.name = "DuplicateCheckoutError";
   }
 }
 
@@ -109,6 +138,8 @@ export interface OrderItemView {
   unitPrice: number;
   quantity: number;
   lineTotal: number;
+  variantId: string | null;
+  variantLabel: string | null;
 }
 
 export interface OrderView {
@@ -127,6 +158,9 @@ export interface OrderView {
     country: string;
   };
   subtotal: number;
+  shippingAmount: number;
+  couponCode: string | null;
+  discountAmount: number;
   total: number;
   currency: string;
   customerNote: string | null;
@@ -197,6 +231,9 @@ function toOrderView(order: OrderWithItems): OrderView {
       country: order.shippingCountry,
     },
     subtotal: Number(order.subtotal),
+    shippingAmount: Number(order.shippingAmount),
+    couponCode: order.couponCode,
+    discountAmount: Number(order.discountAmount),
     total: Number(order.total),
     currency: order.currency,
     customerNote: order.customerNote,
@@ -208,6 +245,8 @@ function toOrderView(order: OrderWithItems): OrderView {
       unitPrice: Number(item.unitPrice),
       quantity: item.quantity,
       lineTotal: Number(item.lineTotal),
+      variantId: item.variantId,
+      variantLabel: item.variantLabel,
     })),
     createdAt: order.createdAt.toISOString(),
     updatedAt: order.updatedAt.toISOString(),
@@ -280,6 +319,33 @@ export function shippingFromInline(input: NonNullable<OrderCreateInput["shipping
   };
 }
 
+/**
+ * Fallback idempotency key for a `clearCart: false` checkout that didn't supply its
+ * own `idempotencyKey` (e.g. a direct API caller bypassing the checkout UI). Buckets
+ * by a hash of the order's content (recipient/address/items/coupon) AND a coarse
+ * 5-second time window: identical content submitted twice within the same bucket
+ * collides (caught as a duplicate); the SAME content submitted again a few seconds
+ * later — indistinguishable from a genuinely repeated legitimate purchase without a
+ * real per-attempt key — is allowed through, same tradeoff explained in the
+ * CheckoutLock model's schema comment. This is strictly a fallback: the real
+ * checkout UI always sends a proper per-page-load key (see checkout-form.tsx), which
+ * has no such ambiguity.
+ */
+function deriveFallbackIdempotencyKey(params: PersistOrderParams): string {
+  const contentParts = [
+    params.userId,
+    params.shipping.shippingRecipientName,
+    params.shipping.shippingLine1,
+    params.shipping.shippingCity,
+    params.shipping.shippingCountry,
+    params.couponCode ?? "",
+    ...params.orderItemsInput.map((i) => `${i.productId}:${i.variantId ?? ""}:${i.quantity}`).sort(),
+  ];
+  const contentHash = createHash("sha256").update(contentParts.join("|")).digest("hex");
+  const timeBucket = Math.floor(Date.now() / 5000);
+  return `fallback:${contentHash}:${timeBucket}`;
+}
+
 function generateOrderNumber(): string {
   const datePart = new Date().toISOString().slice(0, 10).replace(/-/g, "");
   const randPart = Math.random().toString(36).slice(2, 8).toUpperCase();
@@ -295,6 +361,84 @@ function isUniqueConstraintError(error: unknown): boolean {
   );
 }
 
+/**
+ * Shared cart-line -> order-item pricing resolution, used by both `createOrder`
+ * (authenticated, server cart) and `createGuestOrder` (client-supplied item list) so
+ * the variant-pricing logic exists in exactly one place. Re-reads every product AND
+ * variant from the DB — never trusts a client-supplied price — and throws
+ * `StockUnavailableError` (treated as "0 available") for any line whose product or
+ * variant no longer exists, same as a plain missing-product line did before variants
+ * existed.
+ */
+async function resolveCartItemsToOrderInput(
+  items: { productId: string; variantId?: string | null; quantity: number }[]
+): Promise<{
+  products: Awaited<ReturnType<typeof productRepository.findByIds>>;
+  orderItemsInput: PersistOrderItemInput[];
+}> {
+  const productIds = items.map((item) => item.productId);
+  const variantIds = items.filter((item) => item.variantId).map((item) => item.variantId!);
+
+  const [products, variants] = await Promise.all([
+    productRepository.findByIds(productIds),
+    productVariantRepository.findByIds(variantIds),
+  ]);
+  const productById = new Map(products.map((p) => [p.id, p]));
+  const variantById = new Map(variants.map((v) => [v.id, v]));
+
+  const missing = items.filter((item) => {
+    if (!productById.has(item.productId)) return true;
+    if (item.variantId) {
+      const variant = variantById.get(item.variantId);
+      // A mismatched pairing (variant belongs to a DIFFERENT product than the cart
+      // line's own productId) is treated the same as "doesn't exist" — never trust
+      // the caller's (productId, variantId) pairing. Without this check, a
+      // buggy/malicious client could produce an OrderItem whose snapshotted
+      // SKU/label/price belong to a different product than the one it's billed
+      // against. See cart-service.ts's `assertVariantBelongsToProduct` for the same
+      // guard on the cart-write path — this is the authoritative check, since both
+      // createOrder (server cart) and createGuestOrder (client-supplied items, which
+      // never touches cart-service at all) funnel through here.
+      if (!variant || variant.productId !== item.productId) return true;
+    }
+    return false;
+  });
+  if (missing.length > 0) {
+    // A cart item referencing a product/variant that no longer exists (or a variant
+    // that doesn't belong to the stated product) is functionally the same as "0
+    // available" from the customer's point of view.
+    throw new StockUnavailableError(
+      missing.map((item) => ({
+        productId: item.productId,
+        variantId: item.variantId ?? null,
+        requested: item.quantity,
+        available: 0,
+      }))
+    );
+  }
+
+  const orderItemsInput: PersistOrderItemInput[] = items.map((item) => {
+    const product = productById.get(item.productId)!;
+    const variant = item.variantId ? variantById.get(item.variantId)! : null;
+    const unitPrice = variant?.price !== null && variant?.price !== undefined
+      ? Number(variant.price)
+      : Number(product.price);
+    const lineTotal = Math.round(unitPrice * item.quantity * 100) / 100;
+    return {
+      productId: product.id,
+      productName: product.name,
+      sku: variant?.sku ?? product.sku ?? null,
+      unitPrice,
+      quantity: item.quantity,
+      lineTotal,
+      variantId: variant?.id ?? null,
+      variantLabel: variant ? variantLabel(variant.attributes as Record<string, string>) : null,
+    };
+  });
+
+  return { products, orderItemsInput };
+}
+
 interface PersistOrderItemInput {
   productId: string;
   productName: string;
@@ -302,6 +446,8 @@ interface PersistOrderItemInput {
   unitPrice: number;
   quantity: number;
   lineTotal: number;
+  variantId?: string | null;
+  variantLabel?: string | null;
 }
 
 interface PersistOrderParams {
@@ -310,9 +456,17 @@ interface PersistOrderParams {
   currency: string;
   customerNote: string | null;
   orderItemsInput: PersistOrderItemInput[];
+  /** Optional coupon code to apply — re-validated and redeemed atomically inside the
+   * same transaction as order creation (see couponService.previewInTransaction /
+   * redeemInTransaction). Never trusted for its discount amount — only the code. */
+  couponCode?: string | null;
   /** Clears the caller's server cart, inside the same transaction, once the order is
    * created — only ever true for the normal cart-based checkout path. */
   clearCart: boolean;
+  /** Only consulted when `clearCart` is false (guest checkout, quote conversion) —
+   * see the CheckoutLock model's schema comment. Ignored for the cart-checkout path,
+   * which has its own, more precise guard (the cart's own row count). */
+  idempotencyKey?: string | null;
   /** Runs inside the SAME transaction as order creation + inventory decrement, right
    * after the order row is created — e.g. quote-service.ts uses this to atomically
    * mark a Quote CONVERTED + link the resulting order, so a quote conversion can never
@@ -336,10 +490,11 @@ interface PersistOrderParams {
 async function persistOrder(params: PersistOrderParams): Promise<OrderWithItems> {
   const subtotal =
     Math.round(params.orderItemsInput.reduce((sum, i) => sum + i.lineTotal, 0) * 100) / 100;
-  // No tax/shipping charges are calculated (D-008, deferred) — total equals subtotal
-  // today. Kept as a separate field so tax/shipping can be added later without a
-  // breaking schema change.
-  const total = subtotal;
+  // Flat-rate shipping (D-008 resolved) — currently free ($0) for every order. No
+  // tax calculation exists (still deferred). Kept as its own field so a future
+  // zone/carrier-based calculation can replace FLAT_SHIPPING_AMOUNT without a
+  // breaking schema change — see docs/DECISIONS.md.
+  const shippingAmount = FLAT_SHIPPING_AMOUNT;
 
   const MAX_ORDER_NUMBER_ATTEMPTS = 5;
   let lastError: unknown;
@@ -348,28 +503,115 @@ async function persistOrder(params: PersistOrderParams): Promise<OrderWithItems>
     const orderNumber = generateOrderNumber();
     try {
       return await prisma.$transaction(async (tx) => {
-        // Decrement stock for every line FIRST, inside this same transaction — the
-        // atomic conditional UPDATE inside inventoryService.adjustStock (passed this
-        // `tx`, not a new one) throws InsufficientStockError if stock changed since the
-        // pre-check the caller already ran, which aborts and rolls back the whole
-        // transaction.
-        for (const item of params.orderItemsInput) {
-          await inventoryService.adjustStock(
-            {
-              productId: item.productId,
-              delta: -item.quantity,
-              reason: "ORDER_PLACED",
-              actorId: params.userId,
-              note: `Order ${orderNumber}`,
-            },
-            tx
-          );
+        // Duplicate-checkout guard — MUST run first, before any inventory decrement or
+        // order creation.
+        //
+        // The concurrency guarantee is the same "atomic conditional operation, not a
+        // read-then-write" principle as inventory/coupons elsewhere in this file: two
+        // simultaneous checkout requests for the same cart (a double-click, a
+        // back-button resubmit, a retried request) both call `DELETE FROM CartItem
+        // WHERE cartId = X` here. Postgres serializes the two DELETEs against the same
+        // rows — the second one blocks until the first commits, then re-evaluates its
+        // WHERE clause and finds nothing left to delete (`count === 0`), which is the
+        // signal that another concurrent request already consumed this cart and
+        // created its order. That loser transaction throws and rolls back entirely —
+        // its inventory decrement (which hasn't happened yet, since this runs first)
+        // never occurs, so a duplicate submission costs nothing.
+        //
+        // Found via adversarial red-team testing: before this guard, two simultaneous
+        // checkout requests for the same cart both succeeded and created two separate
+        // orders, both decrementing inventory.
+        if (params.clearCart) {
+          const cart = await cartRepository.findByUserIdTx(tx, params.userId);
+          if (!cart) {
+            throw new EmptyCartError();
+          }
+          const { count } = await cartRepository.clearItemsTx(tx, cart.id);
+          if (count === 0) {
+            throw new DuplicateCheckoutError();
+          }
+        } else {
+          // Guest checkout and quote-to-order conversion have no server Cart row to
+          // gate on (`clearCart: false`) — the SAME adversarial testing pass found
+          // this left them unprotected: a RETURNING guest (an existing isGuest User
+          // row, reused across orders — see createGuestOrder) double-clicking checkout
+          // could create two separate orders, since a brand-new guest email was only
+          // accidentally protected by an unrelated unique-constraint collision on user
+          // creation. `checkoutLockRepository.claim` is a second, independent atomic
+          // gate keyed to `(params.userId, key)` — see the CheckoutLock model's schema
+          // comment for why its `INSERT ... ON CONFLICT ... DO NOTHING` shape is what
+          // makes it race-proof (a plain `INSERT ... WHERE NOT EXISTS` would not be),
+          // and why a per-attempt key (not a time window) is the only correct way to
+          // tell "the same click, retried" apart from "a genuinely repeated purchase."
+          const key = params.idempotencyKey ?? deriveFallbackIdempotencyKey(params);
+          const claimed = await checkoutLockRepository.claim(tx, params.userId, key);
+          if (!claimed) {
+            throw new DuplicateCheckoutError();
+          }
         }
+
+        // Decrement stock for every line FIRST, inside this same transaction — the
+        // atomic conditional UPDATE inside inventoryService.adjustStock/
+        // productVariantService.adjustStock (passed this `tx`, not a new one) throws
+        // InsufficientStockError/VariantInsufficientStockError if stock changed since
+        // the pre-check the caller already ran, which aborts and rolls back the whole
+        // transaction. A variant line decrements ONLY its variant's stock, never the
+        // parent product's (they're separate rows — see ProductVariant's schema
+        // comment on why this is a parallel inventory path).
+        for (const item of params.orderItemsInput) {
+          if (item.variantId) {
+            await productVariantService.adjustStock(
+              {
+                variantId: item.variantId,
+                delta: -item.quantity,
+                reason: "ORDER_PLACED",
+                actorId: params.userId,
+                note: `Order ${orderNumber}`,
+              },
+              tx
+            );
+          } else {
+            await inventoryService.adjustStock(
+              {
+                productId: item.productId,
+                delta: -item.quantity,
+                reason: "ORDER_PLACED",
+                actorId: params.userId,
+                note: `Order ${orderNumber}`,
+              },
+              tx
+            );
+          }
+        }
+
+        // Coupon: previewed (not yet redeemed) BEFORE the order row exists, using
+        // this same `tx` for read consistency — see couponService.previewInTransaction.
+        // `discountAmount` must be known before creating the order row since `total`
+        // depends on it; actual redemption (the atomic usage-limit guarantee) happens
+        // AFTER the order exists, since CouponRedemption.orderId is required.
+        let couponId: string | null = null;
+        let couponCode: string | null = null;
+        let discountAmount = 0;
+        if (params.couponCode) {
+          const preview = await couponService.previewInTransaction(
+            tx,
+            params.couponCode,
+            subtotal,
+            params.userId
+          );
+          couponId = preview.couponId;
+          couponCode = preview.code;
+          discountAmount = preview.discountAmount;
+        }
+        const total = Math.round((subtotal + shippingAmount - discountAmount) * 100) / 100;
 
         const order = await orderRepository.createTx(tx, {
           orderNumber,
           userId: params.userId,
           subtotal,
+          shippingAmount,
+          couponCode,
+          discountAmount,
           total,
           currency: params.currency,
           customerNote: params.customerNote,
@@ -377,13 +619,13 @@ async function persistOrder(params: PersistOrderParams): Promise<OrderWithItems>
           items: params.orderItemsInput,
         });
 
-        // Cart is cleared only here, inside the same transaction as order creation —
-        // if anything above throws, this line never runs and the cart is untouched.
-        if (params.clearCart) {
-          const cart = await cartRepository.findByUserIdTx(tx, params.userId);
-          if (cart) {
-            await cartRepository.clearItemsTx(tx, cart.id);
-          }
+        // Redemption happens only now that order.id exists. If the coupon's usage
+        // limit was just claimed by a concurrent checkout (between the preview above
+        // and this atomic UPDATE), this throws and rolls back the ENTIRE transaction
+        // — order creation and inventory decrement included — never a half-applied
+        // coupon or an order that silently lost its discount.
+        if (couponId) {
+          await couponService.redeemInTransaction(tx, couponId, params.userId, order.id, discountAmount);
         }
 
         if (params.withinTransaction) {
@@ -422,6 +664,13 @@ export interface CreateOrderFromPricedItemsParams {
   shipping: ShippingSnapshot;
   currency: string;
   customerNote?: string | null;
+  /** Passed through to persistOrder's duplicate-checkout guard (`clearCart: false`
+   * path) — quote-service.ts passes the quote's own id, which is naturally stable
+   * and unique per conversion attempt: re-converting the SAME quote should always be
+   * treated as a duplicate, and the quote's own ACCEPTED->CONVERTED status transition
+   * already ensures a given quote is only ever the source of one conversion params
+   * object per call anyway. */
+  idempotencyKey?: string | null;
   withinTransaction?: (tx: Prisma.TransactionClient, order: OrderWithItems) => Promise<void>;
 }
 
@@ -453,34 +702,8 @@ export const orderService = {
       throw new StockUnavailableError(stockIssues);
     }
 
-    const productIds = cartItems.map((item) => item.productId);
-    const products = await productRepository.findByIds(productIds);
-    const productById = new Map(products.map((p) => [p.id, p]));
-
-    const missing = cartItems.filter((item) => !productById.has(item.productId));
-    if (missing.length > 0) {
-      // A cart item referencing a product that no longer exists is functionally the
-      // same as "0 available" from the customer's point of view.
-      throw new StockUnavailableError(
-        missing.map((item) => ({ productId: item.productId, requested: item.quantity, available: 0 }))
-      );
-    }
-
+    const { products, orderItemsInput } = await resolveCartItemsToOrderInput(cartItems);
     const currency = products[0]?.currency ?? "USD";
-
-    const orderItemsInput = cartItems.map((item) => {
-      const product = productById.get(item.productId)!;
-      const unitPrice = Number(product.price);
-      const lineTotal = Math.round(unitPrice * item.quantity * 100) / 100;
-      return {
-        productId: product.id,
-        productName: product.name,
-        sku: product.sku ?? null,
-        unitPrice,
-        quantity: item.quantity,
-        lineTotal,
-      };
-    });
 
     const customerNote = input.customerNote ? input.customerNote : null;
 
@@ -490,6 +713,7 @@ export const orderService = {
       currency,
       customerNote,
       orderItemsInput,
+      couponCode: input.couponCode ? input.couponCode : null,
       clearCart: true,
     });
 
@@ -538,48 +762,31 @@ export const orderService = {
       });
     }
 
-    // Dedupe by productId (summing quantities) — unlike the authenticated path,
-    // `input.items` is client-supplied with no DB-level uniqueness constraint behind
-    // it (CartItem enforces @@unique([cartId, productId]); a guest has no Cart row).
-    // Without this, a duplicated productId would silently create two OrderItem rows
-    // for the same product instead of one combined line.
-    const itemsByProduct = new Map<string, number>();
+    // Dedupe by (productId, variantId) line identity (summing quantities) — unlike
+    // the authenticated path, `input.items` is client-supplied with no DB-level
+    // uniqueness constraint behind it (a guest has no Cart row). Without this, a
+    // duplicated line would silently create two OrderItem rows instead of one
+    // combined line — same reasoning as cart-service.ts's `lineKey`.
+    const itemsByLine = new Map<string, { productId: string; variantId: string | null; quantity: number }>();
     for (const item of input.items) {
-      itemsByProduct.set(item.productId, (itemsByProduct.get(item.productId) ?? 0) + item.quantity);
+      const variantId = item.variantId ?? null;
+      const key = `${item.productId}::${variantId ?? ""}`;
+      const existing = itemsByLine.get(key);
+      itemsByLine.set(key, {
+        productId: item.productId,
+        variantId,
+        quantity: (existing?.quantity ?? 0) + item.quantity,
+      });
     }
-    const dedupedItems = Array.from(itemsByProduct, ([productId, quantity]) => ({ productId, quantity }));
+    const dedupedItems = Array.from(itemsByLine.values());
 
     const stockIssues = await cartService.validateStock(dedupedItems);
     if (stockIssues.length > 0) {
       throw new StockUnavailableError(stockIssues);
     }
 
-    const productIds = dedupedItems.map((item) => item.productId);
-    const products = await productRepository.findByIds(productIds);
-    const productById = new Map(products.map((p) => [p.id, p]));
-
-    const missing = dedupedItems.filter((item) => !productById.has(item.productId));
-    if (missing.length > 0) {
-      throw new StockUnavailableError(
-        missing.map((item) => ({ productId: item.productId, requested: item.quantity, available: 0 }))
-      );
-    }
-
+    const { products, orderItemsInput } = await resolveCartItemsToOrderInput(dedupedItems);
     const currency = products[0]?.currency ?? "USD";
-
-    const orderItemsInput = dedupedItems.map((item) => {
-      const product = productById.get(item.productId)!;
-      const unitPrice = Number(product.price);
-      const lineTotal = Math.round(unitPrice * item.quantity * 100) / 100;
-      return {
-        productId: product.id,
-        productName: product.name,
-        sku: product.sku ?? null,
-        unitPrice,
-        quantity: item.quantity,
-        lineTotal,
-      };
-    });
 
     const created = await persistOrder({
       userId: user.id,
@@ -587,7 +794,9 @@ export const orderService = {
       currency,
       customerNote: input.customerNote ? input.customerNote : null,
       orderItemsInput,
+      couponCode: input.couponCode ? input.couponCode : null,
       clearCart: false,
+      idempotencyKey: input.idempotencyKey ? input.idempotencyKey : null,
     });
 
     return toOrderView(created);
@@ -621,6 +830,7 @@ export const orderService = {
       customerNote: params.customerNote ? params.customerNote : null,
       orderItemsInput,
       clearCart: false,
+      idempotencyKey: params.idempotencyKey,
       withinTransaction: params.withinTransaction,
     });
 

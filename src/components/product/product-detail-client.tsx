@@ -8,6 +8,7 @@ import { motion } from "framer-motion";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { ProductCard } from "@/components/product/product-card";
+import { ProductReviews } from "@/components/product/product-reviews";
 import { SafeImage } from "@/components/ui/safe-image";
 import type { Product } from "@/lib/types/product";
 import { availabilityLabels } from "@/lib/types/product";
@@ -21,16 +22,29 @@ import {
   formatProductPrice,
 } from "@/lib/utils";
 
+export interface ProductVariantOption {
+  id: string;
+  attributes: Record<string, string>;
+  label: string;
+  price: number | null;
+  image: string | null;
+  active: boolean;
+  quantity: number;
+  status: "in_stock" | "low_stock" | "out_of_stock";
+}
+
 interface ProductDetailClientProps {
   product: Product;
   related: Product[];
   categoryName: string;
+  variants: ProductVariantOption[];
 }
 
 export function ProductDetailClient({
   product,
   related,
   categoryName,
+  variants,
 }: ProductDetailClientProps) {
   const [selectedImage, setSelectedImage] = useState(0);
   const [quantity, setQuantity] = useState(1);
@@ -38,10 +52,36 @@ export function ProductDetailClient({
   const openCart = useUIStore((s) => s.openCart);
   const { isInWishlist, toggleItem } = useWishlistStore();
   const inWishlist = isInWishlist(product.id);
-  const discount = calculateDiscount(product.price, product.compareAtPrice);
+
+  // Attribute keys in the order they first appear (e.g. "size", "color"), each with
+  // the set of values any active variant offers for it.
+  const attributeOptions = new Map<string, Set<string>>();
+  for (const v of variants) {
+    for (const [key, value] of Object.entries(v.attributes)) {
+      if (!attributeOptions.has(key)) attributeOptions.set(key, new Set());
+      attributeOptions.get(key)!.add(value);
+    }
+  }
+  const hasVariants = variants.length > 0;
+
+  const [selectedAttributes, setSelectedAttributes] = useState<Record<string, string>>({});
+
+  const selectedVariant = hasVariants
+    ? (variants.find((v) =>
+        [...attributeOptions.keys()].every((key) => selectedAttributes[key] === v.attributes[key])
+      ) ?? null)
+    : null;
+
+  const effectivePrice = selectedVariant?.price ?? product.price;
+  const discount = calculateDiscount(effectivePrice, product.compareAtPrice);
+  const variantStockBlocked = hasVariants && (!selectedVariant || selectedVariant.status === "out_of_stock");
 
   const handleAddToCart = () => {
-    addItem(product.id, quantity);
+    if (hasVariants && !selectedVariant) {
+      toast.error("Please select an option before adding to cart.");
+      return;
+    }
+    addItem(product.id, quantity, selectedVariant?.id);
     openCart();
     toast.success(`${product.name} added to cart`);
   };
@@ -140,7 +180,7 @@ export function ProductDetailClient({
 
           <div className="mb-6 flex items-baseline gap-3">
             <span className="text-3xl font-bold">
-              {formatProductPrice(product.price, product.currency, product.priceUnit)}
+              {formatProductPrice(effectivePrice, product.currency, product.priceUnit)}
             </span>
             {product.compareAtPrice && (
               <>
@@ -157,6 +197,50 @@ export function ProductDetailClient({
           <p className="mb-6 leading-relaxed text-muted">
             {product.shortDescription}
           </p>
+
+          {hasVariants && (
+            <div className="mb-6 space-y-4">
+              {[...attributeOptions.entries()].map(([key, values]) => (
+                <div key={key}>
+                  <span className="mb-2 block text-sm font-medium capitalize">{key}</span>
+                  <div className="flex flex-wrap gap-2" role="radiogroup" aria-label={key}>
+                    {[...values].map((value) => {
+                      const isSelected = selectedAttributes[key] === value;
+                      return (
+                        <button
+                          key={value}
+                          type="button"
+                          role="radio"
+                          aria-checked={isSelected}
+                          onClick={() =>
+                            setSelectedAttributes((prev) => ({ ...prev, [key]: value }))
+                          }
+                          className={cn(
+                            "border px-3 py-1.5 text-sm",
+                            isSelected
+                              ? "border-primary bg-primary text-primary-foreground"
+                              : "border-border hover:border-primary"
+                          )}
+                        >
+                          {value}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+              ))}
+              {selectedVariant && selectedVariant.status === "out_of_stock" && (
+                <p role="alert" className="text-sm font-medium text-destructive">
+                  This option is out of stock.
+                </p>
+              )}
+              {!selectedVariant && Object.keys(selectedAttributes).length > 0 && (
+                <p role="alert" className="text-sm font-medium text-destructive">
+                  That combination isn&apos;t available.
+                </p>
+              )}
+            </div>
+          )}
 
           <div className="mb-6 flex items-center gap-4">
             <span className="text-sm font-medium">Quantity</span>
@@ -183,7 +267,12 @@ export function ProductDetailClient({
 
           <div className="space-y-3">
             {product.purchasingMode !== "quote_only" && (
-              <Button onClick={handleAddToCart} size="lg" className="w-full">
+              <Button
+                onClick={handleAddToCart}
+                size="lg"
+                className="w-full"
+                disabled={variantStockBlocked}
+              >
                 <ShoppingCart className="h-5 w-5" />
                 Add to Cart
               </Button>
@@ -247,6 +336,8 @@ export function ProductDetailClient({
           </div>
         </div>
       </div>
+
+      <ProductReviews productId={product.id} />
 
       {related.length > 0 && (
         <section className="mt-20">
