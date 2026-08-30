@@ -2,6 +2,7 @@
 
 import { useActionState } from "react";
 import Link from "next/link";
+import { useTranslations } from "next-intl";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -10,6 +11,7 @@ import { FadeIn } from "@/components/ui/motion";
 import { loginAction, type ActionState } from "@/app/(auth)/actions";
 
 export default function LoginPage() {
+  const t = useTranslations("auth.login");
   const [state, action, pending] = useActionState<ActionState, FormData>(
     loginAction,
     undefined
@@ -18,12 +20,12 @@ export default function LoginPage() {
   return (
     <div className="container-custom py-24 md:py-28">
       <FadeIn className="mx-auto max-w-md">
-        <span className="eyebrow">Welcome Back</span>
+        <span className="eyebrow">{t("eyebrow")}</span>
         <h1 className="font-display mb-4 text-3xl font-bold md:text-4xl">
-          Log In
+          {t("title")}
         </h1>
         <p className="mb-8 text-muted">
-          Log in to your account to manage orders, quotes, and your wishlist.
+          {t("subtitle")}
         </p>
 
         <Card>
@@ -39,7 +41,7 @@ export default function LoginPage() {
               )}
 
               <div>
-                <Label htmlFor="email">Email *</Label>
+                <Label htmlFor="email">{t("emailLabel")}</Label>
                 <Input
                   id="email"
                   name="email"
@@ -56,7 +58,7 @@ export default function LoginPage() {
               </div>
 
               <div>
-                <Label htmlFor="password">Password *</Label>
+                <Label htmlFor="password">{t("passwordLabel")}</Label>
                 <Input
                   id="password"
                   name="password"
@@ -77,22 +79,22 @@ export default function LoginPage() {
                   href="/forgot-password"
                   className="text-xs font-medium text-muted underline-offset-4 hover:text-foreground hover:underline"
                 >
-                  Forgot password?
+                  {t("forgotPassword")}
                 </Link>
               </div>
 
               <Button type="submit" className="w-full" disabled={pending}>
-                {pending ? "Logging in..." : "Log In"}
+                {pending ? t("submitting") : t("submit")}
               </Button>
             </form>
 
             <p className="mt-6 text-center text-sm text-muted">
-              Don&apos;t have an account?{" "}
+              {t("noAccount")}{" "}
               <Link
                 href="/register"
                 className="font-medium text-foreground underline-offset-4 hover:underline"
               >
-                Create one
+                {t("signUp")}
               </Link>
             </p>
           </CardContent>

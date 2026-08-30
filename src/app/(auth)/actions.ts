@@ -2,6 +2,7 @@
 
 import { redirect } from "next/navigation";
 import { headers } from "next/headers";
+import { getTranslations } from "next-intl/server";
 import { AuthError } from "next-auth";
 import { signIn, signOut } from "@/server/auth/auth";
 import { authService, EmailAlreadyRegisteredError } from "@/server/services/auth-service";
@@ -19,8 +20,6 @@ export type ActionState = {
   message?: string;
 } | undefined;
 
-const RATE_LIMIT_MESSAGE = "Too many attempts. Please wait a moment and try again.";
-
 async function isRateLimited(routeKey: string, policy: { limit: number; windowMs: number }) {
   const ip = getClientIp(await headers());
   const result = checkRateLimit(`${routeKey}:${ip}`, policy.limit, policy.windowMs);
@@ -28,8 +27,10 @@ async function isRateLimited(routeKey: string, policy: { limit: number; windowMs
 }
 
 export async function loginAction(_prevState: ActionState, formData: FormData): Promise<ActionState> {
+  const t = await getTranslations("auth.errors");
+
   if (await isRateLimited("login", RATE_LIMITS.login)) {
-    return { message: RATE_LIMIT_MESSAGE };
+    return { message: t("rateLimited") };
   }
 
   const validated = loginSchema.safeParse({
@@ -50,7 +51,7 @@ export async function loginAction(_prevState: ActionState, formData: FormData): 
   } catch (error) {
     if (error instanceof AuthError) {
       // Deliberately generic: never reveal whether the email exists.
-      return { message: "Invalid email or password." };
+      return { message: t("invalidCredentials") };
     }
     throw error;
   }
@@ -74,8 +75,10 @@ export async function registerAction(
   _prevState: ActionState,
   formData: FormData
 ): Promise<ActionState> {
+  const t = await getTranslations("auth.errors");
+
   if (await isRateLimited("register", RATE_LIMITS.register)) {
-    return { message: RATE_LIMIT_MESSAGE };
+    return { message: t("rateLimited") };
   }
 
   const validated = registerSchema.safeParse({
@@ -94,7 +97,7 @@ export async function registerAction(
     await authService.register(validated.data);
   } catch (error) {
     if (error instanceof EmailAlreadyRegisteredError) {
-      return { errors: { email: [error.message] } };
+      return { errors: { email: [t("emailInUse")] } };
     }
     throw error;
   }
@@ -118,8 +121,10 @@ export async function forgotPasswordAction(
   _prevState: ActionState,
   formData: FormData
 ): Promise<ActionState> {
+  const t = await getTranslations("auth.errors");
+
   if (await isRateLimited("forgot-password", RATE_LIMITS.forgotPassword)) {
-    return { message: RATE_LIMIT_MESSAGE };
+    return { message: t("rateLimited") };
   }
 
   const validated = forgotPasswordSchema.safeParse({
@@ -134,7 +139,7 @@ export async function forgotPasswordAction(
 
   // Same message whether or not the account exists.
   return {
-    message: "If an account exists for that email, a password reset link has been sent.",
+    message: t("forgotPasswordSent"),
   };
 }
 
@@ -142,8 +147,10 @@ export async function resetPasswordAction(
   _prevState: ActionState,
   formData: FormData
 ): Promise<ActionState> {
+  const t = await getTranslations("auth.errors");
+
   if (await isRateLimited("reset-password", RATE_LIMITS.resetPassword)) {
-    return { message: RATE_LIMIT_MESSAGE };
+    return { message: t("rateLimited") };
   }
 
   const validated = resetPasswordSchema.safeParse({
@@ -159,7 +166,7 @@ export async function resetPasswordAction(
   try {
     await authService.resetPassword(validated.data.token, validated.data.password);
   } catch {
-    return { message: "This password reset link is invalid or has expired." };
+    return { message: t("invalidResetToken") };
   }
 
   redirect("/login");

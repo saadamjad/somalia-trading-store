@@ -2,6 +2,7 @@
 
 import { useActionState } from "react";
 import Link from "next/link";
+import { useTranslations } from "next-intl";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -10,6 +11,7 @@ import { FadeIn } from "@/components/ui/motion";
 import { forgotPasswordAction, type ActionState } from "@/app/(auth)/actions";
 
 export default function ForgotPasswordPage() {
+  const t = useTranslations("auth.forgotPassword");
   const [state, action, pending] = useActionState<ActionState, FormData>(
     forgotPasswordAction,
     undefined
@@ -18,13 +20,12 @@ export default function ForgotPasswordPage() {
   return (
     <div className="container-custom py-24 md:py-28">
       <FadeIn className="mx-auto max-w-md">
-        <span className="eyebrow">Account Recovery</span>
+        <span className="eyebrow">{t("eyebrow")}</span>
         <h1 className="font-display mb-4 text-3xl font-bold md:text-4xl">
-          Forgot Password
+          {t("title")}
         </h1>
         <p className="mb-8 text-muted">
-          Enter the email associated with your account and we&apos;ll send you a
-          link to reset your password.
+          {t("subtitle")}
         </p>
 
         <Card>
@@ -36,7 +37,7 @@ export default function ForgotPasswordPage() {
             ) : (
               <form action={action} className="space-y-5">
                 <div>
-                  <Label htmlFor="email">Email *</Label>
+                  <Label htmlFor="email">{t("emailLabel")}</Label>
                   <Input
                     id="email"
                     name="email"
@@ -53,18 +54,18 @@ export default function ForgotPasswordPage() {
                 </div>
 
                 <Button type="submit" className="w-full" disabled={pending}>
-                  {pending ? "Sending..." : "Send Reset Link"}
+                  {pending ? t("submitting") : t("submit")}
                 </Button>
               </form>
             )}
 
             <p className="mt-6 text-center text-sm text-muted">
-              Remembered your password?{" "}
+              {t("rememberedPassword")}{" "}
               <Link
                 href="/login"
                 className="font-medium text-foreground underline-offset-4 hover:underline"
               >
-                Log in
+                {t("logIn")}
               </Link>
             </p>
           </CardContent>

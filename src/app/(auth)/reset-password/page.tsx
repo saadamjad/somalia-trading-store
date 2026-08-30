@@ -3,6 +3,7 @@
 import { Suspense, useActionState } from "react";
 import { useSearchParams } from "next/navigation";
 import Link from "next/link";
+import { useTranslations } from "next-intl";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -11,6 +12,7 @@ import { FadeIn } from "@/components/ui/motion";
 import { resetPasswordAction, type ActionState } from "@/app/(auth)/actions";
 
 function ResetPasswordForm() {
+  const t = useTranslations("auth.resetPassword");
   const searchParams = useSearchParams();
   const token = searchParams.get("token") ?? "";
   const [state, action, pending] = useActionState<ActionState, FormData>(
@@ -23,12 +25,13 @@ function ResetPasswordForm() {
       <CardContent className="p-6 md:p-8">
         {!token ? (
           <p role="alert" className="text-sm text-destructive">
-            This password reset link is missing its token. Request a new one from
-            the{" "}
-            <Link href="/forgot-password" className="underline underline-offset-4">
-              forgot password
-            </Link>{" "}
-            page.
+            {t.rich("missingToken", {
+              link: (chunks) => (
+                <Link href="/forgot-password" className="underline underline-offset-4">
+                  {chunks}
+                </Link>
+              ),
+            })}
           </p>
         ) : (
           <form action={action} className="space-y-5">
@@ -44,7 +47,7 @@ function ResetPasswordForm() {
             )}
 
             <div>
-              <Label htmlFor="password">New Password *</Label>
+              <Label htmlFor="password">{t("newPasswordLabel")}</Label>
               <Input
                 id="password"
                 name="password"
@@ -63,7 +66,7 @@ function ResetPasswordForm() {
             </div>
 
             <div>
-              <Label htmlFor="confirmPassword">Confirm New Password *</Label>
+              <Label htmlFor="confirmPassword">{t("confirmNewPasswordLabel")}</Label>
               <Input
                 id="confirmPassword"
                 name="confirmPassword"
@@ -80,7 +83,7 @@ function ResetPasswordForm() {
             </div>
 
             <Button type="submit" className="w-full" disabled={pending}>
-              {pending ? "Resetting..." : "Reset Password"}
+              {pending ? t("submitting") : t("submit")}
             </Button>
           </form>
         )}
@@ -90,14 +93,16 @@ function ResetPasswordForm() {
 }
 
 export default function ResetPasswordPage() {
+  const t = useTranslations("auth.resetPassword");
+
   return (
     <div className="container-custom py-24 md:py-28">
       <FadeIn className="mx-auto max-w-md">
-        <span className="eyebrow">Account Recovery</span>
+        <span className="eyebrow">{t("eyebrow")}</span>
         <h1 className="font-display mb-4 text-3xl font-bold md:text-4xl">
-          Reset Password
+          {t("title")}
         </h1>
-        <p className="mb-8 text-muted">Choose a new password for your account.</p>
+        <p className="mb-8 text-muted">{t("subtitle")}</p>
 
         <Suspense fallback={null}>
           <ResetPasswordForm />

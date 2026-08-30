@@ -2,6 +2,7 @@
 
 import { useActionState } from "react";
 import Link from "next/link";
+import { useTranslations } from "next-intl";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -10,6 +11,7 @@ import { FadeIn } from "@/components/ui/motion";
 import { registerAction, type ActionState } from "@/app/(auth)/actions";
 
 export default function RegisterPage() {
+  const t = useTranslations("auth.register");
   const [state, action, pending] = useActionState<ActionState, FormData>(
     registerAction,
     undefined
@@ -18,12 +20,12 @@ export default function RegisterPage() {
   return (
     <div className="container-custom py-24 md:py-28">
       <FadeIn className="mx-auto max-w-md">
-        <span className="eyebrow">Join Us</span>
+        <span className="eyebrow">{t("eyebrow")}</span>
         <h1 className="font-display mb-4 text-3xl font-bold md:text-4xl">
-          Create an Account
+          {t("title")}
         </h1>
         <p className="mb-8 text-muted">
-          Register to place orders, request quotes, and track your purchases.
+          {t("subtitle")}
         </p>
 
         <Card>
@@ -39,7 +41,7 @@ export default function RegisterPage() {
               )}
 
               <div>
-                <Label htmlFor="name">Full Name *</Label>
+                <Label htmlFor="name">{t("nameLabel")}</Label>
                 <Input id="name" name="name" required className="mt-1.5" />
                 {state?.errors?.name && (
                   <p className="mt-1.5 text-xs text-destructive">
@@ -49,7 +51,7 @@ export default function RegisterPage() {
               </div>
 
               <div>
-                <Label htmlFor="email">Email *</Label>
+                <Label htmlFor="email">{t("emailLabel")}</Label>
                 <Input
                   id="email"
                   name="email"
@@ -66,7 +68,7 @@ export default function RegisterPage() {
               </div>
 
               <div>
-                <Label htmlFor="phone">Phone</Label>
+                <Label htmlFor="phone">{t("phoneLabel")}</Label>
                 <Input id="phone" name="phone" type="tel" className="mt-1.5" />
                 {state?.errors?.phone && (
                   <p className="mt-1.5 text-xs text-destructive">
@@ -76,7 +78,7 @@ export default function RegisterPage() {
               </div>
 
               <div>
-                <Label htmlFor="password">Password *</Label>
+                <Label htmlFor="password">{t("passwordLabel")}</Label>
                 <Input
                   id="password"
                   name="password"
@@ -95,7 +97,7 @@ export default function RegisterPage() {
               </div>
 
               <div>
-                <Label htmlFor="confirmPassword">Confirm Password *</Label>
+                <Label htmlFor="confirmPassword">{t("confirmPasswordLabel")}</Label>
                 <Input
                   id="confirmPassword"
                   name="confirmPassword"
@@ -112,17 +114,17 @@ export default function RegisterPage() {
               </div>
 
               <Button type="submit" className="w-full" disabled={pending}>
-                {pending ? "Creating account..." : "Create Account"}
+                {pending ? t("submitting") : t("submit")}
               </Button>
             </form>
 
             <p className="mt-6 text-center text-sm text-muted">
-              Already have an account?{" "}
+              {t("haveAccount")}{" "}
               <Link
                 href="/login"
                 className="font-medium text-foreground underline-offset-4 hover:underline"
               >
-                Log in
+                {t("logIn")}
               </Link>
             </p>
           </CardContent>
