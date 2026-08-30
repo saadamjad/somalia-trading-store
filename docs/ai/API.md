@@ -33,6 +33,20 @@ Registration and password-reset are handled by `authService` and surfaced throug
 | `/api/categories/[id]` | GET | public | Read one category. |
 | `/api/categories/[id]` | PATCH | `categories.update` | Update a category. |
 | `/api/categories/[id]` | DELETE | `categories.delete` | Delete a category (blocked by FK if it has products). |
+| `/api/product-variants` | GET | public | Batch lookup of variants by `?ids=...` — resolves a cart/checkout line's current price/label/stock (mirrors `GET /api/products?ids=...`). |
+| `/api/products/[id]/variants` | GET | `products.view` | Admin — list all variants (active and inactive) for a product. |
+| `/api/products/[id]/variants` | POST | `products.create` | Admin — create a variant for a product. |
+| `/api/products/[id]/variants/[variantId]` | PATCH | `products.update` | Admin — update a variant (price/attributes/image/active). |
+| `/api/products/[id]/variants/[variantId]` | DELETE | `products.delete` | Admin — delete a variant (blocked if it has order history — `VariantHasOrdersError`; deactivate instead). |
+| `/api/products/[id]/variants/[variantId]/stock` | POST | `inventory.update` | Admin — adjust a variant's stock by a signed delta, with reason; logs a `VariantInventoryTransaction`. |
+| `/api/products/[id]/reviews` | GET | public | List **approved** reviews for a product, plus average rating and count. |
+| `/api/products/[id]/reviews` | POST | session | Submit a review for the product (starts `PENDING`; `verifiedPurchase` computed server-side, never client-supplied). One review per user per product (`ReviewAlreadyExistsError`). |
+| `/api/admin/reviews` | GET | `reviews.view` | Admin review list — filter by status for moderation. |
+| `/api/admin/reviews/[id]` | PATCH | `reviews.manage` | Admin — approve/reject/re-moderate a review (a single overwritable status, not a terminal state machine). |
+| `/api/cart/coupon` | POST | public (session optional) | Validates a coupon code against the caller's cart subtotal and returns the discount it would apply — a **preview only**, no usage is consumed (actual redemption happens atomically with order creation in `persistOrder`). A coupon with `perCustomerLimit` requires a session. |
+| `/api/admin/coupons` | GET | `coupons.view` | Admin coupon list. |
+| `/api/admin/coupons` | POST | `coupons.manage` | Admin — create a coupon. |
+| `/api/admin/coupons/[id]` | PATCH | `coupons.manage` | Admin — update a coupon (including toggling `active`; can't be hard-deleted once it has redemptions — see `BUSINESS_RULES.md`). |
 
 ## Inventory
 
@@ -112,5 +126,5 @@ Registration and password-reset are handled by `authService` and surfaced throug
 ## Notes on the pattern
 
 - Every `admin/*` route imports `requirePermission` from `@/server/auth/permissions` and calls it as the **first** line inside the handler — permission checks happen before any input parsing.
-- Every permission key follows `"<resource>.<action>"` and must exist in `prisma/seed.ts`'s `permissionKeys` array to mean anything (an unseeded key would make `requirePermission` always throw `ForbiddenError`, since `getRolePermissions` looks the key up live against the DB). See `BUSINESS_RULES.md` for the actual seeded list.
+- Every permission key follows `"<resource>.<action>"` and must exist in `prisma/seed.ts`'s `permissionKeys` array to mean anything (an unseeded key would make `requirePermission` always throw `ForbiddenError`, since `getRolePermissions` looks the key up live against the DB). See `BUSINESS_RULES.md` for the actual seeded list — includes `reviews.view`/`reviews.manage` and `coupons.view`/`coupons.manage` as of the reviews/coupons/variants build-out. Note: `staff` is excluded from `coupons.*` (financial) but **not** from `reviews.*` (content moderation) — see `BUSINESS_RULES.md`.
 - Ownership-scoped routes (`session`-level auth) return **404**, not 403, when a resource exists but belongs to someone else — see `BUSINESS_RULES.md`'s "Customer data isolation" section.

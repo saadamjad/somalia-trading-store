@@ -211,3 +211,56 @@ Admin-flow E2E specs authenticate as a fixed, obviously-fake, local-test-only su
 - Reusing `tsx` (already a project dependency, already used for `npm run bootstrap:admin` and `prisma db seed`) to run the actual Prisma seeding logic (`e2e/seed-admin.ts`) as a child process from `global-setup.ts`, rather than importing the generated Prisma client directly into Playwright's own config/setup loader, works around a real incompatibility: Playwright's TS/ESM loader throws `ReferenceError: exports is not defined in ES module scope` on the generated (CommonJS-flavored) Prisma client when imported in-process, but `tsx` handles it without issue.
 
 **Revisit if:** a CI/CD pipeline is set up (D-009) — at that point, consider whether the E2E suite should also run against a production build as part of that pipeline, and whether the test-admin provisioning should move to a CI-specific seed step instead of `global-setup.ts`.
+
+---
+
+## D-015: Product Variants Schema — Parallel Models, Not a Nullable Retrofit
+
+**Classification:** Technical Decision
+**Status:** Confirmed
+**Date:** 2026-08-29
+
+**Decision:** Product variants (size/color) are modeled as three new tables (`ProductVariant`, `VariantInventory`, `VariantInventoryTransaction`) that parallel the existing `Product`/`Inventory`/`InventoryTransaction` tables, rather than adding a nullable `variantId` column directly onto `Inventory`/`InventoryTransaction`. `CartItem`/`OrderItem` do get a nullable `variantId` column each (lower-risk, additive-only change to those two tables), but the stock/inventory tables themselves stay untouched and fully independent.
+
+**Rationale:**
+- `Inventory.productId` is `@unique` (one row per product) — retrofitting it to support multiple variant rows per product would mean either dropping that constraint (regression risk to the entire existing, tested, atomic no-oversell mechanism for every non-variant product) or a more invasive nullable-key redesign.
+- A parallel model with the exact same shape and the exact same atomic conditional-UPDATE pattern (`WHERE quantity + delta >= 0`) means the variant stock path is provably as safe as the original — it's a copy of a mechanism already proven correct by a dedicated concurrency test, not a novel design under time pressure.
+- Every existing product with zero `ProductVariant` rows behaves identically to before this feature existed — no migration of existing data, no behavior change to the single-SKU catalog.
+- `CartItem`/`OrderItem` needed a `variantId` regardless (a cart/order line must record which variant was selected) — that part of the schema couldn't avoid touching existing tables, but it's purely additive (a new nullable column), not a redesign of an existing constraint.
+
+**Revisit if:** the variant model needs to support more than two flat attributes (size/color) with real per-attribute filtering/faceting — the current `attributes: Json` field would need to become a normalized attribute-value join table at that point.
+
+---
+
+## D-016: Coupons — Order-Level Only, Atomic Redemption Ledger
+
+**Classification:** Technical/Business Decision
+**Status:** Confirmed
+**Date:** 2026-08-29
+
+**Decision:** Coupons are order-level, code-based discounts only (`Coupon`, `CouponRedemption`) — no product/category eligibility restriction in this phase. One coupon per order (`CouponRedemption.orderId` is `@unique`). Redemption (incrementing `Coupon.timesUsed`) happens atomically, in the same transaction as order creation and inventory decrement, via the same conditional-UPDATE pattern already used for `Inventory.quantity`.
+
+**Rationale:**
+- Product/category-restricted coupons would require a join table plus storefront eligibility-checking UI — real added complexity with no concrete business requirement driving it yet. Scoped out per the "no unnecessary/speculative changes" standard; revisit if the business asks for category-restricted promotions specifically.
+- A discount amount must never be client-supplied — the same "pricing integrity" principle already governing `OrderItem.unitPrice` (see `BUSINESS_RULES.md`) extends to `Order.discountAmount`. `couponPreviewSchema`/order-create schemas accept only a coupon *code*, never an amount.
+- Doing the redemption in the SAME transaction as order+inventory (rather than a separate step before or after) means a coupon's last unit being claimed by a concurrent checkout rolls back the whole order — never a half-applied discount, and never an over-redeemed coupon.
+
+**Revisit if:** the business asks for category/product-scoped coupons, or stackable (multiple-coupon) discounts.
+
+---
+
+## D-017: Checkout Idempotency — Client-Generated Key, Not a Time Window
+
+**Classification:** Technical Decision
+**Status:** Confirmed
+**Date:** 2026-08-30
+
+**Decision:** Duplicate-checkout prevention for paths with no server-side cart to gate on (guest checkout, quote-to-order conversion) uses a `CheckoutLock` table keyed `(userId, key)`, where `key` is a random idempotency key the **client** generates once per checkout page load and resends on every submit — not a server-side time-window debounce.
+
+**Rationale:**
+- An earlier version of this fix used a flat time window (e.g. "reject a second order from the same guest within N seconds") and it was wrong: it broke a legitimate scenario (a returning guest placing two genuinely separate orders back-to-back) because a time window structurally cannot distinguish that from an actual duplicate — the two requests can be byte-identical, differing only in wall-clock time. No server-side heuristic based on request content or timing alone can resolve this ambiguity correctly, because the ambiguity is real: from the server's perspective, "the same click retried" and "the same purchase made again on purpose" are the same request.
+- A client-generated per-attempt key is the industry-standard resolution to exactly this problem (the same pattern Stripe's `Idempotency-Key` header uses) — the client is the only party that actually knows whether this is a retry of the same user action or a new one.
+- Claimed via atomic `INSERT ... ON CONFLICT (userId, key) DO NOTHING RETURNING id`, not a naive `SELECT` existence check then `INSERT` — the latter is a classic TOCTOU race under READ COMMITTED (two concurrent transactions can both see "not exists" as true). The unique constraint's row-level lock is the actual serialization point, consistent with every other atomic-conditional-operation in this codebase (`Inventory.quantity`, `Coupon.timesUsed`).
+- The authenticated cart-checkout path didn't need this mechanism — the cart's own row count, cleared first inside the transaction, is already an equivalent atomic gate (a second concurrent request sees an empty cart). `CheckoutLock` exists only for the paths that lack that natural gate.
+
+**Revisit if:** never, structurally — this is the correct mechanism for this problem, not a stopgap. Extend the same pattern (client-generated key + `ON CONFLICT DO NOTHING`) to any future order-creation path that also lacks a server-side cart to gate on.
