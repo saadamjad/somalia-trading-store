@@ -1,3 +1,4 @@
+import { getTranslations } from "next-intl/server";
 import { getCurrentSession } from "@/server/auth/session";
 import { addressService } from "@/server/services/address-service";
 import { CheckoutForm } from "@/components/checkout/checkout-form";
@@ -13,12 +14,13 @@ export const metadata = { title: "Checkout" };
  * branch on `customer === null`.
  */
 export default async function CheckoutPage() {
+  const t = await getTranslations("checkout");
   const session = await getCurrentSession();
   const addresses = session ? await addressService.listForUser(session.userId) : [];
 
   return (
     <div className="container-custom py-24 md:py-28">
-      <h1 className="font-display mb-8 text-3xl font-bold">Checkout</h1>
+      <h1 className="font-display mb-8 text-3xl font-bold">{t("title")}</h1>
       <CheckoutForm
         customer={session ? { name: session.name, email: session.email } : null}
         initialAddresses={addresses.map((address) => ({

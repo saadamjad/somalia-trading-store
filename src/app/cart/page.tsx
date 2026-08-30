@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { useTranslations } from "next-intl";
 import { Minus, Plus, ShoppingBag, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -12,6 +13,7 @@ import { formatPrice, formatProductPrice } from "@/lib/utils";
 import { SafeImage } from "@/components/ui/safe-image";
 
 export default function CartPage() {
+  const t = useTranslations("cart");
   const { updateQuantity, removeItem, clearCart } = useCartStore();
   const { lineItems: items, subtotal, isLoading } = useCartProducts();
   // Phase 7: stock validation before checkout — flags any line item whose requested
@@ -27,11 +29,11 @@ export default function CartPage() {
       <div className="container-custom min-h-[60vh] py-24">
         <EmptyState
           icon={ShoppingBag}
-          title="Your Cart is Empty"
-          description="Looks like you haven't added any products yet. Browse our catalogue and find what you need."
+          title={t("empty.title")}
+          description={t("empty.description")}
           action={
             <Button asChild size="lg">
-              <Link href="/shop">Shop Products</Link>
+              <Link href="/shop">{t("empty.cta")}</Link>
             </Button>
           }
         />
@@ -43,13 +45,13 @@ export default function CartPage() {
     <div className="container-custom py-24 md:py-28">
       <div className="mb-8 flex items-center justify-between">
         <h1 className="font-display text-3xl font-bold md:text-4xl">
-          Shopping Cart
+          {t("title")}
         </h1>
         <button
           onClick={clearCart}
           className="text-sm text-muted hover:text-destructive"
         >
-          Clear cart
+          {t("clearCart")}
         </button>
       </div>
 
@@ -84,8 +86,7 @@ export default function CartPage() {
                       </p>
                       {issue && (
                         <p role="alert" className="mt-1 text-xs font-medium text-destructive">
-                          Only {issue.available} left in stock — reduce quantity before
-                          checkout.
+                          {t("stockIssue", { available: issue.available })}
                         </p>
                       )}
                     </div>
@@ -94,7 +95,7 @@ export default function CartPage() {
                         <button
                           onClick={() => updateQuantity(product.id, quantity - 1, variant?.id)}
                           className="flex h-8 w-8 items-center justify-center rounded-lg border border-border hover:bg-accent-light"
-                          aria-label="Decrease quantity"
+                          aria-label={t("decreaseQuantity")}
                         >
                           <Minus className="h-4 w-4" />
                         </button>
@@ -104,7 +105,7 @@ export default function CartPage() {
                         <button
                           onClick={() => updateQuantity(product.id, quantity + 1, variant?.id)}
                           className="flex h-8 w-8 items-center justify-center rounded-lg border border-border hover:bg-accent-light"
-                          aria-label="Increase quantity"
+                          aria-label={t("increaseQuantity")}
                         >
                           <Plus className="h-4 w-4" />
                         </button>
@@ -112,7 +113,7 @@ export default function CartPage() {
                       <button
                         onClick={() => removeItem(product.id, variant?.id)}
                         className="text-muted hover:text-destructive"
-                        aria-label="Remove item"
+                        aria-label={t("removeItem")}
                       >
                         <Trash2 className="h-5 w-5" />
                       </button>
@@ -128,33 +129,33 @@ export default function CartPage() {
           <Card className="sticky top-24">
             <CardContent className="space-y-4 p-6">
               <h2 className="font-display text-xl font-semibold">
-                Order Summary
+                {t("summary.title")}
               </h2>
               <div className="space-y-2 text-sm">
                 <div className="flex justify-between">
-                  <span className="text-muted">Subtotal</span>
+                  <span className="text-muted">{t("summary.subtotal")}</span>
                   <span className="font-medium">{formatPrice(subtotal)}</span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-muted">Shipping</span>
+                  <span className="text-muted">{t("summary.shipping")}</span>
                   <span className="text-muted">
-                    Calculated at checkout
+                    {t("summary.shippingCalculated")}
                   </span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-muted">Discount</span>
-                  <span className="text-muted">—</span>
+                  <span className="text-muted">{t("summary.discount")}</span>
+                  <span className="text-muted">{t("summary.discountNone")}</span>
                 </div>
               </div>
               <div className="border-t border-border pt-4">
                 <div className="flex justify-between text-lg font-bold">
-                  <span>Total</span>
+                  <span>{t("summary.total")}</span>
                   <span>{formatPrice(total)}</span>
                 </div>
               </div>
               {hasStockIssues && (
                 <p role="alert" className="text-xs text-destructive">
-                  Some items exceed available stock. Update quantities before checkout.
+                  {t("stockIssuesWarning")}
                 </p>
               )}
               <Button asChild className="w-full" size="lg" disabled={hasStockIssues}>
@@ -163,12 +164,12 @@ export default function CartPage() {
                   aria-disabled={hasStockIssues}
                   onClick={(e) => hasStockIssues && e.preventDefault()}
                 >
-                  Proceed to Checkout
+                  {t("proceedToCheckout")}
                 </Link>
               </Button>
               <Button asChild variant="outline" className="w-full">
                 <Link href="/shop">
-                  Continue Shopping
+                  {t("continueShopping")}
                 </Link>
               </Button>
             </CardContent>

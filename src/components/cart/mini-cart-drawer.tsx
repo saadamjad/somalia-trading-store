@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { useTranslations } from "next-intl";
 import { Minus, Plus, ShoppingBag, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { EmptyState } from "@/components/ui/empty-state";
@@ -17,6 +18,7 @@ import { formatPrice, formatProductPrice } from "@/lib/utils";
 import { SafeImage } from "@/components/ui/safe-image";
 
 export function MiniCartDrawer() {
+  const t = useTranslations("cart");
   const { isCartOpen, closeCart } = useUIStore();
   const { updateQuantity, removeItem } = useCartStore();
   const { lineItems: items, subtotal } = useCartProducts();
@@ -27,7 +29,7 @@ export function MiniCartDrawer() {
         <SheetHeader>
           <SheetTitle className="flex items-center gap-2">
             <ShoppingBag className="h-5 w-5" />
-            Your Cart ({items.length})
+            {t("drawer.title", { count: items.length })}
           </SheetTitle>
         </SheetHeader>
 
@@ -35,11 +37,11 @@ export function MiniCartDrawer() {
           {items.length === 0 ? (
             <EmptyState
               icon={ShoppingBag}
-              title="Your cart is empty"
-              description="Browse our products and add items to get started."
+              title={t("drawer.empty.title")}
+              description={t("drawer.empty.description")}
               action={
                 <Button asChild onClick={closeCart}>
-                  <Link href="/shop">Shop Products</Link>
+                  <Link href="/shop">{t("drawer.empty.cta")}</Link>
                 </Button>
               }
             />
@@ -75,7 +77,7 @@ export function MiniCartDrawer() {
                       <button
                         onClick={() => updateQuantity(product.id, quantity - 1, variant?.id)}
                         className="flex h-7 w-7 items-center justify-center rounded-md border border-border hover:bg-accent-light"
-                        aria-label="Decrease quantity"
+                        aria-label={t("decreaseQuantity")}
                       >
                         <Minus className="h-3 w-3" />
                       </button>
@@ -85,14 +87,14 @@ export function MiniCartDrawer() {
                       <button
                         onClick={() => updateQuantity(product.id, quantity + 1, variant?.id)}
                         className="flex h-7 w-7 items-center justify-center rounded-md border border-border hover:bg-accent-light"
-                        aria-label="Increase quantity"
+                        aria-label={t("increaseQuantity")}
                       >
                         <Plus className="h-3 w-3" />
                       </button>
                       <button
                         onClick={() => removeItem(product.id, variant?.id)}
                         className="ml-auto text-muted hover:text-destructive"
-                        aria-label="Remove item"
+                        aria-label={t("removeItem")}
                       >
                         <Trash2 className="h-4 w-4" />
                       </button>
@@ -107,12 +109,12 @@ export function MiniCartDrawer() {
         {items.length > 0 && (
           <div className="border-t border-border p-6">
             <div className="mb-4 flex justify-between text-base font-semibold">
-              <span>Subtotal</span>
+              <span>{t("drawer.subtotal")}</span>
               <span>{formatPrice(subtotal)}</span>
             </div>
             <div className="space-y-2">
               <Button asChild className="w-full" onClick={closeCart}>
-                <Link href="/cart">View Cart</Link>
+                <Link href="/cart">{t("drawer.viewCart")}</Link>
               </Button>
               <Button
                 asChild
@@ -121,7 +123,7 @@ export function MiniCartDrawer() {
                 onClick={closeCart}
               >
                 <Link href="/shop">
-                  Continue Shopping
+                  {t("drawer.continueShopping")}
                 </Link>
               </Button>
               <Button
@@ -130,7 +132,7 @@ export function MiniCartDrawer() {
                 className="w-full"
                 onClick={closeCart}
               >
-                <Link href="/checkout">Proceed to Checkout</Link>
+                <Link href="/checkout">{t("drawer.proceedToCheckout")}</Link>
               </Button>
             </div>
           </div>
