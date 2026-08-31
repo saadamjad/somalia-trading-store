@@ -1,8 +1,9 @@
 "use client";
 
 import { useState } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter } from "@/i18n/navigation";
 import { toast } from "sonner";
+import { useTranslations } from "next-intl";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
@@ -44,13 +45,14 @@ function AddressFields({
   onChange: (values: AddressFormValues) => void;
   idPrefix: string;
 }) {
+  const t = useTranslations("account");
   const set = <K extends keyof AddressFormValues>(key: K, value: AddressFormValues[K]) =>
     onChange({ ...values, [key]: value });
 
   return (
     <div className="grid gap-4 sm:grid-cols-2">
       <div>
-        <Label htmlFor={`${idPrefix}-recipientName`}>Recipient Name</Label>
+        <Label htmlFor={`${idPrefix}-recipientName`}>{t("addresses.recipientName")}</Label>
         <Input
           id={`${idPrefix}-recipientName`}
           value={values.recipientName}
@@ -60,7 +62,7 @@ function AddressFields({
         />
       </div>
       <div>
-        <Label htmlFor={`${idPrefix}-phone`}>Phone</Label>
+        <Label htmlFor={`${idPrefix}-phone`}>{t("addresses.phone")}</Label>
         <Input
           id={`${idPrefix}-phone`}
           type="tel"
@@ -71,7 +73,7 @@ function AddressFields({
         />
       </div>
       <div className="sm:col-span-2">
-        <Label htmlFor={`${idPrefix}-line1`}>Address Line 1</Label>
+        <Label htmlFor={`${idPrefix}-line1`}>{t("addresses.line1")}</Label>
         <Input
           id={`${idPrefix}-line1`}
           value={values.line1}
@@ -81,7 +83,7 @@ function AddressFields({
         />
       </div>
       <div className="sm:col-span-2">
-        <Label htmlFor={`${idPrefix}-line2`}>Address Line 2 (optional)</Label>
+        <Label htmlFor={`${idPrefix}-line2`}>{t("addresses.line2")}</Label>
         <Input
           id={`${idPrefix}-line2`}
           value={values.line2 ?? ""}
@@ -90,7 +92,7 @@ function AddressFields({
         />
       </div>
       <div>
-        <Label htmlFor={`${idPrefix}-city`}>City</Label>
+        <Label htmlFor={`${idPrefix}-city`}>{t("addresses.city")}</Label>
         <Input
           id={`${idPrefix}-city`}
           value={values.city}
@@ -100,7 +102,7 @@ function AddressFields({
         />
       </div>
       <div>
-        <Label htmlFor={`${idPrefix}-region`}>Region / State (optional)</Label>
+        <Label htmlFor={`${idPrefix}-region`}>{t("addresses.region")}</Label>
         <Input
           id={`${idPrefix}-region`}
           value={values.region ?? ""}
@@ -109,7 +111,7 @@ function AddressFields({
         />
       </div>
       <div>
-        <Label htmlFor={`${idPrefix}-postalCode`}>Postal Code (optional)</Label>
+        <Label htmlFor={`${idPrefix}-postalCode`}>{t("addresses.postalCode")}</Label>
         <Input
           id={`${idPrefix}-postalCode`}
           value={values.postalCode ?? ""}
@@ -118,7 +120,7 @@ function AddressFields({
         />
       </div>
       <div>
-        <Label htmlFor={`${idPrefix}-country`}>Country</Label>
+        <Label htmlFor={`${idPrefix}-country`}>{t("addresses.country")}</Label>
         <Input
           id={`${idPrefix}-country`}
           value={values.country}
@@ -140,6 +142,7 @@ function AddressFields({
  * checking the response.
  */
 export function AddressManager({ initialAddresses }: { initialAddresses: AddressDTO[] }) {
+  const t = useTranslations("account");
   const router = useRouter();
   const [addresses, setAddresses] = useState<AddressDTO[]>(initialAddresses);
   const [isAdding, setIsAdding] = useState(false);
@@ -170,14 +173,14 @@ export function AddressManager({ initialAddresses }: { initialAddresses: Address
       });
       if (!res.ok) {
         const data = await res.json().catch(() => ({}));
-        throw new Error(data.error || "Could not add address.");
+        throw new Error(data.error || t("addresses.addError"));
       }
-      toast.success("Address added.");
+      toast.success(t("addresses.addSuccess"));
       setIsAdding(false);
       setAddForm(EMPTY_FORM);
       await refresh();
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Could not add address.");
+      setError(err instanceof Error ? err.message : t("addresses.addError"));
     } finally {
       setPendingId(null);
     }
@@ -209,13 +212,13 @@ export function AddressManager({ initialAddresses }: { initialAddresses: Address
       });
       if (!res.ok) {
         const data = await res.json().catch(() => ({}));
-        throw new Error(data.error || "Could not update address.");
+        throw new Error(data.error || t("addresses.updateError"));
       }
-      toast.success("Address updated.");
+      toast.success(t("addresses.updateSuccess"));
       setEditingId(null);
       await refresh();
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Could not update address.");
+      setError(err instanceof Error ? err.message : t("addresses.updateError"));
     } finally {
       setPendingId(null);
     }
@@ -228,12 +231,12 @@ export function AddressManager({ initialAddresses }: { initialAddresses: Address
       const res = await fetch(`/api/addresses/${id}`, { method: "DELETE" });
       if (!res.ok && res.status !== 204) {
         const data = await res.json().catch(() => ({}));
-        throw new Error(data.error || "Could not delete address.");
+        throw new Error(data.error || t("addresses.deleteError"));
       }
-      toast.success("Address removed.");
+      toast.success(t("addresses.deleteSuccess"));
       await refresh();
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Could not delete address.");
+      setError(err instanceof Error ? err.message : t("addresses.deleteError"));
     } finally {
       setPendingId(null);
     }
@@ -250,11 +253,11 @@ export function AddressManager({ initialAddresses }: { initialAddresses: Address
       });
       if (!res.ok) {
         const data = await res.json().catch(() => ({}));
-        throw new Error(data.error || "Could not set default address.");
+        throw new Error(data.error || t("addresses.setDefaultError"));
       }
       await refresh();
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Could not set default address.");
+      setError(err instanceof Error ? err.message : t("addresses.setDefaultError"));
     } finally {
       setPendingId(null);
     }
@@ -272,7 +275,7 @@ export function AddressManager({ initialAddresses }: { initialAddresses: Address
       )}
 
       {addresses.length === 0 && !isAdding && (
-        <p className="text-sm text-muted">You have no saved addresses yet.</p>
+        <p className="text-sm text-muted">{t("addresses.empty")}</p>
       )}
 
       <div className="space-y-4">
@@ -288,7 +291,7 @@ export function AddressManager({ initialAddresses }: { initialAddresses: Address
                   />
                   <div className="flex gap-2">
                     <Button type="submit" size="sm" disabled={pendingId === address.id}>
-                      {pendingId === address.id ? "Saving…" : "Save"}
+                      {pendingId === address.id ? t("addresses.saving") : t("addresses.save")}
                     </Button>
                     <Button
                       type="button"
@@ -296,7 +299,7 @@ export function AddressManager({ initialAddresses }: { initialAddresses: Address
                       size="sm"
                       onClick={() => setEditingId(null)}
                     >
-                      Cancel
+                      {t("addresses.cancel")}
                     </Button>
                   </div>
                 </form>
@@ -309,7 +312,7 @@ export function AddressManager({ initialAddresses }: { initialAddresses: Address
                   <div className="text-sm">
                     <div className="mb-1 flex items-center gap-2">
                       <p className="font-semibold">{address.recipientName}</p>
-                      {address.isDefault && <Badge variant="success">Default</Badge>}
+                      {address.isDefault && <Badge variant="success">{t("addresses.default")}</Badge>}
                     </div>
                     <p className="text-muted">{address.phone}</p>
                     <p className="text-muted">
@@ -332,7 +335,7 @@ export function AddressManager({ initialAddresses }: { initialAddresses: Address
                         disabled={pendingId === address.id}
                         onClick={() => handleSetDefault(address.id)}
                       >
-                        Set as default
+                        {t("addresses.setAsDefault")}
                       </Button>
                     )}
                     <Button
@@ -341,7 +344,7 @@ export function AddressManager({ initialAddresses }: { initialAddresses: Address
                       size="sm"
                       onClick={() => startEdit(address)}
                     >
-                      Edit
+                      {t("addresses.edit")}
                     </Button>
                     <Button
                       type="button"
@@ -350,7 +353,7 @@ export function AddressManager({ initialAddresses }: { initialAddresses: Address
                       disabled={pendingId === address.id}
                       onClick={() => handleDelete(address.id)}
                     >
-                      Delete
+                      {t("addresses.delete")}
                     </Button>
                   </div>
                 </div>
@@ -367,7 +370,7 @@ export function AddressManager({ initialAddresses }: { initialAddresses: Address
               <AddressFields values={addForm} onChange={setAddForm} idPrefix="add" />
               <div className="flex gap-2">
                 <Button type="submit" size="sm" disabled={pendingId === "new"}>
-                  {pendingId === "new" ? "Saving…" : "Add Address"}
+                  {pendingId === "new" ? t("addresses.saving") : t("addresses.addAddress")}
                 </Button>
                 <Button
                   type="button"
@@ -378,7 +381,7 @@ export function AddressManager({ initialAddresses }: { initialAddresses: Address
                     setAddForm(EMPTY_FORM);
                   }}
                 >
-                  Cancel
+                  {t("addresses.cancel")}
                 </Button>
               </div>
             </form>
@@ -386,7 +389,7 @@ export function AddressManager({ initialAddresses }: { initialAddresses: Address
         </Card>
       ) : (
         <Button type="button" variant="outline" onClick={() => setIsAdding(true)}>
-          Add New Address
+          {t("addresses.addNewAddress")}
         </Button>
       )}
     </div>

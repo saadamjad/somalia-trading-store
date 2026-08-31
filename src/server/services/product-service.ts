@@ -21,6 +21,7 @@ import { cacheTags } from "@/lib/cache-tags";
 import { deleteBlobsBestEffort } from "@/lib/blob";
 import type { ActiveFilters } from "@/lib/types/filter";
 import type { Category, CategorySlug, Product, SortOption } from "@/lib/types/product";
+import { defaultLocale, type Locale } from "@/config/i18n";
 
 export class CategoryNotFoundError extends Error {
   constructor(slugOrId: string) {
@@ -59,40 +60,49 @@ export class CategoryCycleError extends Error {
  * intentionally read straight from the repository, uncached, so an admin always sees
  * their own just-made edit immediately.
  */
+// locale is an explicit parameter (not read from context) on every cached function
+// below so Next's unstable_cache — which keys on keyParts + the actual call
+// arguments — never serves an English-cached entry to a Somali request or vice versa
+// (requirement §49: "an English cached page must NEVER be served to a Somali URL").
 const getAllCached = cachedRead(
-  async () => (await productRepository.findAll()).map(toDomainProduct),
+  async (locale: Locale) => (await productRepository.findAll()).map((row) => toDomainProduct(row, locale)),
   ["products:getAll"],
   { tags: [cacheTags.products] }
 );
 
 const getBySlugCached = cachedRead(
-  async (category: CategorySlug, slug: string) => {
-    const row = await productRepository.findBySlug(slug);
+  async (category: CategorySlug, slug: string, locale: Locale) => {
+    // Try a locale-specific translated slug first (requirement §22); fall back to the
+    // base English slug so a locale-prefixed URL always still resolves the product
+    // even when no translated slug has been set for it yet.
+    const translatedRow =
+      locale === defaultLocale ? null : await productRepository.findByTranslatedSlug(locale, slug);
+    const row = translatedRow ?? (await productRepository.findBySlug(slug));
     if (!row || row.category.slug !== category) return undefined;
-    return toDomainProduct(row);
+    return toDomainProduct(row, locale);
   },
   ["products:getBySlug"],
   { tags: [cacheTags.products] }
 );
 
 const getByCategoryCached = cachedRead(
-  async (category: CategorySlug) => {
+  async (category: CategorySlug, locale: Locale) => {
     const categoryRow = await categoryRepository.findBySlug(category);
     if (!categoryRow) return [];
     const rows = await productRepository.findByCategoryId(categoryRow.id);
-    return rows.map(toDomainProduct);
+    return rows.map((row) => toDomainProduct(row, locale));
   },
   ["products:getByCategory"],
   { tags: [cacheTags.products, cacheTags.categories] }
 );
 
 const getCategoriesCached = cachedRead(
-  async () => {
+  async (locale: Locale) => {
     const rows = await categoryRepository.findAll();
     return Promise.all(
       rows.map(async (row) => {
         const subcategories = await categoryRepository.findSubcategories(row.id);
-        return toDomainCategory(row, subcategories);
+        return toDomainCategory(row, subcategories, locale);
       })
     );
   },
@@ -101,62 +111,66 @@ const getCategoriesCached = cachedRead(
 );
 
 const getCategoryCached = cachedRead(
-  async (slug: string) => {
+  async (slug: string, locale: Locale) => {
     const row = await categoryRepository.findBySlug(slug);
     if (!row) return undefined;
     const subcategories = await categoryRepository.findSubcategories(row.id);
-    return toDomainCategory(row, subcategories);
+    return toDomainCategory(row, subcategories, locale);
   },
   ["categories:getBySlug"],
   { tags: [cacheTags.categories] }
 );
 
 export const productService = {
-  async getAll(): Promise<Product[]> {
-    return getAllCached();
+  async getAll(locale: Locale = defaultLocale): Promise<Product[]> {
+    return getAllCached(locale);
   },
 
-  async getById(id: string): Promise<Product | undefined> {
+  async getById(id: string, locale: Locale = defaultLocale): Promise<Product | undefined> {
     const row = await productRepository.findById(id);
-    return row ? toDomainProduct(row) : undefined;
+    return row ? toDomainProduct(row, locale) : undefined;
   },
 
-  async getBySlug(category: CategorySlug, slug: string): Promise<Product | undefined> {
-    return getBySlugCached(category, slug);
+  async getBySlug(
+    category: CategorySlug,
+    slug: string,
+    locale: Locale = defaultLocale
+  ): Promise<Product | undefined> {
+    return getBySlugCached(category, slug, locale);
   },
 
-  async getByCategory(category: CategorySlug): Promise<Product[]> {
-    return getByCategoryCached(category);
+  async getByCategory(category: CategorySlug, locale: Locale = defaultLocale): Promise<Product[]> {
+    return getByCategoryCached(category, locale);
   },
 
-  async getByIds(ids: string[]): Promise<Product[]> {
+  async getByIds(ids: string[], locale: Locale = defaultLocale): Promise<Product[]> {
     const rows = await productRepository.findByIds(ids);
-    return rows.map(toDomainProduct);
+    return rows.map((row) => toDomainProduct(row, locale));
   },
 
-  async getRelated(product: Product, limit = 4): Promise<Product[]> {
-    const categoryProducts = await this.getByCategory(product.category);
+  async getRelated(product: Product, limit = 4, locale: Locale = defaultLocale): Promise<Product[]> {
+    const categoryProducts = await this.getByCategory(product.category, locale);
     return categoryProducts.filter((p) => p.id !== product.id).slice(0, limit);
   },
 
-  async getFeatured(limit = 8): Promise<Product[]> {
-    const all = await this.getAll();
+  async getFeatured(limit = 8, locale: Locale = defaultLocale): Promise<Product[]> {
+    const all = await this.getAll(locale);
     return all.filter((p) => p.featured).slice(0, limit);
   },
 
-  async getCategories(): Promise<Category[]> {
-    return getCategoriesCached();
+  async getCategories(locale: Locale = defaultLocale): Promise<Category[]> {
+    return getCategoriesCached(locale);
   },
 
-  async getCategory(slug: string): Promise<Category | undefined> {
-    return getCategoryCached(slug);
+  async getCategory(slug: string, locale: Locale = defaultLocale): Promise<Category | undefined> {
+    return getCategoryCached(slug, locale);
   },
 
-  async getCategoryById(id: string): Promise<Category | undefined> {
+  async getCategoryById(id: string, locale: Locale = defaultLocale): Promise<Category | undefined> {
     const row = await categoryRepository.findById(id);
     if (!row) return undefined;
     const subcategories = await categoryRepository.findSubcategories(row.id);
-    return toDomainCategory(row, subcategories);
+    return toDomainCategory(row, subcategories, locale);
   },
 
   /**
@@ -176,6 +190,7 @@ export const productService = {
       search?: string;
       page?: number;
       pageSize?: number;
+      locale?: Locale;
     } = {}
   ) {
     const {
@@ -184,9 +199,10 @@ export const productService = {
       search,
       page = 1,
       pageSize = 12,
+      locale = defaultLocale,
     } = options;
 
-    const categoryProducts = await this.getByCategory(category);
+    const categoryProducts = await this.getByCategory(category, locale);
     const filtered = applyFilters(categoryProducts, filters, search);
     const sorted = sortProducts(filtered, sort);
     const total = sorted.length;
@@ -197,13 +213,13 @@ export const productService = {
     return { items, total, page, pageSize, priceRange, hasMore: start + pageSize < total };
   },
 
-  async search(query: string): Promise<Product[]> {
-    const all = await this.getAll();
+  async search(query: string, locale: Locale = defaultLocale): Promise<Product[]> {
+    const all = await this.getAll(locale);
     return searchProducts(all, query);
   },
 
-  async getSuggestions(query: string, limit = 6): Promise<Product[]> {
-    const all = await this.getAll();
+  async getSuggestions(query: string, limit = 6, locale: Locale = defaultLocale): Promise<Product[]> {
+    const all = await this.getAll(locale);
     return getSearchSuggestions(all, query, limit);
   },
 

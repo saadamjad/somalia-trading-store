@@ -1,0 +1,37 @@
+{
+  "empty": {
+    "title": "Your Cart is Empty",
+    "description": "Looks like you haven't added any products yet. Browse our catalogue and find what you need.",
+    "cta": "Shop Products"
+  },
+  "title": "Shopping Cart",
+  "clearCart": "Clear cart",
+  "stockIssue": "Only {available} left in stock — reduce quantity before checkout.",
+  "stockIssuesWarning": "Some items exceed available stock. Update quantities before checkout.",
+  "decreaseQuantity": "Decrease quantity",
+  "increaseQuantity": "Increase quantity",
+  "removeItem": "Remove item",
+  "summary": {
+    "title": "Order Summary",
+    "subtotal": "Subtotal",
+    "shipping": "Shipping",
+    "shippingCalculated": "Calculated at checkout",
+    "discount": "Discount",
+    "discountNone": "—",
+    "total": "Total"
+  },
+  "proceedToCheckout": "Proceed to Checkout",
+  "continueShopping": "Continue Shopping",
+  "drawer": {
+    "title": "Your Cart ({count})",
+    "empty": {
+      "title": "Your cart is empty",
+      "description": "Browse our products and add items to get started.",
+      "cta": "Shop Products"
+    },
+    "subtotal": "Subtotal",
+    "viewCart": "View Cart",
+    "continueShopping": "Continue Shopping",
+    "proceedToCheckout": "Proceed to Checkout"
+  }
+}

@@ -13,17 +13,29 @@ export interface CategoryCreateInput {
 
 export type CategoryUpdateInput = Partial<CategoryCreateInput>;
 
+const withTranslations = { translations: true } as const;
+
 export const categoryRepository = {
   findAll() {
-    return prisma.category.findMany({ orderBy: { name: "asc" } });
+    return prisma.category.findMany({ include: withTranslations, orderBy: { name: "asc" } });
   },
 
   findBySlug(slug: string) {
-    return prisma.category.findUnique({ where: { slug } });
+    return prisma.category.findUnique({ where: { slug }, include: withTranslations });
   },
 
   findById(id: string) {
-    return prisma.category.findUnique({ where: { id } });
+    return prisma.category.findUnique({ where: { id }, include: withTranslations });
+  },
+
+  /** Looks up a category by a locale-specific translated slug (requirement §22). Returns
+   * null if no translation uses this slug for this locale — callers fall back to the
+   * base English slug lookup (findBySlug) in that case. */
+  findByTranslatedSlug(locale: string, slug: string) {
+    return prisma.category.findFirst({
+      where: { translations: { some: { locale, slug } } },
+      include: withTranslations,
+    });
   },
 
   /** Distinct, non-null `subcategory` values for a category's products, alphabetized. */

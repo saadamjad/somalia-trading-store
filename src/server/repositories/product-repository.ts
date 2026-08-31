@@ -2,7 +2,7 @@ import { Prisma } from "@/generated/prisma/client";
 import { prisma } from "@/server/lib/prisma";
 import type { Availability, PurchasingMode } from "@/generated/prisma/client";
 
-const withCategory = { category: true } as const;
+const withCategory = { category: true, translations: true } as const;
 
 export interface ProductCreateInput {
   slug: string;
@@ -37,6 +37,16 @@ export const productRepository = {
 
   findBySlug(slug: string) {
     return prisma.product.findUnique({ where: { slug }, include: withCategory });
+  },
+
+  /** Looks up a product by a locale-specific translated slug (requirement §22). Returns
+   * null if no translation uses this slug for this locale — callers fall back to the
+   * base English slug lookup (findBySlug) in that case. */
+  findByTranslatedSlug(locale: string, slug: string) {
+    return prisma.product.findFirst({
+      where: { translations: { some: { locale, slug } } },
+      include: withCategory,
+    });
   },
 
   findByIds(ids: string[]) {

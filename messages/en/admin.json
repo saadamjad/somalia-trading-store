@@ -1,0 +1,90 @@
+{
+  "dashboard": {
+    "title": "Dashboard",
+    "subtitle": "Operational overview of the store right now.",
+    "ordersHeading": "Orders — {period}",
+    "newOrdersInPeriod": "New orders in period",
+    "orderValueInPeriod": "Order value in period (not revenue — no payments collected)",
+    "totalOrdersAllTime": "Total orders (all time)",
+    "pendingOrders": "Pending orders",
+    "ordersByStatus": "Orders by status (current)",
+    "needsAttention": "Needs attention",
+    "refundRequestsToReview": "Refund requests to review",
+    "quotesAwaitingResponse": "Quotes awaiting response",
+    "lowStockProducts": "Low stock products",
+    "outOfStockProducts": "Out of stock products",
+    "catalogAndCustomers": "Catalog & customers",
+    "totalProducts": "Total products",
+    "featuredProducts": "Featured products",
+    "totalCustomers": "Total customers",
+    "newCustomers": "New customers ({period})",
+    "refundRequestsByStatus": "Refund requests by status",
+    "quotesByStatus": "Quotes by status",
+    "orderStatus": {
+      "pending": "Pending",
+      "confirmed": "Confirmed",
+      "processing": "Processing",
+      "shipped": "Shipped",
+      "delivered": "Delivered",
+      "cancelled": "Cancelled"
+    },
+    "refundStatus": {
+      "requested": "Requested",
+      "underReview": "Under review",
+      "approved": "Approved",
+      "rejected": "Rejected"
+    },
+    "quoteStatus": {
+      "new": "New",
+      "reviewing": "Reviewing",
+      "quoted": "Quoted",
+      "accepted": "Accepted",
+      "declined": "Declined",
+      "converted": "Converted"
+    }
+  },
+  "products": {
+    "list": {
+      "accessDeniedTitle": "Access Denied",
+      "accessDeniedMessage": "Your account does not have permission to view products.",
+      "accessDeniedCreateMessage": "Your account does not have permission to create products.",
+      "accessDeniedUpdateMessage": "Your account does not have permission to update products.",
+      "title": "Products",
+      "totalCount": "{count} total",
+      "addNew": "New Product",
+      "columns": {
+        "name": "Name",
+        "category": "Category",
+        "price": "Price",
+        "availability": "Availability",
+        "featured": "Featured",
+        "actions": "Actions"
+      },
+      "yes": "Yes",
+      "no": "No",
+      "edit": "Edit",
+      "deleteConfirm": "Delete \"{name}\"?",
+      "empty": "No products yet."
+    },
+    "new": {
+      "title": "New Product"
+    },
+    "edit": {
+      "title": "Edit Product"
+    },
+    "form": {
+      "saveFailed": "Save failed.",
+      "updateSuccess": "Product updated.",
+      "createSuccess": "Product created.",
+      "nameLabel": "Name *",
+      "slugLabel": "Slug *",
+      "categoryLabel": "Category *",
+      "subcategoryLabel": "Subcategory",
+      "skuLabel": "SKU",
+      "shortDescriptionLabel": "Short Description *",
+      "descriptionLabel": "Description *",
+      "priceLabel": "Price *",
+      "compareAtPriceLabel": "Compare-at Price"
+    }
+  }
+}

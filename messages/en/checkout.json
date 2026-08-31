@@ -1,0 +1,67 @@
+{
+  "title": "Checkout",
+  "empty": {
+    "title": "Nothing to Checkout",
+    "description": "Add products to your cart first.",
+    "cta": "Shop Products"
+  },
+  "contact": {
+    "title": "Contact Information",
+    "guestNotice": "Checking out as a guest. <loginLink>Log in</loginLink> if you have an account.",
+    "fullName": "Full Name *",
+    "email": "Email *"
+  },
+  "shipping": {
+    "title": "Shipping Address",
+    "default": "Default",
+    "useNewAddress": "Use a new address",
+    "recipientName": "Recipient Name *",
+    "phone": "Phone *",
+    "line1": "Address Line 1 *",
+    "line2": "Address Line 2 (optional)",
+    "city": "City *",
+    "region": "Region (optional)",
+    "postalCode": "Postal Code (optional)",
+    "country": "Country *"
+  },
+  "note": {
+    "title": "Order Note (optional)",
+    "placeholder": "Delivery instructions or anything else we should know."
+  },
+  "review": {
+    "title": "Order Summary"
+  },
+  "coupon": {
+    "label": "Coupon Code",
+    "placeholder": "Enter code",
+    "apply": "Apply",
+    "applying": "Applying…",
+    "remove": "Remove",
+    "appliedMessage": "\"{code}\" applied — you save {amount}.",
+    "appliedToast": "Coupon \"{code}\" applied.",
+    "genericError": "That coupon couldn't be applied."
+  },
+  "summary": {
+    "subtotal": "Subtotal",
+    "discount": "Discount",
+    "shipping": "Shipping",
+    "shippingFree": "Free",
+    "total": "Total"
+  },
+  "paymentNotice": "No online payment is collected at this time — your order will be confirmed and paid for outside the platform. Payment integration is coming in a future update.",
+  "placeOrder": "Place Order",
+  "placingOrder": "Placing Order…",
+  "errors": {
+    "guestDetailsRequired": "Please enter your name and email.",
+    "addressRequired": "Please select a shipping address.",
+    "orderFailed": "Could not place your order.",
+    "stockIssue": "Only {available} available (you requested {requested})."
+  },
+  "orderPlacedToast": "Order placed.",
+  "confirmation": {
+    "title": "Order Placed",
+    "orderReceived": "Your order <orderNumber></orderNumber> has been received. We'll email you updates as it's processed.",
+    "trackAccount": "Create a password anytime via <forgotPasswordLink>forgot password</forgotPasswordLink> to track this and future orders from your account.",
+    "continueShopping": "Continue Shopping"
+  }
+}

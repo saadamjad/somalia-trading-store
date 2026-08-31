@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { ArrowUpRight, Heart, ShoppingCart } from "lucide-react";
+import { useTranslations } from "next-intl";
 import { toast } from "sonner";
 import type { Product } from "@/lib/types/product";
 import { useCartStore } from "@/stores/cart-store";
@@ -21,6 +22,7 @@ export function ProductCard({
   variant = "grid",
   className,
 }: ProductCardProps) {
+  const t = useTranslations("shop.productCard");
   const addItem = useCartStore((s) => s.addItem);
   const openCart = useUIStore((s) => s.openCart);
   const { isInWishlist, toggleItem } = useWishlistStore();
@@ -33,7 +35,7 @@ export function ProductCard({
     e.stopPropagation();
     addItem(product.id);
     openCart();
-    toast.success(`${product.name} added to cart`);
+    toast.success(t("addedToCart", { name: product.name }));
   };
 
   if (variant === "editorial") {
@@ -90,17 +92,17 @@ export function ProductCard({
               className="inline-flex h-12 items-center gap-2 bg-foreground px-7 text-sm font-semibold text-background transition-colors hover:bg-foreground/90"
             >
               <ShoppingCart className="h-4 w-4" />
-              Add to Cart
+              {t("addToCart")}
             </button>
             <button
               onClick={() => {
                 toggleItem(product.id);
                 toast.success(
-                  inWishlist ? "Removed from wishlist" : "Added to wishlist"
+                  inWishlist ? t("removedFromWishlist") : t("addedToWishlist")
                 );
               }}
               aria-label={
-                inWishlist ? "Remove from wishlist" : "Add to wishlist"
+                inWishlist ? t("removeFromWishlist") : t("addToWishlist")
               }
               className={cn(
                 "inline-flex h-12 w-12 items-center justify-center border border-border-strong transition-colors hover:border-foreground",
@@ -136,11 +138,11 @@ export function ProductCard({
             e.preventDefault();
             toggleItem(product.id);
             toast.success(
-              inWishlist ? "Removed from wishlist" : "Added to wishlist"
+              inWishlist ? t("removedFromWishlist") : t("addedToWishlist")
             );
           }}
           aria-label={
-            inWishlist ? "Remove from wishlist" : "Add to wishlist"
+            inWishlist ? t("removeFromWishlist") : t("addToWishlist")
           }
           className={cn(
             "absolute right-4 top-4 flex h-9 w-9 items-center justify-center bg-white/90 shadow-(--shadow-sm) transition-all duration-(--duration-base) hover:scale-110 hover:bg-white",
@@ -173,7 +175,7 @@ export function ProductCard({
           <button
             onClick={handleAddToCart}
             className="flex h-8 w-8 items-center justify-center border border-border-strong transition-all duration-(--duration-base) hover:border-foreground hover:bg-foreground hover:text-background"
-            aria-label="Add to cart"
+            aria-label={t("addToCartAriaLabel")}
           >
             <ArrowUpRight className="h-3.5 w-3.5" strokeWidth={1.5} />
           </button>

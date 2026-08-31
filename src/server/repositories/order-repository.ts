@@ -33,6 +33,10 @@ export interface OrderCreateInput extends ShippingSnapshot {
   total: Prisma.Decimal | number | string;
   currency: string;
   customerNote?: string | null;
+  /** The customer's effective locale at order-creation time (requirement §31) — a
+   * snapshot, see the Order.customerLocale schema comment for why this is never a
+   * live read of User.preferredLocale. */
+  customerLocale?: string | null;
   items: OrderItemCreateInput[];
 }
 

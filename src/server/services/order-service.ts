@@ -455,6 +455,10 @@ interface PersistOrderParams {
   shipping: ShippingSnapshot;
   currency: string;
   customerNote: string | null;
+  /** The customer's effective locale at order-creation time (requirement §31) —
+   * captured once, here, rather than resolved later from a possibly-since-changed
+   * account preference. See order-service.ts's two callers for how it's resolved. */
+  customerLocale: string | null;
   orderItemsInput: PersistOrderItemInput[];
   /** Optional coupon code to apply — re-validated and redeemed atomically inside the
    * same transaction as order creation (see couponService.previewInTransaction /
@@ -615,6 +619,7 @@ async function persistOrder(params: PersistOrderParams): Promise<OrderWithItems>
           total,
           currency: params.currency,
           customerNote: params.customerNote,
+          customerLocale: params.customerLocale,
           ...params.shipping,
           items: params.orderItemsInput,
         });
@@ -687,7 +692,7 @@ export const orderService = {
    *     reimplemented) and re-prices every line from the current Product rows.
    *  4. Delegates to `persistOrder` for the actual atomic creation.
    */
-  async createOrder(userId: string, input: OrderCreateInput): Promise<OrderView> {
+  async createOrder(userId: string, input: OrderCreateInput, locale?: string): Promise<OrderView> {
     const shipping = input.addressId
       ? shippingFromAddress(await addressService.getOwned(input.addressId, userId))
       : shippingFromInline(input.shippingAddress!);
@@ -712,6 +717,7 @@ export const orderService = {
       shipping,
       currency,
       customerNote,
+      customerLocale: locale ?? null,
       orderItemsInput,
       couponCode: input.couponCode ? input.couponCode : null,
       clearCart: true,
@@ -735,7 +741,7 @@ export const orderService = {
    * password is set via the normal forgot-password flow (auth-service.ts
    * `verifyCredentials` already rejects a null passwordHash).
    */
-  async createGuestOrder(input: GuestOrderCreateInput): Promise<OrderView> {
+  async createGuestOrder(input: GuestOrderCreateInput, locale?: string): Promise<OrderView> {
     const email = input.email.trim().toLowerCase();
 
     let user = await userRepository.findByEmail(email);
@@ -793,6 +799,7 @@ export const orderService = {
       shipping: shippingFromInline(input.shippingAddress),
       currency,
       customerNote: input.customerNote ? input.customerNote : null,
+      customerLocale: locale ?? null,
       orderItemsInput,
       couponCode: input.couponCode ? input.couponCode : null,
       clearCart: false,
@@ -823,11 +830,17 @@ export const orderService = {
       };
     });
 
+    // No request/checkout context here (admin-driven quote conversion) to read a
+    // locale from — fall back to the customer's own stored account preference,
+    // since a userId always exists for this path (unlike guest checkout).
+    const customer = await userRepository.findById(params.userId);
+
     const created = await persistOrder({
       userId: params.userId,
       shipping: params.shipping,
       currency: params.currency,
       customerNote: params.customerNote ? params.customerNote : null,
+      customerLocale: customer?.preferredLocale ?? null,
       orderItemsInput,
       clearCart: false,
       idempotencyKey: params.idempotencyKey,
@@ -956,6 +969,13 @@ export const orderService = {
       message: `Your order ${updated.orderNumber} is now ${toStatus}.`,
       relatedEntityType: "ORDER",
       relatedEntityId: updated.id,
+      // The order's own captured locale (requirement §31) — NOT the customer's
+      // current account preference, which may have changed since checkout.
+      locale: updated.customerLocale ?? undefined,
+      emailTemplate: {
+        key: "orderStatusChanged",
+        params: { orderNumber: updated.orderNumber, status: toStatus },
+      },
     });
 
     return {

@@ -4,35 +4,19 @@ import { useRef } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { ArrowUpRight, ChevronLeft, ChevronRight } from "lucide-react";
+import { useTranslations } from "next-intl";
 import { FadeIn } from "@/components/ui/motion";
 import { brand } from "@/config/brand";
 import { galleryMoments } from "@/config/gallery";
 
-const storyChapters = [
-  {
-    label: "01 — On the Ground",
-    title: "Hands-on leadership at every site",
-    description: "Inspecting equipment and materials firsthand.",
-    image: "/images/our-story/site-visit-road.jpg",
-    alt: "Foley General Trading leadership meeting with partners at an international trade expo",
-  },
-  {
-    label: "02 — Client Partnership",
-    title: "Real conversations, real samples",
-    description: "Face-to-face with suppliers before every order.",
-    image: "/images/our-story/client-consultation.jpg",
-    alt: "Foley General Trading leadership at an agricultural trading company booth",
-  },
-  {
-    label: "03 — Quality & Production",
-    title: "From factory floor to finished product",
-    description: "Direct oversight of manufacturing quality.",
-    image: "/images/our-story/manufacturing-quality.jpg",
-    alt: "Quality inspection at a heavy machinery manufacturing facility",
-  },
-];
+const storyChapterImages = [
+  { key: "chapter1", image: "/images/our-story/site-visit-road.jpg" },
+  { key: "chapter2", image: "/images/our-story/client-consultation.jpg" },
+  { key: "chapter3", image: "/images/our-story/manufacturing-quality.jpg" },
+] as const;
 
 export function OurStorySection() {
+  const t = useTranslations("home.ourStory");
   const scrollerRef = useRef<HTMLDivElement>(null);
 
   const scrollByAmount = (direction: "left" | "right") => {
@@ -58,40 +42,38 @@ export function OurStorySection() {
       <div className="container-custom relative z-10">
         {/* Intro */}
         <FadeIn className="section-heading mx-auto max-w-2xl text-center">
-          <span className="label mb-4 block">Our Story</span>
+          <span className="label mb-4 block">{t("eyebrow")}</span>
           <h2 className="font-display text-3xl font-bold text-foreground md:text-5xl">
-            Real People.
+            {t("titleLine1")}
             <br />
-            <span className="text-accent">Real Work.</span>
+            <span className="text-accent">{t("titleAccent")}</span>
           </h2>
           <p className="mt-5 text-sm leading-relaxed text-muted md:text-base">
-            {brand.shortName} isn&apos;t just a catalogue — it&apos;s a team on
-            the ground, in the factory, and at the table with every client we
-            serve across Somalia.
+            {t("description", { shortName: brand.shortName })}
           </p>
         </FadeIn>
 
         {/* Story chapters — image with caption below, not overlaid */}
         <div className="mt-12 grid gap-3 md:mt-16 md:grid-cols-3">
-          {storyChapters.map((chapter, i) => (
-            <FadeIn key={chapter.label} delay={0.08 + i * 0.06}>
+          {storyChapterImages.map((chapter, i) => (
+            <FadeIn key={chapter.key} delay={0.08 + i * 0.06}>
               <article className="h-full border border-border bg-surface transition-shadow duration-(--duration-base) hover:shadow-(--shadow-md)">
                 <div className="relative aspect-4/3 overflow-hidden bg-muted/10">
                   <Image
                     src={chapter.image}
-                    alt={chapter.alt}
+                    alt={t(`chapters.${chapter.key}.alt`)}
                     fill
                     sizes="(max-width: 768px) 100vw, 33vw"
                     className="object-cover transition-transform duration-700 hover:scale-[1.03]"
                   />
                 </div>
                 <div className="p-5 md:p-7">
-                  <span className="label mb-1.5 block">{chapter.label}</span>
+                  <span className="label mb-1.5 block">{t(`chapters.${chapter.key}.label`)}</span>
                   <h3 className="font-display mb-1.5 text-base font-bold text-foreground md:text-lg">
-                    {chapter.title}
+                    {t(`chapters.${chapter.key}.title`)}
                   </h3>
                   <p className="text-xs leading-relaxed text-muted md:text-sm">
-                    {chapter.description}
+                    {t(`chapters.${chapter.key}.description`)}
                   </p>
                 </div>
               </article>
@@ -103,9 +85,9 @@ export function OurStorySection() {
         <FadeIn delay={0.2} className="mb-10 mt-12 md:mt-14">
           <div className="mb-6 flex items-end justify-between gap-4">
             <div>
-              <span className="label mb-2 block">Behind the Business</span>
+              <span className="label mb-2 block">{t("gallery.eyebrow")}</span>
               <p className="font-display text-lg font-semibold text-foreground md:text-xl">
-                Moments that define who we are
+                {t("gallery.title")}
               </p>
             </div>
             <div className="flex items-center gap-4">
@@ -113,14 +95,14 @@ export function OurStorySection() {
                 href="/gallery"
                 className="group hidden items-center gap-2 text-xs font-semibold uppercase tracking-widest text-foreground transition-colors hover:text-accent-text sm:inline-flex"
               >
-                View All
+                {t("gallery.viewAll")}
                 <ArrowUpRight className="h-3.5 w-3.5 transition-transform duration-(--duration-base) group-hover:translate-x-0.5" />
               </Link>
               <div className="hidden items-center gap-2 md:flex">
                 <button
                   type="button"
                   onClick={() => scrollByAmount("left")}
-                  aria-label="Scroll gallery left"
+                  aria-label={t("gallery.scrollLeft")}
                   className="flex h-9 w-9 items-center justify-center border border-border-strong text-foreground transition-colors hover:border-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
                 >
                   <ChevronLeft className="h-4 w-4" strokeWidth={1.5} />
@@ -128,7 +110,7 @@ export function OurStorySection() {
                 <button
                   type="button"
                   onClick={() => scrollByAmount("right")}
-                  aria-label="Scroll gallery right"
+                  aria-label={t("gallery.scrollRight")}
                   className="flex h-9 w-9 items-center justify-center border border-border-strong text-foreground transition-colors hover:border-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
                 >
                   <ChevronRight className="h-4 w-4" strokeWidth={1.5} />
@@ -169,7 +151,7 @@ export function OurStorySection() {
             href="/gallery"
             className="group mt-4 inline-flex items-center gap-2 text-xs font-semibold uppercase tracking-widest text-foreground transition-colors hover:text-accent-text sm:hidden"
           >
-            View All
+            {t("gallery.viewAll")}
             <ArrowUpRight className="h-3.5 w-3.5 transition-transform duration-(--duration-base) group-hover:translate-x-0.5" />
           </Link>
         </FadeIn>

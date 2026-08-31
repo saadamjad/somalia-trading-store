@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
+import { getTranslations } from "next-intl/server";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { getCurrentSession } from "@/server/auth/session";
@@ -14,31 +15,6 @@ import {
 import { formatPrice } from "@/lib/utils";
 
 export const metadata = { title: "Dashboard | Admin" };
-
-const ORDER_STATUS_LABEL: Record<string, string> = {
-  PENDING: "Pending",
-  CONFIRMED: "Confirmed",
-  PROCESSING: "Processing",
-  SHIPPED: "Shipped",
-  DELIVERED: "Delivered",
-  CANCELLED: "Cancelled",
-};
-
-const REFUND_STATUS_LABEL: Record<string, string> = {
-  REQUESTED: "Requested",
-  UNDER_REVIEW: "Under review",
-  APPROVED: "Approved",
-  REJECTED: "Rejected",
-};
-
-const QUOTE_STATUS_LABEL: Record<string, string> = {
-  NEW: "New",
-  REVIEWING: "Reviewing",
-  QUOTED: "Quoted",
-  ACCEPTED: "Accepted",
-  DECLINED: "Declined",
-  CONVERTED: "Converted",
-};
 
 interface PageProps {
   searchParams: Promise<Record<string, string | undefined>>;
@@ -132,13 +108,39 @@ export default async function AdminDashboardPage({ searchParams }: PageProps) {
   const { period } = dashboardQuerySchema.parse({ period: params.period });
 
   const summary = await dashboardService.getSummary(period);
+  const t = await getTranslations("admin.dashboard");
+
+  const ORDER_STATUS_LABEL: Record<string, string> = {
+    PENDING: t("orderStatus.pending"),
+    CONFIRMED: t("orderStatus.confirmed"),
+    PROCESSING: t("orderStatus.processing"),
+    SHIPPED: t("orderStatus.shipped"),
+    DELIVERED: t("orderStatus.delivered"),
+    CANCELLED: t("orderStatus.cancelled"),
+  };
+
+  const REFUND_STATUS_LABEL: Record<string, string> = {
+    REQUESTED: t("refundStatus.requested"),
+    UNDER_REVIEW: t("refundStatus.underReview"),
+    APPROVED: t("refundStatus.approved"),
+    REJECTED: t("refundStatus.rejected"),
+  };
+
+  const QUOTE_STATUS_LABEL: Record<string, string> = {
+    NEW: t("quoteStatus.new"),
+    REVIEWING: t("quoteStatus.reviewing"),
+    QUOTED: t("quoteStatus.quoted"),
+    ACCEPTED: t("quoteStatus.accepted"),
+    DECLINED: t("quoteStatus.declined"),
+    CONVERTED: t("quoteStatus.converted"),
+  };
 
   return (
     <div className="flex flex-col gap-8">
       <div className="flex flex-wrap items-center justify-between gap-4">
         <div>
-          <h1 className="font-display text-2xl font-bold">Dashboard</h1>
-          <p className="text-sm text-muted">Operational overview of the store right now.</p>
+          <h1 className="font-display text-2xl font-bold">{t("title")}</h1>
+          <p className="text-sm text-muted">{t("subtitle")}</p>
         </div>
         <nav aria-label="Period" className="flex gap-1 rounded-lg border border-border bg-surface p-1">
           {DASHBOARD_PERIODS.map((p) => (
@@ -149,18 +151,18 @@ export default async function AdminDashboardPage({ searchParams }: PageProps) {
 
       <section aria-labelledby="orders-heading" className="flex flex-col gap-4">
         <h2 id="orders-heading" className="label text-muted">
-          Orders — {DASHBOARD_PERIOD_LABELS[period]}
+          {t("ordersHeading", { period: DASHBOARD_PERIOD_LABELS[period] })}
         </h2>
         <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
-          <StatTile label="New orders in period" value={summary.orders.newInPeriod} href="/admin/orders" />
+          <StatTile label={t("newOrdersInPeriod")} value={summary.orders.newInPeriod} href="/admin/orders" />
           <StatTile
-            label="Order value in period (not revenue — no payments collected)"
+            label={t("orderValueInPeriod")}
             value={formatPrice(summary.orders.orderValueInPeriod, summary.orders.currency)}
             href="/admin/orders"
           />
-          <StatTile label="Total orders (all time)" value={summary.orders.totalAllTime} href="/admin/orders" />
+          <StatTile label={t("totalOrdersAllTime")} value={summary.orders.totalAllTime} href="/admin/orders" />
           <StatTile
-            label="Pending orders"
+            label={t("pendingOrders")}
             value={summary.orders.byStatus.PENDING}
             href="/admin/orders?status=PENDING"
             tone={summary.orders.byStatus.PENDING > 0 ? "warning" : "default"}
@@ -168,7 +170,7 @@ export default async function AdminDashboardPage({ searchParams }: PageProps) {
         </div>
         <Card>
           <CardHeader>
-            <CardTitle className="text-base">Orders by status (current)</CardTitle>
+            <CardTitle className="text-base">{t("ordersByStatus")}</CardTitle>
           </CardHeader>
           <CardContent className="pt-0">
             <StatusBreakdown
@@ -182,29 +184,29 @@ export default async function AdminDashboardPage({ searchParams }: PageProps) {
 
       <section aria-labelledby="attention-heading" className="flex flex-col gap-4">
         <h2 id="attention-heading" className="label text-muted">
-          Needs attention
+          {t("needsAttention")}
         </h2>
         <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
           <StatTile
-            label="Refund requests to review"
+            label={t("refundRequestsToReview")}
             value={summary.refunds.needingAttention}
             href="/admin/refunds?status=REQUESTED"
             tone={summary.refunds.needingAttention > 0 ? "warning" : "default"}
           />
           <StatTile
-            label="Quotes awaiting response"
+            label={t("quotesAwaitingResponse")}
             value={summary.quotes.needingResponse}
             href="/admin/quotes?status=NEW"
             tone={summary.quotes.needingResponse > 0 ? "warning" : "default"}
           />
           <StatTile
-            label="Low stock products"
+            label={t("lowStockProducts")}
             value={summary.inventory.lowStock}
             href="/admin/inventory"
             tone={summary.inventory.lowStock > 0 ? "warning" : "default"}
           />
           <StatTile
-            label="Out of stock products"
+            label={t("outOfStockProducts")}
             value={summary.inventory.outOfStock}
             href="/admin/inventory"
             tone={summary.inventory.outOfStock > 0 ? "warning" : "default"}
@@ -215,14 +217,14 @@ export default async function AdminDashboardPage({ searchParams }: PageProps) {
       <section aria-labelledby="catalog-heading" className="grid gap-4 md:grid-cols-3">
         <div>
           <h2 id="catalog-heading" className="label mb-4 text-muted">
-            Catalog & customers
+            {t("catalogAndCustomers")}
           </h2>
           <div className="grid grid-cols-2 gap-4">
-            <StatTile label="Total products" value={summary.products.total} href="/admin/products" />
-            <StatTile label="Featured products" value={summary.products.featured} href="/admin/products" />
-            <StatTile label="Total customers" value={summary.customers.total} />
+            <StatTile label={t("totalProducts")} value={summary.products.total} href="/admin/products" />
+            <StatTile label={t("featuredProducts")} value={summary.products.featured} href="/admin/products" />
+            <StatTile label={t("totalCustomers")} value={summary.customers.total} />
             <StatTile
-              label={`New customers (${DASHBOARD_PERIOD_LABELS[period]})`}
+              label={t("newCustomers", { period: DASHBOARD_PERIOD_LABELS[period] })}
               value={summary.customers.newInPeriod}
             />
           </div>
@@ -230,7 +232,7 @@ export default async function AdminDashboardPage({ searchParams }: PageProps) {
 
         <Card>
           <CardHeader>
-            <CardTitle className="text-base">Refund requests by status</CardTitle>
+            <CardTitle className="text-base">{t("refundRequestsByStatus")}</CardTitle>
           </CardHeader>
           <CardContent className="pt-0">
             <StatusBreakdown
@@ -243,7 +245,7 @@ export default async function AdminDashboardPage({ searchParams }: PageProps) {
 
         <Card>
           <CardHeader>
-            <CardTitle className="text-base">Quotes by status</CardTitle>
+            <CardTitle className="text-base">{t("quotesByStatus")}</CardTitle>
           </CardHeader>
           <CardContent className="pt-0">
             <StatusBreakdown

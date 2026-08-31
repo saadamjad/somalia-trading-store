@@ -47,6 +47,7 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
       if (user) {
         token.id = user.id as string;
         token.role = (user as { role: string }).role;
+        token.preferredLocale = (user as { preferredLocale?: string | null }).preferredLocale ?? null;
       }
       return token;
     },
@@ -54,6 +55,7 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
       if (session.user) {
         session.user.id = token.id as string;
         session.user.role = token.role as string;
+        session.user.preferredLocale = (token.preferredLocale as string | null | undefined) ?? null;
       }
       return session;
     },

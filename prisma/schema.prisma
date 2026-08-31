@@ -56,7 +56,37 @@ model Category {
 
   products Product[]
 
+  translations CategoryTranslation[]
+
   @@index([parentId])
+}
+
+// Phase 17 (i18n): locale-specific overrides for Category's customer-facing text.
+// English content stays on the base Category row (canonical default-locale fallback,
+// never null) — this table only holds additional locales. A missing row for a given
+// locale means "not yet translated"; the read path falls back to the base English
+// fields, never to a blank/undefined value. `slug` is an optional per-locale URL
+// override; when absent, routing falls back to the base Category.slug (see
+// resolve-translation.ts and the routing layer for the fallback chain).
+model CategoryTranslation {
+  id         String   @id @default(cuid())
+  categoryId String
+  category   Category @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+
+  locale String // validated against src/config/i18n.ts `locales` at the app layer —
+  // kept as String, not an enum, so adding a locale never requires a migration.
+
+  name             String
+  description      String
+  shortDescription String
+  slug             String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([categoryId, locale])
+  @@unique([locale, slug])
+  @@index([locale])
 }
 
 model Product {
@@ -115,10 +145,48 @@ model Product {
   // Inventory/CartItem/OrderItem to be nullable-variant-aware.
   variants ProductVariant[]
 
+  translations ProductTranslation[]
+
   @@index([categoryId])
   @@index([featured])
   @@index([availability])
   @@index([subcategory])
+}
+
+// Phase 17 (i18n): locale-specific overrides for Product's customer-facing text. Same
+// pattern/rationale as CategoryTranslation above — English stays on the base Product
+// row as the canonical fallback; this table is additive-only. Deliberately NOT flat
+// per-locale columns (nameSo, nameAr, ...): a translation table lets a new locale be
+// added as admin-authored rows with zero schema migration, whereas flat columns would
+// require a migration + new admin form fields for every future language.
+//
+// IMPORTANT: this table only affects the *live* catalog. OrderItem.productName is an
+// immutable English snapshot captured at order-creation time (docs/DECISIONS.md D-007)
+// and must never be swapped for a live/localized lookup — order history stays in
+// whatever language the product was in when the order was placed.
+model ProductTranslation {
+  id        String  @id @default(cuid())
+  productId String
+  product   Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  locale String
+
+  name             String
+  description      String
+  shortDescription String
+  slug             String? // optional locale-specific slug override; falls back to
+  // the base Product.slug when absent — see the note on nullable-slug uniqueness in
+  // resolve-translation.ts. Not checked against other products' base English slugs,
+  // only deduped within this table (@@unique([locale, slug]) below).
+  seoTitle       String?
+  seoDescription String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([productId, locale])
+  @@unique([locale, slug])
+  @@index([locale])
 }
 
 // Product variants (size/color/etc.) — e.g. a shirt in Black/Small, Black/Medium,
@@ -314,6 +382,13 @@ model User {
   isGuest       Boolean   @default(false)
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
+
+  // i18n: explicit account-level language preference (requirement §54). String, not
+  // an enum — validated against src/config/i18n.ts's `locales` at the app layer, same
+  // pattern as ProductTranslation/CategoryTranslation.locale, so adding a new
+  // supported language never needs a migration here. Nullable: no preference set yet
+  // means "fall back to cookie/browser/geo resolution" (see src/i18n/resolve-locale.ts).
+  preferredLocale String?
 
   // Admin User Management & RBAC. `active` gates `getCurrentSession` (session.ts) on
   // every request — a deactivated account loses admin access immediately, not just at
@@ -540,6 +615,14 @@ model Order {
   currency String  @default("USD")
 
   customerNote String?
+
+  // i18n: the customer's effective locale AT THE MOMENT of order creation (requirement
+  // §31) — a snapshot, deliberately NOT a live read of User.preferredLocale, so a
+  // customer changing their language preference later never rewrites which language
+  // past transactional emails/invoices were (or should be) sent in. Nullable only
+  // because orders created before this field existed have no historical value;
+  // every new order always sets it (see order-service.ts persistOrder).
+  customerLocale String?
 
   // Phase 9: Order Management. Admin-only working note — visible only in /admin/orders,
   // never surfaced to the customer. A single overwritable field, not a log: simpler than
@@ -1132,7 +1215,31 @@ model CMSPage {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
+  translations CMSPageTranslation[]
+
   @@index([published])
+}
+
+// Phase 17 (i18n): same pattern as ProductTranslation/CategoryTranslation. `body` is
+// the same structured-JSON block shape as the base CMSPage.body (rendered as plain
+// React text, never dangerouslySetInnerHTML — see CMSPage's own comment).
+model CMSPageTranslation {
+  id     String  @id @default(cuid())
+  pageId String
+  page   CMSPage @relation(fields: [pageId], references: [id], onDelete: Cascade)
+
+  locale String
+
+  title String
+  body  Json
+  slug  String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([pageId, locale])
+  @@unique([locale, slug])
+  @@index([locale])
 }
 
 // Named slots a Banner can be assigned to. HOMEPAGE_HERO overrides the homepage hero's
@@ -1169,7 +1276,30 @@ model Banner {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
+  translations BannerTranslation[]
+
   @@index([slot, active])
+}
+
+// Phase 17 (i18n): same pattern as the other translation models. No slug field here —
+// Banner has no customer-facing URL of its own (linkUrl is an admin-supplied, already
+// locale-agnostic destination).
+model BannerTranslation {
+  id       String @id @default(cuid())
+  bannerId String
+  banner   Banner @relation(fields: [bannerId], references: [id], onDelete: Cascade)
+
+  locale String
+
+  title    String
+  subtitle String?
+  ctaText  String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([bannerId, locale])
+  @@index([locale])
 }
 
 // Phase 15: Notifications. A small closed enum covering exactly the three trigger

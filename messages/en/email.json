@@ -1,0 +1,22 @@
+{
+  "orderStatusChanged": {
+    "subject": "Order {orderNumber} status updated",
+    "body": "Your order {orderNumber} is now {status}."
+  },
+  "quoteReady": {
+    "subject": "Your quote is ready",
+    "body": "We've responded to your quote request with pricing — take a look."
+  },
+  "refundApproved": {
+    "subject": "Refund request approved",
+    "body": "Your refund request for order {orderNumber} was approved."
+  },
+  "refundRejected": {
+    "subject": "Refund request rejected",
+    "body": "Your refund request for order {orderNumber} was rejected."
+  },
+  "passwordReset": {
+    "subject": "Reset your password",
+    "body": "Use the link below to reset your password:\n{resetUrl}"
+  }
+}

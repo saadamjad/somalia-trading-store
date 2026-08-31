@@ -1,0 +1,40 @@
+{
+  "nav": {
+    "skipToContent": "Skip to content",
+    "main": "Main",
+    "mobile": "Mobile"
+  },
+  "account": {
+    "myAccount": "My Account",
+    "logOut": "Log Out",
+    "logIn": "Log In"
+  },
+  "footer": {
+    "shop": "Shop",
+    "company": "Company",
+    "legal": "Legal",
+    "contact": "Contact"
+  },
+  "search": {
+    "title": "Search Products",
+    "placeholder": "Search by name, category, or SKU...",
+    "noResults": "No products found. Try a different search term.",
+    "viewAllResults": "View all results"
+  },
+  "whatsapp": {
+    "menuLabel": "Chat with us on WhatsApp — choose a topic",
+    "chatWithUs": "Chat with us",
+    "openLabel": "Chat with us on WhatsApp",
+    "closeMenuLabel": "Close WhatsApp menu"
+  },
+  "aria": {
+    "searchProducts": "Search products",
+    "wishlistCount": "Wishlist, {count} items",
+    "cartCount": "Cart, {count} items",
+    "notificationsUnread": "Notifications, {count} unread",
+    "accountMenu": "Account menu",
+    "closeMenu": "Close menu",
+    "openMenu": "Open menu",
+    "closeSearch": "Close search"
+  }
+}

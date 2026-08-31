@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { ArrowUpRight } from "lucide-react";
+import { useTranslations } from "next-intl";
 import type { Category } from "@/lib/types/product";
 import { cn } from "@/lib/utils";
 import { SafeImage } from "@/components/ui/safe-image";
@@ -19,6 +20,8 @@ export function CategoryCard({
   variant = "default",
   className,
 }: CategoryCardProps) {
+  const t = useTranslations("shop.categoryCard");
+
   return (
     <Link
       href={`/shop/${category.slug}`}
@@ -43,7 +46,7 @@ export function CategoryCard({
       </div>
 
       <div className="flex flex-1 flex-col p-7 md:p-9">
-        <span className="label mb-3 block">Category 0{index + 1}</span>
+        <span className="label mb-3 block">{t("categoryIndex", { index: index + 1 })}</span>
         <h3 className="font-display mb-3 text-2xl font-bold text-foreground md:text-3xl">
           {category.name}
         </h3>
@@ -51,7 +54,7 @@ export function CategoryCard({
           {category.shortDescription}
         </p>
         <span className="mt-auto inline-flex items-center gap-2 text-xs font-semibold uppercase tracking-widest text-accent-text transition-all group-hover:gap-3">
-          View Products
+          {t("viewProducts")}
           <ArrowUpRight className="h-3.5 w-3.5" />
         </span>
       </div>

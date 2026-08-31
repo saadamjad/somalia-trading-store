@@ -1,0 +1,130 @@
+{
+  "hero": {
+    "kicker": "Featured categories",
+    "shopNow": "Shop Now",
+    "shopAriaLabel": "Shop {category}",
+    "slideStatus": "Showing {category}, slide {current} of {total}",
+    "previousSlide": "Previous slide",
+    "nextSlide": "Next slide",
+    "goToSlide": "Go to slide {number}: {category}",
+    "headlineLine1": "Built for",
+    "headlineAccent": "Industry.",
+    "headlineLine3": "Trusted in Trade.",
+    "cta": "Explore Catalogue"
+  },
+  "ourStory": {
+    "eyebrow": "Our Story",
+    "titleLine1": "Real People.",
+    "titleAccent": "Real Work.",
+    "description": "{shortName} isn't just a catalogue — it's a team on the ground, in the factory, and at the table with every client we serve across Somalia.",
+    "chapters": {
+      "chapter1": {
+        "label": "01 — On the Ground",
+        "title": "Hands-on leadership at every site",
+        "description": "Inspecting equipment and materials firsthand.",
+        "alt": "Foley General Trading leadership meeting with partners at an international trade expo"
+      },
+      "chapter2": {
+        "label": "02 — Client Partnership",
+        "title": "Real conversations, real samples",
+        "description": "Face-to-face with suppliers before every order.",
+        "alt": "Foley General Trading leadership at an agricultural trading company booth"
+      },
+      "chapter3": {
+        "label": "03 — Quality & Production",
+        "title": "From factory floor to finished product",
+        "description": "Direct oversight of manufacturing quality.",
+        "alt": "Quality inspection at a heavy machinery manufacturing facility"
+      }
+    },
+    "gallery": {
+      "eyebrow": "Behind the Business",
+      "title": "Moments that define who we are",
+      "viewAll": "View All",
+      "scrollLeft": "Scroll gallery left",
+      "scrollRight": "Scroll gallery right"
+    }
+  },
+  "featured": {
+    "eyebrow": "Featured",
+    "title": "Popular Right Now",
+    "shopAll": "Shop All"
+  },
+  "shopByCategory": {
+    "eyebrow": "Catalogue",
+    "titleLine1": "Shop by",
+    "titleAccent": "Category",
+    "description": "Construction materials, road interlocks, and fishing products — three specialised supply divisions."
+  },
+  "statsTrust": {
+    "eyebrow": "Trusted Across Somalia",
+    "title": "Built on Reliability",
+    "description": "{shortName} supports contractors, developers, and businesses with dependable supply across construction, infrastructure, and marine sectors."
+  },
+  "whyChoose": {
+    "eyebrow": "Why FGT",
+    "titleLine1": "A Partner You Can",
+    "titleLine2": "Count On",
+    "description": "From paver blocks and doors to fishing equipment — we combine product quality with the service standards your business expects.",
+    "pillars": {
+      "quality": {
+        "title": "Quality Assured",
+        "description": "Products selected to meet commercial and project-grade requirements across every division."
+      },
+      "supply": {
+        "title": "Reliable Supply",
+        "description": "Consistent stock and dependable delivery for ongoing projects and bulk orders."
+      },
+      "expertise": {
+        "title": "Industry Expertise",
+        "description": "Specialist knowledge in construction materials, road interlocks, and fishing products."
+      },
+      "support": {
+        "title": "Dedicated Support",
+        "description": "Responsive communication and professional guidance from inquiry to fulfilment."
+      }
+    }
+  },
+  "reviews": {
+    "eyebrow": "Client Feedback",
+    "title": "What Our Clients Say",
+    "reviewsCount": "({count} reviews)",
+    "items": {
+      "review1": {
+        "name": "Ahmed H.",
+        "role": "Contractor, Mogadishu",
+        "text": "Reliable supply of paver blocks for our road project. Quality was consistent and delivery was on schedule."
+      },
+      "review2": {
+        "name": "Fatima M.",
+        "role": "Construction Developer",
+        "text": "We sourced interior doors and building materials through FGT. Professional service and fair pricing throughout."
+      },
+      "review3": {
+        "name": "Hassan O.",
+        "role": "Fishing Equipment Buyer",
+        "text": "Good range of fishing rods and gear for our coastal operations. Straightforward ordering and dependable stock."
+      }
+    }
+  },
+  "trustStrip": {
+    "items": {
+      "item1": "Reliable Supply",
+      "item2": "Quality Products",
+      "item3": "Multi-Industry",
+      "item4": "Customer Focus",
+      "item5": "Professional Service",
+      "item6": "Somalia Market"
+    }
+  },
+  "ctaBanner": {
+    "eyebrow": "Start Here",
+    "titleLine1": "Ready to source",
+    "titleAccent": "quality products?",
+    "description": "Browse our catalogue across construction materials, road interlocks, and fishing products — select a category to explore the full range.",
+    "exploreCatalogue": "Explore Catalogue",
+    "contactUs": "Contact Us",
+    "directLine": "Direct Line",
+    "footnote": "Speak with our team for product availability, project supply, and bulk orders across all categories."
+  }
+}

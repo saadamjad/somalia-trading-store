@@ -2,7 +2,8 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { useRouter } from "@/i18n/navigation";
+import { useTranslations } from "next-intl";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -63,6 +64,7 @@ export function CheckoutForm({
   customer: { name: string; email: string } | null;
   initialAddresses: CheckoutAddressDTO[];
 }) {
+  const t = useTranslations("checkout");
   const router = useRouter();
   const { items: rawItems, clearCart } = useCartStore();
   const { lineItems: items, subtotal, isLoading } = useCartProducts();
@@ -107,13 +109,13 @@ export function CheckoutForm({
       });
       const data = await res.json().catch(() => ({}));
       if (!res.ok) {
-        throw new Error(data.error || "That coupon couldn't be applied.");
+        throw new Error(data.error || t("coupon.genericError"));
       }
       setAppliedCoupon({ code: data.item.code, discountAmount: data.item.discountAmount });
-      toast.success(`Coupon "${data.item.code}" applied.`);
+      toast.success(t("coupon.appliedToast", { code: data.item.code }));
     } catch (err) {
       setAppliedCoupon(null);
-      setCouponError(err instanceof Error ? err.message : "That coupon couldn't be applied.");
+      setCouponError(err instanceof Error ? err.message : t("coupon.genericError"));
     } finally {
       setApplyingCoupon(false);
     }
@@ -131,12 +133,12 @@ export function CheckoutForm({
     setStockIssues([]);
 
     if (!customer && (!guestName.trim() || !guestEmail.trim())) {
-      setError("Please enter your name and email.");
+      setError(t("errors.guestDetailsRequired"));
       return;
     }
 
     if (!useNewAddress && !selectedAddressId) {
-      setError("Please select a shipping address.");
+      setError(t("errors.addressRequired"));
       return;
     }
 
@@ -172,7 +174,7 @@ export function CheckoutForm({
         if (res.status === 409 && Array.isArray(data.issues)) {
           setStockIssues(data.issues);
         }
-        throw new Error(data.error || "Could not place your order.");
+        throw new Error(data.error || t("errors.orderFailed"));
       }
 
       // Server has already persisted the order, decremented inventory, and cleared
@@ -180,7 +182,7 @@ export function CheckoutForm({
       // inside one transaction — clearing the local store here just keeps the client
       // UI in sync with that already-committed server state.
       clearCart();
-      toast.success("Order placed.");
+      toast.success(t("orderPlacedToast"));
       // A guest has no session, so /account/orders/[id] (an authenticated route)
       // isn't reachable — show an unauthenticated confirmation instead.
       router.push(
@@ -189,7 +191,7 @@ export function CheckoutForm({
           : `/checkout/confirmation?orderNumber=${encodeURIComponent(data.item.orderNumber)}`
       );
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Could not place your order.");
+      setError(err instanceof Error ? err.message : t("errors.orderFailed"));
     } finally {
       setSubmitting(false);
     }
@@ -198,10 +200,10 @@ export function CheckoutForm({
   if (!isLoading && items.length === 0) {
     return (
       <div className="flex min-h-[40vh] flex-col items-center justify-center py-12 text-center">
-        <h2 className="font-display mb-4 text-2xl font-bold">Nothing to Checkout</h2>
-        <p className="mb-8 text-muted">Add products to your cart first.</p>
+        <h2 className="font-display mb-4 text-2xl font-bold">{t("empty.title")}</h2>
+        <p className="mb-8 text-muted">{t("empty.description")}</p>
         <Button asChild>
-          <Link href="/shop">Shop Products</Link>
+          <Link href="/shop">{t("empty.cta")}</Link>
         </Button>
       </div>
     );
@@ -212,7 +214,7 @@ export function CheckoutForm({
       <div className="space-y-6">
         <Card>
           <CardContent className="space-y-2 p-6">
-            <h2 className="font-display text-lg font-semibold">Contact Information</h2>
+            <h2 className="font-display text-lg font-semibold">{t("contact.title")}</h2>
             {customer ? (
               <p className="text-sm text-muted">
                 {customer.name} &middot; {customer.email}
@@ -220,15 +222,17 @@ export function CheckoutForm({
             ) : (
               <>
                 <p className="mb-2 text-sm text-muted">
-                  Checking out as a guest.{" "}
-                  <Link href="/login?callbackUrl=/checkout" className="font-medium text-accent underline">
-                    Log in
-                  </Link>{" "}
-                  if you have an account.
+                  {t.rich("contact.guestNotice", {
+                    loginLink: (chunks) => (
+                      <Link href="/login?callbackUrl=/checkout" className="font-medium text-accent underline">
+                        {chunks}
+                      </Link>
+                    ),
+                  })}
                 </p>
                 <div className="grid gap-4 sm:grid-cols-2">
                   <div>
-                    <Label htmlFor="guestName">Full Name *</Label>
+                    <Label htmlFor="guestName">{t("contact.fullName")}</Label>
                     <Input
                       id="guestName"
                       required
@@ -238,7 +242,7 @@ export function CheckoutForm({
                     />
                   </div>
                   <div>
-                    <Label htmlFor="guestEmail">Email *</Label>
+                    <Label htmlFor="guestEmail">{t("contact.email")}</Label>
                     <Input
                       id="guestEmail"
                       type="email"
@@ -256,7 +260,7 @@ export function CheckoutForm({
 
         <Card>
           <CardContent className="space-y-4 p-6">
-            <h2 className="font-display text-lg font-semibold">Shipping Address</h2>
+            <h2 className="font-display text-lg font-semibold">{t("shipping.title")}</h2>
 
             {initialAddresses.length > 0 && (
               <div className="space-y-3">
@@ -279,7 +283,7 @@ export function CheckoutForm({
                     <span>
                       <span className="mb-1 flex items-center gap-2 font-semibold">
                         {address.recipientName}
-                        {address.isDefault && <Badge variant="success">Default</Badge>}
+                        {address.isDefault && <Badge variant="success">{t("shipping.default")}</Badge>}
                       </span>
                       <span className="block text-muted">{address.phone}</span>
                       <span className="block text-muted">
@@ -305,7 +309,7 @@ export function CheckoutForm({
                       : "border-dashed border-border hover:border-accent"
                   }`}
                 >
-                  Use a new address
+                  {t("shipping.useNewAddress")}
                 </button>
               </div>
             )}
@@ -313,7 +317,7 @@ export function CheckoutForm({
             {useNewAddress && (
               <div className="grid gap-4 sm:grid-cols-2">
                 <div>
-                  <Label htmlFor="recipientName">Recipient Name *</Label>
+                  <Label htmlFor="recipientName">{t("shipping.recipientName")}</Label>
                   <Input
                     id="recipientName"
                     required
@@ -323,7 +327,7 @@ export function CheckoutForm({
                   />
                 </div>
                 <div>
-                  <Label htmlFor="phone">Phone *</Label>
+                  <Label htmlFor="phone">{t("shipping.phone")}</Label>
                   <Input
                     id="phone"
                     type="tel"
@@ -334,7 +338,7 @@ export function CheckoutForm({
                   />
                 </div>
                 <div className="sm:col-span-2">
-                  <Label htmlFor="line1">Address Line 1 *</Label>
+                  <Label htmlFor="line1">{t("shipping.line1")}</Label>
                   <Input
                     id="line1"
                     required
@@ -344,7 +348,7 @@ export function CheckoutForm({
                   />
                 </div>
                 <div className="sm:col-span-2">
-                  <Label htmlFor="line2">Address Line 2 (optional)</Label>
+                  <Label htmlFor="line2">{t("shipping.line2")}</Label>
                   <Input
                     id="line2"
                     value={newAddress.line2}
@@ -353,7 +357,7 @@ export function CheckoutForm({
                   />
                 </div>
                 <div>
-                  <Label htmlFor="city">City *</Label>
+                  <Label htmlFor="city">{t("shipping.city")}</Label>
                   <Input
                     id="city"
                     required
@@ -363,7 +367,7 @@ export function CheckoutForm({
                   />
                 </div>
                 <div>
-                  <Label htmlFor="region">Region (optional)</Label>
+                  <Label htmlFor="region">{t("shipping.region")}</Label>
                   <Input
                     id="region"
                     value={newAddress.region}
@@ -372,7 +376,7 @@ export function CheckoutForm({
                   />
                 </div>
                 <div>
-                  <Label htmlFor="postalCode">Postal Code (optional)</Label>
+                  <Label htmlFor="postalCode">{t("shipping.postalCode")}</Label>
                   <Input
                     id="postalCode"
                     value={newAddress.postalCode}
@@ -381,7 +385,7 @@ export function CheckoutForm({
                   />
                 </div>
                 <div>
-                  <Label htmlFor="country">Country *</Label>
+                  <Label htmlFor="country">{t("shipping.country")}</Label>
                   <Input
                     id="country"
                     required
@@ -397,11 +401,11 @@ export function CheckoutForm({
 
         <Card>
           <CardContent className="space-y-4 p-6">
-            <h2 className="font-display text-lg font-semibold">Order Note (optional)</h2>
+            <h2 className="font-display text-lg font-semibold">{t("note.title")}</h2>
             <Textarea
               value={customerNote}
               onChange={(e) => setCustomerNote(e.target.value)}
-              placeholder="Delivery instructions or anything else we should know."
+              placeholder={t("note.placeholder")}
               rows={3}
             />
           </CardContent>
@@ -411,7 +415,7 @@ export function CheckoutForm({
       <div>
         <Card className="sticky top-24">
           <CardContent className="space-y-4 p-6">
-            <h2 className="font-display text-lg font-semibold">Order Summary</h2>
+            <h2 className="font-display text-lg font-semibold">{t("review.title")}</h2>
             <ul className="space-y-3 border-b border-border pb-4">
               {items.map(({ product, quantity, variant, unitPrice }) => (
                 <li key={`${product.id}::${variant?.id ?? ""}`} className="flex justify-between text-sm">
@@ -425,19 +429,19 @@ export function CheckoutForm({
             </ul>
             <div className="border-b border-border pb-4">
               <Label htmlFor="coupon-code" className="text-sm">
-                Coupon Code
+                {t("coupon.label")}
               </Label>
               <div className="mt-1.5 flex gap-2">
                 <Input
                   id="coupon-code"
                   value={couponInput}
                   onChange={(e) => setCouponInput(e.target.value)}
-                  placeholder="Enter code"
+                  placeholder={t("coupon.placeholder")}
                   disabled={Boolean(appliedCoupon)}
                 />
                 {appliedCoupon ? (
                   <Button type="button" variant="outline" onClick={handleRemoveCoupon}>
-                    Remove
+                    {t("coupon.remove")}
                   </Button>
                 ) : (
                   <Button
@@ -446,36 +450,38 @@ export function CheckoutForm({
                     onClick={handleApplyCoupon}
                     disabled={applyingCoupon || !couponInput.trim()}
                   >
-                    {applyingCoupon ? "Applying…" : "Apply"}
+                    {applyingCoupon ? t("coupon.applying") : t("coupon.apply")}
                   </Button>
                 )}
               </div>
               {couponError && <p className="mt-1.5 text-sm text-destructive">{couponError}</p>}
               {appliedCoupon && (
                 <p className="mt-1.5 text-sm text-success">
-                  &quot;{appliedCoupon.code}&quot; applied — you save{" "}
-                  {formatPrice(appliedCoupon.discountAmount)}.
+                  {t("coupon.appliedMessage", {
+                    code: appliedCoupon.code,
+                    amount: formatPrice(appliedCoupon.discountAmount),
+                  })}
                 </p>
               )}
             </div>
             <div className="space-y-1 border-b border-border pb-4 text-sm">
               <div className="flex justify-between">
-                <span className="text-muted">Subtotal</span>
+                <span className="text-muted">{t("summary.subtotal")}</span>
                 <span>{formatPrice(subtotal)}</span>
               </div>
               {appliedCoupon && (
                 <div className="flex justify-between text-success">
-                  <span>Discount</span>
+                  <span>{t("summary.discount")}</span>
                   <span>-{formatPrice(appliedCoupon.discountAmount)}</span>
                 </div>
               )}
               <div className="flex justify-between">
-                <span className="text-muted">Shipping</span>
-                <span>Free</span>
+                <span className="text-muted">{t("summary.shipping")}</span>
+                <span>{t("summary.shippingFree")}</span>
               </div>
             </div>
             <div className="flex justify-between text-lg font-bold">
-              <span>Total</span>
+              <span>{t("summary.total")}</span>
               <span>{formatPrice(Math.max(0, subtotal - (appliedCoupon?.discountAmount ?? 0)))}</span>
             </div>
 
@@ -491,20 +497,21 @@ export function CheckoutForm({
               <ul className="space-y-1 rounded-lg border border-destructive/40 bg-destructive/10 px-4 py-3 text-sm text-destructive">
                 {stockIssues.map((issue) => (
                   <li key={issue.productId}>
-                    Only {issue.available} available (you requested {issue.requested}).
+                    {t("errors.stockIssue", {
+                      available: issue.available,
+                      requested: issue.requested,
+                    })}
                   </li>
                 ))}
               </ul>
             )}
 
             <p className="text-xs text-muted">
-              No online payment is collected at this time — your order will be confirmed
-              and paid for outside the platform. Payment integration is coming in a
-              future update.
+              {t("paymentNotice")}
             </p>
 
             <Button type="submit" className="w-full" size="lg" disabled={submitting || isLoading}>
-              {submitting ? "Placing Order…" : "Place Order"}
+              {submitting ? t("placingOrder") : t("placeOrder")}
             </Button>
           </CardContent>
         </Card>

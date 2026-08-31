@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
+import { useTranslations } from "next-intl";
 import { useSession } from "next-auth/react";
 import { Star, BadgeCheck } from "lucide-react";
 import { toast } from "sonner";
@@ -44,6 +45,7 @@ interface ProductReviewsProps {
 }
 
 export function ProductReviews({ productId }: ProductReviewsProps) {
+  const t = useTranslations("product");
   const { status } = useSession();
   const [data, setData] = useState<ReviewsResponse | null>(null);
   const [loading, setLoading] = useState(true);
@@ -66,7 +68,7 @@ export function ProductReviews({ productId }: ProductReviewsProps) {
         const json: ReviewsResponse = await res.json();
         if (!cancelled) setData(json);
       } catch {
-        if (!cancelled) setError("Couldn't load reviews right now. Please try again later.");
+        if (!cancelled) setError(t("reviews.loadError"));
       } finally {
         if (!cancelled) setLoading(false);
       }
@@ -82,11 +84,11 @@ export function ProductReviews({ productId }: ProductReviewsProps) {
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     if (rating < 1) {
-      toast.error("Please select a star rating.");
+      toast.error(t("reviews.selectRating"));
       return;
     }
     if (!body.trim()) {
-      toast.error("Please write a review.");
+      toast.error(t("reviews.writeBody"));
       return;
     }
 
@@ -99,16 +101,16 @@ export function ProductReviews({ productId }: ProductReviewsProps) {
       });
       if (res.status === 409) {
         setAlreadyReviewed(true);
-        toast.error("You've already reviewed this product.");
+        toast.error(t("reviews.alreadyReviewed"));
         return;
       }
       if (!res.ok) throw new Error("Failed to submit review.");
-      toast.success("Thanks! Your review will appear once it's approved.");
+      toast.success(t("reviews.submitSuccess"));
       setRating(0);
       setTitle("");
       setBody("");
     } catch {
-      toast.error("Something went wrong submitting your review. Please try again.");
+      toast.error(t("reviews.submitError"));
     } finally {
       setSubmitting(false);
     }
@@ -118,19 +120,22 @@ export function ProductReviews({ productId }: ProductReviewsProps) {
     <section className="mt-20" aria-labelledby="reviews-heading">
       <div className="mb-8 flex flex-wrap items-center justify-between gap-4">
         <h2 id="reviews-heading" className="font-display text-2xl font-bold">
-          Customer Reviews
+          {t("reviews.title")}
         </h2>
         {data && data.count > 0 && (
           <div className="flex items-center gap-2">
             <StarRow rating={Math.round(data.averageRating ?? 0)} size="h-5 w-5" />
             <span className="text-sm text-muted">
-              {data.averageRating?.toFixed(1)} out of 5 ({data.count} review{data.count === 1 ? "" : "s"})
+              {t("reviews.summary", {
+                rating: data.averageRating?.toFixed(1) ?? "0.0",
+                count: data.count,
+              })}
             </span>
           </div>
         )}
       </div>
 
-      {loading && <p className="text-sm text-muted">Loading reviews…</p>}
+      {loading && <p className="text-sm text-muted">{t("reviews.loading")}</p>}
       {error && (
         <p role="alert" className="text-sm text-destructive">
           {error}
@@ -141,7 +146,7 @@ export function ProductReviews({ productId }: ProductReviewsProps) {
         <>
           {data.items.length === 0 ? (
             <p className="mb-8 text-sm text-muted">
-              No reviews yet — be the first to share your experience.
+              {t("reviews.empty")}
             </p>
           ) : (
             <ul className="mb-10 space-y-4">
@@ -154,14 +159,17 @@ export function ProductReviews({ productId }: ProductReviewsProps) {
                         {review.verifiedPurchase && (
                           <span className="flex items-center gap-1 text-xs font-medium text-success">
                             <BadgeCheck className="h-3.5 w-3.5" />
-                            Verified Purchase
+                            {t("reviews.verifiedPurchase")}
                           </span>
                         )}
                       </div>
                       {review.title && <p className="font-semibold">{review.title}</p>}
                       <p className="text-sm text-muted">{review.body}</p>
                       <p className="text-xs text-muted">
-                        {review.author} · {new Date(review.createdAt).toLocaleDateString()}
+                        {t("reviews.authorDate", {
+                          author: review.author,
+                          date: new Date(review.createdAt).toLocaleDateString(),
+                        })}
                       </p>
                     </CardContent>
                   </Card>
@@ -175,11 +183,11 @@ export function ProductReviews({ productId }: ProductReviewsProps) {
       {status === "authenticated" && !alreadyReviewed && (
         <Card>
           <CardContent className="p-6">
-            <h3 className="font-display mb-4 text-lg font-semibold">Write a Review</h3>
+            <h3 className="font-display mb-4 text-lg font-semibold">{t("reviews.writeReview")}</h3>
             <form onSubmit={handleSubmit} className="space-y-4">
               <div>
                 <label className="mb-2 block text-sm font-medium" id="rating-label">
-                  Rating
+                  {t("reviews.ratingLabel")}
                 </label>
                 <div className="flex gap-1" role="radiogroup" aria-labelledby="rating-label">
                   {[1, 2, 3, 4, 5].map((n) => (
@@ -188,7 +196,7 @@ export function ProductReviews({ productId }: ProductReviewsProps) {
                       type="button"
                       role="radio"
                       aria-checked={rating === n}
-                      aria-label={`${n} star${n === 1 ? "" : "s"}`}
+                      aria-label={t("reviews.starLabel", { count: n })}
                       onClick={() => setRating(n)}
                       className="p-0.5"
                     >
@@ -204,7 +212,7 @@ export function ProductReviews({ productId }: ProductReviewsProps) {
               </div>
               <div>
                 <label htmlFor="review-title" className="mb-2 block text-sm font-medium">
-                  Title (optional)
+                  {t("reviews.titleLabel")}
                 </label>
                 <input
                   id="review-title"
@@ -217,7 +225,7 @@ export function ProductReviews({ productId }: ProductReviewsProps) {
               </div>
               <div>
                 <label htmlFor="review-body" className="mb-2 block text-sm font-medium">
-                  Your Review
+                  {t("reviews.bodyLabel")}
                 </label>
                 <Textarea
                   id="review-body"
@@ -229,7 +237,7 @@ export function ProductReviews({ productId }: ProductReviewsProps) {
                 />
               </div>
               <Button type="submit" disabled={submitting}>
-                {submitting ? "Submitting…" : "Submit Review"}
+                {submitting ? t("reviews.submitting") : t("reviews.submit")}
               </Button>
             </form>
           </CardContent>
@@ -239,9 +247,9 @@ export function ProductReviews({ productId }: ProductReviewsProps) {
       {status === "unauthenticated" && (
         <p className="text-sm text-muted">
           <Link href="/login" className="font-medium text-accent underline">
-            Log in
+            {t("reviews.loginPrompt")}
           </Link>{" "}
-          to write a review.
+          {t("reviews.loginSuffix")}
         </p>
       )}
     </section>

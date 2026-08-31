@@ -6,6 +6,7 @@ export const categoryFilters: Record<CategorySlug, FilterDefinition[]> = {
     {
       key: "subcategory",
       label: "Product Type",
+      labelKey: "productType",
       type: "checkbox",
       options: [
         { label: "Doors", value: "Doors" },
@@ -17,6 +18,7 @@ export const categoryFilters: Record<CategorySlug, FilterDefinition[]> = {
     {
       key: "material",
       label: "Material",
+      labelKey: "material",
       type: "checkbox",
       specKey: "Material",
       options: [
@@ -29,6 +31,7 @@ export const categoryFilters: Record<CategorySlug, FilterDefinition[]> = {
     {
       key: "availability",
       label: "Availability",
+      labelKey: "availability",
       type: "checkbox",
       options: [
         { label: "In Stock", value: "in_stock" },
@@ -39,6 +42,7 @@ export const categoryFilters: Record<CategorySlug, FilterDefinition[]> = {
     {
       key: "price",
       label: "Price Range",
+      labelKey: "priceRange",
       type: "range",
     },
   ],
@@ -46,6 +50,7 @@ export const categoryFilters: Record<CategorySlug, FilterDefinition[]> = {
     {
       key: "subcategory",
       label: "Paver Type",
+      labelKey: "paverType",
       type: "checkbox",
       options: [
         { label: "Interlocking Pavers", value: "Interlocking Pavers" },
@@ -59,6 +64,7 @@ export const categoryFilters: Record<CategorySlug, FilterDefinition[]> = {
     {
       key: "material",
       label: "Material",
+      labelKey: "material",
       type: "checkbox",
       specKey: "Material",
       options: [
@@ -69,6 +75,7 @@ export const categoryFilters: Record<CategorySlug, FilterDefinition[]> = {
     {
       key: "color",
       label: "Color",
+      labelKey: "color",
       type: "checkbox",
       specKey: "Color",
       options: [
@@ -80,6 +87,7 @@ export const categoryFilters: Record<CategorySlug, FilterDefinition[]> = {
     {
       key: "availability",
       label: "Availability",
+      labelKey: "availability",
       type: "checkbox",
       options: [
         { label: "In Stock", value: "in_stock" },
@@ -90,6 +98,7 @@ export const categoryFilters: Record<CategorySlug, FilterDefinition[]> = {
     {
       key: "price",
       label: "Price Range",
+      labelKey: "priceRange",
       type: "range",
     },
   ],
@@ -97,6 +106,7 @@ export const categoryFilters: Record<CategorySlug, FilterDefinition[]> = {
     {
       key: "subcategory",
       label: "Product Type",
+      labelKey: "productType",
       type: "checkbox",
       options: [
         { label: "Rods", value: "Rods" },
@@ -110,6 +120,7 @@ export const categoryFilters: Record<CategorySlug, FilterDefinition[]> = {
     {
       key: "brand",
       label: "Brand",
+      labelKey: "brand",
       type: "checkbox",
       specKey: "Brand",
       options: [
@@ -121,6 +132,7 @@ export const categoryFilters: Record<CategorySlug, FilterDefinition[]> = {
     {
       key: "material",
       label: "Material",
+      labelKey: "material",
       type: "checkbox",
       specKey: "Material",
       options: [
@@ -133,6 +145,7 @@ export const categoryFilters: Record<CategorySlug, FilterDefinition[]> = {
     {
       key: "availability",
       label: "Availability",
+      labelKey: "availability",
       type: "checkbox",
       options: [
         { label: "In Stock", value: "in_stock" },
@@ -142,6 +155,7 @@ export const categoryFilters: Record<CategorySlug, FilterDefinition[]> = {
     {
       key: "price",
       label: "Price Range",
+      labelKey: "priceRange",
       type: "range",
     },
   ],

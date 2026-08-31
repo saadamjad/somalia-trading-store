@@ -1,0 +1,22 @@
+{
+  "orderStatusChanged": {
+    "subject": "Dalabkaaga {orderNumber} waa la cusboonaysiiyay",
+    "body": "Dalabkaaga {orderNumber} hadda wuxuu yahay {status}."
+  },
+  "quoteReady": {
+    "subject": "Qiimeyntaadu waa diyaar",
+    "body": "Waxaan kaaga jawaabnay codsigaaga qiimeynta — fiiri qiimaha."
+  },
+  "refundApproved": {
+    "subject": "Codsiga lacag celinta waa la ansixiyay",
+    "body": "Codsigaaga lacag celinta ee dalabka {orderNumber} waa la ansixiyay."
+  },
+  "refundRejected": {
+    "subject": "Codsiga lacag celinta waa la diiday",
+    "body": "Codsigaaga lacag celinta ee dalabka {orderNumber} waa la diiday."
+  },
+  "passwordReset": {
+    "subject": "Dib u deji furahaaga sirta ah",
+    "body": "Isticmaal linkiga hoose si aad dib u u dejiso furahaaga sirta ah:\n{resetUrl}"
+  }
+}

@@ -39,14 +39,6 @@ export const whyChoosePillars: WhyChoosePillar[] = [
   },
 ];
 
-export const whyChooseHeading = {
-  eyebrow: "Why FGT",
-  titleLine1: "A Partner You Can",
-  titleLine2: "Count On",
-  description:
-    "From paver blocks and doors to fishing equipment — we combine product quality with the service standards your business expects.",
-};
-
 export interface Testimonial {
   name: string;
   role: string;
@@ -75,11 +67,6 @@ export const testimonials: Testimonial[] = [
   },
 ];
 
-export const shopByCategoryCopy = {
-  description:
-    "Construction materials, road interlocks, and fishing products — three specialised supply divisions.",
-};
-
 export interface TrustStat {
   value: string;
   label: string;
@@ -91,19 +78,3 @@ export const trustStats: TrustStat[] = [
   { value: "10+", label: "Years Experience" },
   { value: "100%", label: "Quality Focus" },
 ];
-
-export const trustStripItems: string[] = [
-  "Reliable Supply",
-  "Quality Products",
-  "Multi-Industry",
-  "Customer Focus",
-  "Professional Service",
-  "Somalia Market",
-];
-
-/** Shown on the homepage hero when no `HOMEPAGE_HERO` banner is active in the CMS. */
-export const heroFallback = {
-  headlineLine1: "Built for",
-  headlineAccent: "Industry.",
-  headlineLine3: "Trusted in Trade.",
-};

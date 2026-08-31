@@ -418,6 +418,7 @@ export const quoteService = {
         message: "We've responded to your quote request with pricing — take a look.",
         relatedEntityType: "QUOTE",
         relatedEntityId: view.id,
+        emailTemplate: { key: "quoteReady" },
       });
     }
 

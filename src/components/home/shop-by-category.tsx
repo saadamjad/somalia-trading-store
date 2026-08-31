@@ -1,26 +1,28 @@
+import { getTranslations } from "next-intl/server";
 import { CategoryCard } from "@/components/product/category-card";
 import { FadeIn } from "@/components/ui/motion";
-import { shopByCategoryCopy } from "@/config/home";
 import type { Category } from "@/lib/types/product";
 
-export function ShopByCategory({ categories }: { categories: Category[] }) {
+export async function ShopByCategory({ categories }: { categories: Category[] }) {
+  const t = await getTranslations("home.shopByCategory");
+
   return (
     <section className="section-padding bg-background">
       <div className="container-custom">
         <FadeIn className="section-heading flex flex-col justify-between gap-6 md:flex-row md:items-end">
           <div>
             <div className="mb-4 flex items-center gap-3">
-              <span className="label">Catalogue</span>
+              <span className="label">{t("eyebrow")}</span>
               <span className="h-px w-10 bg-accent/40" />
             </div>
             <h2 className="font-display text-4xl font-bold md:text-5xl">
-              Shop by
+              {t("titleLine1")}
               <br />
-              <span className="text-accent">Category</span>
+              <span className="text-accent">{t("titleAccent")}</span>
             </h2>
           </div>
           <p className="max-w-sm text-sm leading-relaxed text-muted">
-            {shopByCategoryCopy.description}
+            {t("description")}
           </p>
         </FadeIn>
 
